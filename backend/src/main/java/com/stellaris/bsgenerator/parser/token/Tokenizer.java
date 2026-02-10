@@ -210,6 +210,6 @@ public final class Tokenizer {
     }
 
     private static boolean isIdentPart(char c) {
-        return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '.' || c == ':';
+        return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '.' || c == ':' || c == '|' || c == '\'' || c == '/';
     }
 }
