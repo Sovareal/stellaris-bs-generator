@@ -19,7 +19,7 @@ You get one reroll per category if you don't like a pick.
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Java 25 (Corretto), Spring Boot 4.0, Gradle |
+| Backend | Java 25 (Corretto), Spring Boot 4.0, Gradle, Lombok |
 | Frontend | React 19, TypeScript, Tailwind CSS |
 | Desktop Shell | Tauri 2.0 |
 

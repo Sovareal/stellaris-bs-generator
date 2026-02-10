@@ -2,31 +2,28 @@ package com.stellaris.bsgenerator.parser.loader;
 
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class GameFileService {
-
-    private static final Logger log = LoggerFactory.getLogger(GameFileService.class);
 
     private final ParserProperties properties;
 
-    private ClausewitzNode ethics;
-    private ClausewitzNode authorities;
-    private ClausewitzNode civics;
-    private ClausewitzNode origins;
-    private ClausewitzNode speciesArchetypes;
-    private ClausewitzNode traits;
-
-    public GameFileService(ParserProperties properties) {
-        this.properties = properties;
-    }
+    @Getter private ClausewitzNode ethics;
+    @Getter private ClausewitzNode authorities;
+    @Getter private ClausewitzNode civics;
+    @Getter private ClausewitzNode origins;
+    @Getter private ClausewitzNode speciesArchetypes;
+    @Getter private ClausewitzNode traits;
 
     public void loadAll() throws IOException {
         Path gamePath = Path.of(properties.gamePath());
@@ -63,9 +60,4 @@ public class GameFileService {
         log.info("Game file loading complete in {}ms", elapsed);
     }
 
-    public ClausewitzNode getEthics() { return ethics; }
-    public ClausewitzNode getAuthorities() { return authorities; }
-    public ClausewitzNode getCivics() { return civics; }
-    public ClausewitzNode getSpeciesArchetypes() { return speciesArchetypes; }
-    public ClausewitzNode getTraits() { return traits; }
 }

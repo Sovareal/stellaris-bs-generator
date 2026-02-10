@@ -3,8 +3,7 @@ package com.stellaris.bsgenerator.parser.cache;
 import tools.jackson.databind.ObjectMapper;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -12,10 +11,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class ParsedDataCache {
 
-    private static final Logger log = LoggerFactory.getLogger(ParsedDataCache.class);
     private static final String CACHE_FILE = "stellaris-cache.json";
 
     private final Path cachePath;

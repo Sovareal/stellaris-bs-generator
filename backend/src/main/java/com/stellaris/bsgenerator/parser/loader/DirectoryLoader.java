@@ -3,8 +3,7 @@ package com.stellaris.bsgenerator.parser.loader;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzParser;
 import com.stellaris.bsgenerator.parser.token.Tokenizer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,9 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+@Slf4j
 public final class DirectoryLoader {
-
-    private static final Logger log = LoggerFactory.getLogger(DirectoryLoader.class);
 
     private DirectoryLoader() {}
 

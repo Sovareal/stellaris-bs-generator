@@ -2,8 +2,9 @@ package com.stellaris.bsgenerator.parser.cache;
 
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -13,10 +14,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class GameDataManager {
-
-    private static final Logger log = LoggerFactory.getLogger(GameDataManager.class);
 
     private static final List<String> PARSED_SUBDIRECTORIES = List.of(
             "ethics",
@@ -30,13 +31,8 @@ public class GameDataManager {
     private final GameFileService gameFileService;
     private final ParsedDataCache cache;
 
+    @Getter
     private GameVersion gameVersion;
-
-    public GameDataManager(ParserProperties properties, GameFileService gameFileService, ParsedDataCache cache) {
-        this.properties = properties;
-        this.gameFileService = gameFileService;
-        this.cache = cache;
-    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
@@ -88,10 +84,6 @@ public class GameDataManager {
 
     public void forceReload() throws IOException {
         loadGameData(true);
-    }
-
-    public GameVersion getGameVersion() {
-        return gameVersion;
     }
 
     private void restoreFromCache(ParsedDataCache.CacheEntry cached) {

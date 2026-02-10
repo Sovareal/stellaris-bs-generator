@@ -2,6 +2,7 @@ package com.stellaris.bsgenerator.controller;
 
 import com.stellaris.bsgenerator.parser.cache.GameDataManager;
 import com.stellaris.bsgenerator.parser.cache.GameVersion;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,13 +12,10 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/data")
+@RequiredArgsConstructor
 public class DataController {
 
     private final GameDataManager gameDataManager;
-
-    public DataController(GameDataManager gameDataManager) {
-        this.gameDataManager = gameDataManager;
-    }
 
     public record VersionResponse(String version, String rawVersion, String buildHash) {
         static VersionResponse from(GameVersion gv) {
