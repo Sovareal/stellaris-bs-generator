@@ -1,5 +1,7 @@
 package com.stellaris.bsgenerator.parser.cache;
 
+import com.stellaris.bsgenerator.extractor.*;
+import com.stellaris.bsgenerator.model.*;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import lombok.Getter;
@@ -30,9 +32,20 @@ public class GameDataManager {
     private final ParserProperties properties;
     private final GameFileService gameFileService;
     private final ParsedDataCache cache;
+    private final EthicExtractor ethicExtractor;
+    private final AuthorityExtractor authorityExtractor;
+    private final CivicExtractor civicExtractor;
+    private final OriginExtractor originExtractor;
+    private final SpeciesArchetypeExtractor speciesArchetypeExtractor;
+    private final SpeciesTraitExtractor speciesTraitExtractor;
 
-    @Getter
-    private GameVersion gameVersion;
+    @Getter private GameVersion gameVersion;
+    @Getter private List<Ethic> ethics;
+    @Getter private List<Authority> authorities;
+    @Getter private List<Civic> civics;
+    @Getter private List<Origin> origins;
+    @Getter private List<SpeciesArchetype> speciesArchetypes;
+    @Getter private List<SpeciesTrait> speciesTraits;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
@@ -70,6 +83,7 @@ public class GameDataManager {
 
         // Parse fresh
         gameFileService.loadAll();
+        extractTypedData();
 
         // Save to cache
         Map<String, com.stellaris.bsgenerator.parser.ast.ClausewitzNode> data = Map.of(
@@ -93,8 +107,22 @@ public class GameDataManager {
         // TODO: Implement full cache restore when parse time becomes a concern.
         try {
             gameFileService.loadAll();
+            extractTypedData();
         } catch (IOException e) {
             log.error("Failed to re-parse game files: {}", e.getMessage(), e);
         }
+    }
+
+    private void extractTypedData() {
+        ethics = ethicExtractor.extract(gameFileService.getEthics());
+        authorities = authorityExtractor.extract(gameFileService.getAuthorities());
+        civics = civicExtractor.extract(gameFileService.getCivics());
+        origins = originExtractor.extract(gameFileService.getCivics());
+        speciesArchetypes = speciesArchetypeExtractor.extract(gameFileService.getSpeciesArchetypes());
+        speciesTraits = speciesTraitExtractor.extract(gameFileService.getTraits());
+
+        log.info("Extracted: {} ethics, {} authorities, {} civics, {} origins, {} archetypes, {} traits",
+                ethics.size(), authorities.size(), civics.size(), origins.size(),
+                speciesArchetypes.size(), speciesTraits.size());
     }
 }
