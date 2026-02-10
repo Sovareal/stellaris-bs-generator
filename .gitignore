@@ -1,0 +1,40 @@
+# === Java / Gradle ===
+backend/build/
+backend/.gradle/
+.gradle/
+build/
+
+# === Node / npm ===
+frontend/node_modules/
+frontend/dist/
+
+# === Tauri / Rust ===
+frontend/src-tauri/target/
+frontend/src-tauri/gen/
+
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Claude Code / Working Docs ===
+.claude/
+CLAUDE.md
+IMPLEMENTATION_PLAN.md
+PROGRESS.md
+REQUIREMENTS.md
+
+# === Environment / Secrets ===
+.env
+.env.local
+*.log
