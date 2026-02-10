@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  --color-stellaris-bg: #0a0e17;
+  --color-stellaris-surface: #141b2d;
+  --color-stellaris-border: #1e2a45;
+  --color-stellaris-accent: #4fc3f7;
+  --color-stellaris-text: #e0e6ed;
+  --color-stellaris-muted: #7a8ba8;
+}
