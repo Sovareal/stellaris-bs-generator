@@ -1,0 +1,162 @@
+package com.stellaris.bsgenerator.engine;
+
+import com.stellaris.bsgenerator.extractor.*;
+import com.stellaris.bsgenerator.model.*;
+import com.stellaris.bsgenerator.parser.cache.GameDataManager;
+import com.stellaris.bsgenerator.parser.cache.ParsedDataCache;
+import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.parser.loader.GameFileService;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@EnabledIf("gameFilesExist")
+class EmpireGeneratorServiceTest {
+
+    private static final String GAME_PATH = "F:\\Games\\SteamLibrary\\steamapps\\common\\Stellaris";
+
+    @TempDir
+    static Path tempDir;
+
+    private static EmpireGeneratorService generator;
+    private static RequirementEvaluator evaluator;
+    private static GameDataManager gameDataManager;
+
+    static boolean gameFilesExist() {
+        return Files.isDirectory(Path.of(GAME_PATH, "common"));
+    }
+
+    @BeforeAll
+    static void setUp() throws IOException {
+        var props = new ParserProperties(GAME_PATH, tempDir.toString());
+        var gameFileService = new GameFileService(props);
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        var cache = new ParsedDataCache(props, mapper);
+        gameDataManager = new GameDataManager(props, gameFileService, cache,
+                new EthicExtractor(), new AuthorityExtractor(),
+                new CivicExtractor(), new OriginExtractor(),
+                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor());
+        gameDataManager.loadGameData(false);
+
+        evaluator = new RequirementEvaluator();
+        var filterService = new CompatibilityFilterService(gameDataManager, evaluator);
+        generator = new EmpireGeneratorService(filterService, evaluator);
+    }
+
+    @Test
+    void generateProducesCompleteEmpire() {
+        var empire = generator.generate();
+
+        assertNotNull(empire);
+        assertFalse(empire.ethics().isEmpty(), "Should have ethics");
+        assertNotNull(empire.authority(), "Should have authority");
+        assertEquals(2, empire.civics().size(), "Should have 2 civics");
+        assertNotNull(empire.origin(), "Should have origin");
+        assertNotNull(empire.speciesArchetype(), "Should have archetype");
+        assertNotNull(empire.speciesTraits(), "Should have traits list");
+    }
+
+    @Test
+    void ethicsCostEqualsThree() {
+        var empire = generator.generate();
+        int totalCost = empire.ethics().stream().mapToInt(Ethic::cost).sum();
+        assertEquals(3, totalCost, "Ethics cost must equal 3");
+    }
+
+    @Test
+    void civicsAreDifferent() {
+        var empire = generator.generate();
+        assertEquals(2, empire.civics().size());
+        assertNotEquals(empire.civics().get(0).id(), empire.civics().get(1).id(),
+                "Two civics must be different");
+    }
+
+    @Test
+    void traitPointsWithinBudget() {
+        var empire = generator.generate();
+        assertTrue(empire.traitPointsUsed() <= empire.traitPointsBudget(),
+                "Trait points used (" + empire.traitPointsUsed() + ") should not exceed budget (" + empire.traitPointsBudget() + ")");
+    }
+
+    @Test
+    void traitsAreCompatibleWithArchetype() {
+        var empire = generator.generate();
+        for (var trait : empire.speciesTraits()) {
+            assertTrue(trait.allowedArchetypes().contains(empire.speciesArchetype().id()),
+                    "Trait " + trait.id() + " should be allowed for archetype " + empire.speciesArchetype().id());
+        }
+    }
+
+    @Test
+    void traitsHaveNoOppositeConflicts() {
+        var empire = generator.generate();
+        Set<String> traitIds = new HashSet<>();
+        for (var trait : empire.speciesTraits()) {
+            traitIds.add(trait.id());
+        }
+        for (var trait : empire.speciesTraits()) {
+            for (var opposite : trait.opposites()) {
+                assertFalse(traitIds.contains(opposite),
+                        "Trait " + trait.id() + " conflicts with opposite " + opposite);
+            }
+        }
+    }
+
+    @Test
+    void authorityCompatibleWithEthics() {
+        var empire = generator.generate();
+        var state = EmpireState.empty()
+                .withEthics(toIdSet(empire.ethics()));
+        assertTrue(evaluator.evaluateBoth(empire.authority().potential(), empire.authority().possible(), state),
+                "Authority should be compatible with selected ethics");
+    }
+
+    @Test
+    void civicsCompatibleWithState() {
+        var empire = generator.generate();
+        var state = EmpireState.empty()
+                .withEthics(toIdSet(empire.ethics()))
+                .withAuthority(empire.authority().id());
+
+        for (var civic : empire.civics()) {
+            assertTrue(evaluator.evaluateBoth(civic.potential(), civic.possible(), state),
+                    "Civic " + civic.id() + " should be compatible with state");
+            // Add civic to state for next check
+            var newCivics = new HashSet<>(state.civics());
+            newCivics.add(civic.id());
+            state = state.withCivics(newCivics);
+        }
+    }
+
+    @RepeatedTest(100)
+    void generate100ValidEmpires() {
+        var empire = generator.generate();
+        assertNotNull(empire);
+
+        // Validate ethics cost
+        int totalCost = empire.ethics().stream().mapToInt(Ethic::cost).sum();
+        assertEquals(3, totalCost, "Ethics cost must equal 3");
+
+        // Validate 2 different civics
+        assertEquals(2, empire.civics().size());
+
+        // Validate trait budget
+        assertTrue(empire.traitPointsUsed() <= empire.traitPointsBudget());
+    }
+
+    private Set<String> toIdSet(java.util.List<Ethic> ethics) {
+        var set = new HashSet<String>();
+        for (var e : ethics) set.add(e.id());
+        return set;
+    }
+}
