@@ -45,7 +45,9 @@ class EmpireGeneratorServiceTest {
         gameDataManager = new GameDataManager(props, gameFileService, cache,
                 new EthicExtractor(), new AuthorityExtractor(),
                 new CivicExtractor(), new OriginExtractor(),
-                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor());
+                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
+                new PlanetClassExtractor(), new GraphicalCultureExtractor(),
+                new StartingRulerTraitExtractor());
         gameDataManager.loadGameData(false);
 
         evaluator = new RequirementEvaluator();

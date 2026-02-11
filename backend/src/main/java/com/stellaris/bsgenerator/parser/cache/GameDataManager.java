@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -26,7 +27,9 @@ public class GameDataManager {
             "governments/authorities",
             "governments/civics",
             "species_archetypes",
-            "traits"
+            "traits",
+            "planet_classes",
+            "graphical_culture"
     );
 
     private final ParserProperties properties;
@@ -38,6 +41,9 @@ public class GameDataManager {
     private final OriginExtractor originExtractor;
     private final SpeciesArchetypeExtractor speciesArchetypeExtractor;
     private final SpeciesTraitExtractor speciesTraitExtractor;
+    private final PlanetClassExtractor planetClassExtractor;
+    private final GraphicalCultureExtractor graphicalCultureExtractor;
+    private final StartingRulerTraitExtractor startingRulerTraitExtractor;
 
     @Getter private GameVersion gameVersion;
     @Getter private List<Ethic> ethics;
@@ -46,6 +52,9 @@ public class GameDataManager {
     @Getter private List<Origin> origins;
     @Getter private List<SpeciesArchetype> speciesArchetypes;
     @Getter private List<SpeciesTrait> speciesTraits;
+    @Getter private List<PlanetClass> planetClasses;
+    @Getter private List<GraphicalCulture> graphicalCultures;
+    @Getter private List<StartingRulerTrait> startingRulerTraits;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
@@ -120,9 +129,13 @@ public class GameDataManager {
         origins = originExtractor.extract(gameFileService.getCivics());
         speciesArchetypes = speciesArchetypeExtractor.extract(gameFileService.getSpeciesArchetypes());
         speciesTraits = speciesTraitExtractor.extract(gameFileService.getTraits());
+        planetClasses = planetClassExtractor.extract(gameFileService.getPlanetClasses());
+        graphicalCultures = graphicalCultureExtractor.extract(gameFileService.getGraphicalCultures());
+        startingRulerTraits = startingRulerTraitExtractor.extract(gameFileService.getTraits());
 
-        log.info("Extracted: {} ethics, {} authorities, {} civics, {} origins, {} archetypes, {} traits",
+        log.info("Extracted: {} ethics, {} authorities, {} civics, {} origins, {} archetypes, {} traits, {} planets, {} shipsets, {} ruler traits",
                 ethics.size(), authorities.size(), civics.size(), origins.size(),
-                speciesArchetypes.size(), speciesTraits.size());
+                speciesArchetypes.size(), speciesTraits.size(),
+                planetClasses.size(), graphicalCultures.size(), startingRulerTraits.size());
     }
 }

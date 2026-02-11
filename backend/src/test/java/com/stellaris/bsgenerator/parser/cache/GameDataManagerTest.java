@@ -32,7 +32,9 @@ class GameDataManagerTest {
         return new GameDataManager(props, gameFileService, cache,
                 new EthicExtractor(), new AuthorityExtractor(),
                 new CivicExtractor(), new OriginExtractor(),
-                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor());
+                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
+                new PlanetClassExtractor(), new GraphicalCultureExtractor(),
+                new StartingRulerTraitExtractor());
     }
 
     @Test
@@ -105,7 +107,9 @@ class GameDataManagerTest {
         var manager = new GameDataManager(props, gameFileService, cache,
                 new EthicExtractor(), new AuthorityExtractor(),
                 new CivicExtractor(), new OriginExtractor(),
-                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor());
+                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
+                new PlanetClassExtractor(), new GraphicalCultureExtractor(),
+                new StartingRulerTraitExtractor());
 
         assertThrows(IOException.class, () -> manager.loadGameData(false));
     }

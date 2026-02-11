@@ -15,5 +15,9 @@ public record GeneratedEmpire(
         SpeciesArchetype speciesArchetype,
         List<SpeciesTrait> speciesTraits,
         int traitPointsUsed,
-        int traitPointsBudget
+        int traitPointsBudget,
+        PlanetClass homeworld,
+        GraphicalCulture shipset,
+        String leaderClass,
+        StartingRulerTrait leaderTrait
 ) {}

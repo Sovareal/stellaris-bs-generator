@@ -4,14 +4,14 @@
 > primary context anchor across sessions — read it first to understand where we left off.
 
 ## Current Session Focus
-Phase 6 complete. Generation fixes (gestalt, origin traits, single reroll) all done.
+Phase 7 complete. New empire settings (homeworld, shipset, starting leader) implemented.
 
 ## Last Completed Task
-Phase 6 — Generation Fixes. All 3 tasks (6.1, 6.2, 6.3) complete.
+Phase 7 — New Empire Settings. All 4 tasks (7.1–7.4) complete. Also fixed Clausewitz parser for `hsv { }` syntax.
 
 ## Next Up
-Phase 7: Tasks 7.1–7.4 — Shipset, homeworld planet, starting leader generation
-Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
+Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings (already partially done in 7.4)
+Phase 9: Tasks 9.1–9.3 — Polish & packaging
 
 ---
 
@@ -81,17 +81,17 @@ Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 7.1 | Planet Class Model & Extractor | NOT STARTED | Extract 10 habitable planet types (initial=yes) from common/planet_classes/. Add homeworld field to GeneratedEmpire. Origins with fixed planets (Life Seeded→gaia, Void Dwellers→habitat, etc.) skip selection. |
-| 7.2 | Graphical Culture (Shipset) Model & Extractor | NOT STARTED | Extract 13 player-selectable shipsets from common/graphical_culture/. Handle origin restrictions (biogenesis origins block biogenesis_01/02). Add shipset field to GeneratedEmpire. |
-| 7.3 | Starting Leader Model & Generation | NOT STARTED | Extract 3 leader classes (Official/Commander/Scientist) and starting ruler traits from common/traits/00_starting_ruler_traits.txt. Class-specific and multi-class traits. Some forbidden for specific origins. |
-| 7.4 | Updated DTOs & API | NOT STARTED | Add homeworld, shipset, leader class + trait to EmpireResponse DTO. Update generate/reroll endpoints. New RerollCategories for new fields. |
+| 7.1 | Planet Class Model & Extractor | DONE | PlanetClass record + PlanetClassExtractor (colonizable+initial=yes). 10 habitable types extracted. Also fixed parser for `hsv { }` / `rgb { }` value-typed blocks. |
+| 7.2 | Graphical Culture (Shipset) Model & Extractor | DONE | GraphicalCulture record + GraphicalCultureExtractor. Filters NPC-only (selectable={always=no}). 22 player-selectable shipsets. |
+| 7.3 | Starting Leader Model & Generation | DONE | StartingRulerTrait record + StartingRulerTraitExtractor. Filters starting_ruler_trait=yes, skips tier-2. 34 traits with leader_class, forbidden_origins, allowed_ethics. |
+| 7.4 | Updated DTOs, API & GeneratedEmpire | DONE | GeneratedEmpire now has 12 fields. New DTOs (PlanetClassDto, LeaderDto). 3 new RerollCategories. EmpireCard updated with Homeworld/Shipset/Leader slots. Frontend types updated. Origin-fixed planets use hardcoded map (9 origins). |
 
 ## Phase 8: Frontend Updates for New Settings
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 8.1 | New Empire Card Slots | NOT STARTED | Add Homeworld, Shipset, Leader Class + Trait slots to EmpireCard. Update TypeScript types. |
-| 8.2 | Single Reroll UI Update | NOT STARTED | After any reroll, disable ALL dice buttons. Update tooltip text. |
+| 8.1 | New Empire Card Slots | DONE | Completed as part of Task 7.4 — Homeworld/Shipset/Leader slots in EmpireCard, TypeScript types updated, format.ts extended. |
+| 8.2 | Single Reroll UI Update | DONE | Already working from Phase 6.3 — single boolean reroll, all dice disabled after any reroll. |
 
 ## Phase 9: Polish & Packaging
 
@@ -194,6 +194,8 @@ Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 | 2026-02-11 | Origin-aware trait filtering | SpeciesTrait needs allowedOrigins/forbiddenOrigins + 4 more restriction fields per game docs. Fixes Overtuned and other origin-specific traits. |
 | 2026-02-11 | Single reroll, not per-category | Player should get ONE reroll total across all categories. Forces meaningful trade-off decisions. |
 | 2026-02-11 | New empire settings planned | Shipset (13 selectable), homeworld planet (10 types, some origin-fixed), starting leader class + trait. Phase 7. |
+| 2026-02-11 | Parser fix: value-typed blocks | `hsv { 0.5 0.3 0.7 }` / `rgb { }` syntax was breaking the Clausewitz parser. Fixed by consuming `{ block }` after scalar value when next token is OPEN_BRACE. Planet_classes files were ALL failing before this fix. |
+| 2026-02-11 | DirectoryLoader resilience | Added try-catch around individual file parsing in DirectoryLoader. Skips unparseable files with a warning instead of failing the entire directory. |
 
 ## Blockers & Issues
 
@@ -203,15 +205,16 @@ Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 
 ## Session History
 
-| # | Date | Tasks Covered | Summary |
-|---|------|---------------|---------|
-| 1 | 2026-02-10 | Planning only | Created project docs: CLAUDE.md, REQUIREMENTS.md, IMPLEMENTATION_PLAN.md, PROGRESS.md. Analyzed Stellaris game files. |
-| 2 | 2026-02-10 | 0.0–0.3, 5.2 | Scaffolding: backend verified, Tauri initialized, sidecar code + health hook written. Git repo initialized. Blocker: Windows SDK needed for Tauri build. |
-| 3 | 2026-02-10 | 1.1–1.4 | Phase 1 complete: Clausewitz tokenizer, AST parser, multi-file loader, version detection & cache. 16 production files, 9 test files. Full suite passes in <5s. Pushed. |
-| 4 | 2026-02-10 | Arch cleanup | Converted application.properties→yml. Added Lombok (@Slf4j, @RequiredArgsConstructor, @Getter) to 5 classes. Updated CLAUDE.md, README.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, LEARNING.md for consistency. Planned configurable settings for Phase 6. |
+| # | Date | Tasks Covered | Summary                                                                                                                                                                                                                                                                       |
+|---|------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 | 2026-02-10 | Planning only | Created project docs: CLAUDE.md, REQUIREMENTS.md, IMPLEMENTATION_PLAN.md, PROGRESS.md. Analyzed Stellaris game files.                                                                                                                                                         |
+| 2 | 2026-02-10 | 0.0–0.3, 5.2 | Scaffolding: backend verified, Tauri initialized, sidecar code + health hook written. Git repo initialized. Blocker: Windows SDK needed for Tauri build.                                                                                                                      |
+| 3 | 2026-02-10 | 1.1–1.4 | Phase 1 complete: Clausewitz tokenizer, AST parser, multi-file loader, version detection & cache. 16 production files, 9 test files. Full suite passes in <5s. Pushed.                                                                                                        |
+| 4 | 2026-02-10 | Arch cleanup | Converted application.properties→yml. Added Lombok (@Slf4j, @RequiredArgsConstructor, @Getter) to 5 classes. Updated CLAUDE.md, README.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, LEARNING.md for consistency. Planned configurable settings for Phase 6.                       |
 | 5 | 2026-02-11 | 2.1–2.5, 3.1 | Phase 2 complete. RequirementBlock model + parser (3.1 pulled forward). 6 entity models, 6 extractors, 7 test files. 25 new files, 1440 LOC. Extraction counts: 17 ethics, 7 authorities, 265 civics, 58 origins, 6 archetypes, 154 traits. All tests pass, bootRun verified. |
-| 6 | 2026-02-11 | 3.2–3.3 | Phase 3 complete. EmpireState, RequirementEvaluator (pattern matching on sealed Requirement), CompatibilityFilterService. 5 new files, 25 tests. Fixed civic dedup in filter. |
-| 7 | 2026-02-11 | 4.1–4.3 | Phase 4 complete. EmpireGeneratorService (weighted random, ethics axis detection), RerollService (per-category reroll with locked selections), EmpireController REST API. 12 new files, 119 tests. Fixed isSameAxis bug for fanatic ethics. |
-| 8 | 2026-02-11 | 5.1, 5.3–5.5 | Phase 5 complete. shadcn/ui + Zustand + lucide-react. 14 new components, typed API client, Zustand store. Always-dark Stellaris theme. Empire card with ethics/authority/civics/origin/traits slots, generate + per-slot reroll buttons. 5 commits, clean build. |
-| 9 | 2026-02-11 | Investigation | Post-playtest review: 4 issues found. (1) Gestalt empires never generated. (2) Origin-specific traits not filtered. (3) Reroll should be single-use. (4) Need shipset, homeworld, leader. Planned Phase 6 (3 fix tasks), Phase 7 (4 new tasks), Phase 8 (2 frontend tasks). |
-| 10 | 2026-02-11 | 6.1–6.3 | Phase 6 complete. Gestalt generation (~15% chance), origin/civic/ethic-aware trait filtering (6 new fields on SpeciesTrait), single-reroll constraint (boolean replaces EnumSet). 3 commits, all tests pass. |
+| 6 | 2026-02-11 | 3.2–3.3 | Phase 3 complete. EmpireState, RequirementEvaluator (pattern matching on sealed Requirement), CompatibilityFilterService. 5 new files, 25 tests. Fixed civic dedup in filter.                                                                                                 |
+| 7 | 2026-02-11 | 4.1–4.3 | Phase 4 complete. EmpireGeneratorService (weighted random, ethics axis detection), RerollService (per-category reroll with locked selections), EmpireController REST API. 12 new files, 119 tests. Fixed isSameAxis bug for fanatic ethics.                                   |
+| 8 | 2026-02-11 | 5.1, 5.3–5.5 | Phase 5 complete. shadcn/ui + Zustand + lucide-react. 14 new components, typed API client, Zustand store. Always-dark Stellaris theme. Empire card with ethics/authority/civics/origin/traits slots, generate + per-slot reroll buttons. 5 commits, clean build.              |
+| 9 | 2026-02-11 | Investigation | Post-playtest review: 4 issues found. (1) Gestalt empires never generated. (2) Origin-specific traits not filtered. (3) Reroll should be single-use. (4) Need shipset, homeworld, leader. Planned Phase 6 (3 fix tasks), Phase 7 (4 new tasks), Phase 8 (2 frontend tasks).   |
+| 10 | 2026-02-11 | 6.1–6.3 | Phase 6 complete. Gestalt generation (~20% chance), origin/civic/ethic-aware trait filtering (6 new fields on SpeciesTrait), single-reroll constraint (boolean replaces EnumSet). 3 commits, all tests pass.                                                                  |
+| 11 | 2026-02-11 | 7.1–7.4, 8.1–8.2 | Phase 7+8 complete. New empire settings: homeworld (10 habitable + 9 origin-fixed), shipset (22 selectable), starting leader (3 classes + 34 traits). Fixed Clausewitz parser for `hsv { }` value-typed blocks. DirectoryLoader resilience for unparseable files. 9 new files, all 456 tests pass. |

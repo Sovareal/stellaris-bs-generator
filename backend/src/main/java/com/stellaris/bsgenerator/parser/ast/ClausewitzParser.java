@@ -95,6 +95,17 @@ public final class ClausewitzParser {
 
         // Scalar: key = value
         String value = parseScalarValue();
+
+        // Handle value-typed blocks like: atmosphere_color = hsv { 0.5 0.3 0.7 }
+        // The identifier (hsv/rgb) was parsed as the scalar value, but a block follows.
+        if (!atEnd() && current().type() == TokenType.OPEN_BRACE) {
+            advance(); // {
+            var children = parseEntries();
+            expect(TokenType.CLOSE_BRACE);
+            advance(); // }
+            return ClausewitzNode.block(key, children);
+        }
+
         return ClausewitzNode.leaf(key, value);
     }
 

@@ -9,7 +9,7 @@ import java.util.*;
 
 /**
  * Handles rerolling individual categories of a generated empire.
- * Each category can only be rerolled once per session.
+ * Only one reroll is allowed per generation session.
  * The rerolled component must be compatible with all locked (non-rerolled) selections.
  */
 @Slf4j
@@ -27,7 +27,7 @@ public class RerollService {
      * Reroll a specific category, returning an updated empire.
      *
      * @throws GenerationException if no valid replacement can be found
-     * @throws IllegalStateException if the category has already been rerolled
+     * @throws IllegalStateException if the reroll has already been used
      */
     public GeneratedEmpire reroll(GenerationSession session, RerollCategory category) {
         if (!session.canReroll()) {
@@ -42,6 +42,9 @@ public class RerollService {
             case CIVIC2 -> rerollCivic(empire, 1);
             case ORIGIN -> rerollOrigin(empire);
             case TRAITS -> rerollTraits(empire);
+            case HOMEWORLD -> rerollHomeworld(empire);
+            case SHIPSET -> rerollShipset(empire);
+            case LEADER -> rerollLeader(empire);
         };
 
         session.markRerolled();
@@ -52,20 +55,16 @@ public class RerollService {
     }
 
     private GeneratedEmpire rerollEthics(GeneratedEmpire empire) {
-        // Keep authority, civics, origin locked. Pick new ethics that are compatible.
-        // Try multiple times to find ethics compatible with existing authority + civics
         for (int attempt = 0; attempt < 50; attempt++) {
             var newEmpire = generatorService.generate();
             var candidateEthics = newEmpire.ethics();
 
-            // Check if new ethics are compatible with locked authority
             var state = EmpireState.empty()
                     .withEthics(toEthicIds(candidateEthics));
             if (!evaluator.evaluateBoth(empire.authority().potential(), empire.authority().possible(), state)) {
                 continue;
             }
 
-            // Check if new ethics are compatible with locked civics
             state = state.withAuthority(empire.authority().id());
             boolean civicsCompatible = true;
             for (var civic : empire.civics()) {
@@ -76,18 +75,14 @@ public class RerollService {
             }
             if (!civicsCompatible) continue;
 
-            // Check origin compatibility
-            state = state.withCivics(toIdSet(empire.civics()));
+            state = state.withCivics(toCivicIds(empire.civics()));
             if (!evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), state)) {
                 continue;
             }
 
-            // Found compatible ethics — don't reuse the same set
             if (toEthicIds(candidateEthics).equals(toEthicIds(empire.ethics()))) continue;
 
-            return new GeneratedEmpire(candidateEthics, empire.authority(), empire.civics(),
-                    empire.origin(), empire.speciesArchetype(), empire.speciesTraits(),
-                    empire.traitPointsUsed(), empire.traitPointsBudget());
+            return copyWith(empire, b -> b.ethics = candidateEthics);
         }
         throw new GenerationException("Could not find compatible ethics for reroll");
     }
@@ -95,43 +90,33 @@ public class RerollService {
     private GeneratedEmpire rerollAuthority(GeneratedEmpire empire) {
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()));
-        var compatible = filterService.getCompatibleAuthorities(state);
-        // Exclude current authority
-        compatible = compatible.stream()
+        var compatible = filterService.getCompatibleAuthorities(state).stream()
                 .filter(a -> !a.id().equals(empire.authority().id()))
-                .toList();
-
-        // Also check compatibility with locked civics and origin
-        compatible = compatible.stream().filter(a -> {
-            var withAuth = state.withAuthority(a.id());
-            for (var civic : empire.civics()) {
-                if (!evaluator.evaluateBoth(civic.potential(), civic.possible(), withAuth)) return false;
-            }
-            var withCivics = withAuth.withCivics(toIdSet(empire.civics()));
-            return evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), withCivics);
-        }).toList();
+                .filter(a -> {
+                    var withAuth = state.withAuthority(a.id());
+                    for (var civic : empire.civics()) {
+                        if (!evaluator.evaluateBoth(civic.potential(), civic.possible(), withAuth)) return false;
+                    }
+                    var withCivics = withAuth.withCivics(toCivicIds(empire.civics()));
+                    return evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), withCivics);
+                }).toList();
 
         if (compatible.isEmpty()) {
             throw new GenerationException("No alternative authorities compatible with current empire");
         }
 
         var newAuth = WeightedRandom.select(compatible, Authority::randomWeight, random);
-        return new GeneratedEmpire(empire.ethics(), newAuth, empire.civics(),
-                empire.origin(), empire.speciesArchetype(), empire.speciesTraits(),
-                empire.traitPointsUsed(), empire.traitPointsBudget());
+        return copyWith(empire, b -> b.authority = newAuth);
     }
 
     private GeneratedEmpire rerollCivic(GeneratedEmpire empire, int index) {
         var otherCivicId = empire.civics().get(1 - index).id();
-
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
-                .withCivics(Set.of(otherCivicId)); // Only the other civic is locked
+                .withCivics(Set.of(otherCivicId));
 
-        var compatible = filterService.getCompatibleCivics(state);
-        // Exclude current civic at this index
-        compatible = compatible.stream()
+        var compatible = filterService.getCompatibleCivics(state).stream()
                 .filter(c -> !c.id().equals(empire.civics().get(index).id()))
                 .toList();
 
@@ -142,21 +127,16 @@ public class RerollService {
         var newCivic = WeightedRandom.select(compatible, Civic::randomWeight, random);
         var newCivics = new ArrayList<>(empire.civics());
         newCivics.set(index, newCivic);
-
-        return new GeneratedEmpire(empire.ethics(), empire.authority(), List.copyOf(newCivics),
-                empire.origin(), empire.speciesArchetype(), empire.speciesTraits(),
-                empire.traitPointsUsed(), empire.traitPointsBudget());
+        return copyWith(empire, b -> b.civics = List.copyOf(newCivics));
     }
 
     private GeneratedEmpire rerollOrigin(GeneratedEmpire empire) {
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
-                .withCivics(toIdSet(empire.civics()));
+                .withCivics(toCivicIds(empire.civics()));
 
-        var compatible = filterService.getCompatibleOrigins(state);
-        // Exclude current origin
-        compatible = compatible.stream()
+        var compatible = filterService.getCompatibleOrigins(state).stream()
                 .filter(o -> !o.id().equals(empire.origin().id()))
                 .toList();
 
@@ -165,9 +145,7 @@ public class RerollService {
         }
 
         var newOrigin = WeightedRandom.select(compatible, Origin::randomWeight, random);
-        return new GeneratedEmpire(empire.ethics(), empire.authority(), empire.civics(),
-                newOrigin, empire.speciesArchetype(), empire.speciesTraits(),
-                empire.traitPointsUsed(), empire.traitPointsBudget());
+        return copyWith(empire, b -> b.origin = newOrigin);
     }
 
     private GeneratedEmpire rerollTraits(GeneratedEmpire empire) {
@@ -175,14 +153,13 @@ public class RerollService {
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
-                .withCivics(toIdSet(empire.civics()))
+                .withCivics(toCivicIds(empire.civics()))
                 .withOrigin(empire.origin().id())
                 .withSpeciesArchetype(archetype.id());
         var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
         int maxTraits = archetype.maxTraits();
 
-        // Re-pick traits with new random seed
         List<SpeciesTrait> picked = new ArrayList<>();
         Set<String> pickedIds = new HashSet<>();
         Set<String> excludedByOpposites = new HashSet<>();
@@ -206,10 +183,113 @@ public class RerollService {
             excludedByOpposites.addAll(trait.opposites());
         }
 
-        return new GeneratedEmpire(empire.ethics(), empire.authority(), empire.civics(),
-                empire.origin(), empire.speciesArchetype(), List.copyOf(picked),
-                pointsSpent, budget);
+        int finalPointsSpent = pointsSpent;
+        return copyWith(empire, b -> {
+            b.speciesTraits = List.copyOf(picked);
+            b.traitPointsUsed = finalPointsSpent;
+            b.traitPointsBudget = budget;
+        });
     }
+
+    private GeneratedEmpire rerollHomeworld(GeneratedEmpire empire) {
+        var planets = filterService.getHabitablePlanetClasses().stream()
+                .filter(p -> !p.id().equals(empire.homeworld().id()))
+                .toList();
+
+        if (planets.isEmpty()) {
+            throw new GenerationException("No alternative homeworld planets available");
+        }
+
+        var newPlanet = planets.get(random.nextInt(planets.size()));
+        return copyWith(empire, b -> b.homeworld = newPlanet);
+    }
+
+    private GeneratedEmpire rerollShipset(GeneratedEmpire empire) {
+        var shipsets = filterService.getSelectableShipsets().stream()
+                .filter(s -> !s.id().equals(empire.shipset().id()))
+                .toList();
+
+        if (shipsets.isEmpty()) {
+            throw new GenerationException("No alternative shipsets available");
+        }
+
+        var newShipset = shipsets.get(random.nextInt(shipsets.size()));
+        return copyWith(empire, b -> b.shipset = newShipset);
+    }
+
+    private GeneratedEmpire rerollLeader(GeneratedEmpire empire) {
+        var state = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withOrigin(empire.origin().id());
+
+        // Pick a potentially different leader class
+        var leaderClasses = List.of("official", "commander", "scientist");
+        var newClass = leaderClasses.get(random.nextInt(leaderClasses.size()));
+
+        var compatible = filterService.getCompatibleRulerTraits(newClass, state);
+        // Try to exclude the current trait if same class
+        if (newClass.equals(empire.leaderClass()) && empire.leaderTrait() != null) {
+            var filtered = compatible.stream()
+                    .filter(t -> !t.id().equals(empire.leaderTrait().id()))
+                    .toList();
+            if (!filtered.isEmpty()) {
+                compatible = filtered;
+            }
+        }
+
+        StartingRulerTrait newTrait = compatible.isEmpty() ? null :
+                compatible.get(random.nextInt(compatible.size()));
+        return copyWith(empire, b -> {
+            b.leaderClass = newClass;
+            b.leaderTrait = newTrait;
+        });
+    }
+
+    // --- Helper to build empire copies with selective changes ---
+
+    private static class EmpireBuilder {
+        List<Ethic> ethics;
+        Authority authority;
+        List<Civic> civics;
+        Origin origin;
+        SpeciesArchetype speciesArchetype;
+        List<SpeciesTrait> speciesTraits;
+        int traitPointsUsed;
+        int traitPointsBudget;
+        PlanetClass homeworld;
+        GraphicalCulture shipset;
+        String leaderClass;
+        StartingRulerTrait leaderTrait;
+
+        EmpireBuilder(GeneratedEmpire e) {
+            this.ethics = e.ethics();
+            this.authority = e.authority();
+            this.civics = e.civics();
+            this.origin = e.origin();
+            this.speciesArchetype = e.speciesArchetype();
+            this.speciesTraits = e.speciesTraits();
+            this.traitPointsUsed = e.traitPointsUsed();
+            this.traitPointsBudget = e.traitPointsBudget();
+            this.homeworld = e.homeworld();
+            this.shipset = e.shipset();
+            this.leaderClass = e.leaderClass();
+            this.leaderTrait = e.leaderTrait();
+        }
+
+        GeneratedEmpire build() {
+            return new GeneratedEmpire(ethics, authority, civics, origin,
+                    speciesArchetype, speciesTraits, traitPointsUsed, traitPointsBudget,
+                    homeworld, shipset, leaderClass, leaderTrait);
+        }
+    }
+
+    private GeneratedEmpire copyWith(GeneratedEmpire empire, java.util.function.Consumer<EmpireBuilder> mutator) {
+        var builder = new EmpireBuilder(empire);
+        mutator.accept(builder);
+        return builder.build();
+    }
+
+    // --- ID extraction helpers ---
 
     private Set<String> toEthicIds(List<Ethic> ethics) {
         var set = new HashSet<String>();
@@ -217,7 +297,7 @@ public class RerollService {
         return set;
     }
 
-    private Set<String> toIdSet(List<Civic> civics) {
+    private Set<String> toCivicIds(List<Civic> civics) {
         var set = new HashSet<String>();
         for (var c : civics) set.add(c.id());
         return set;
@@ -231,6 +311,10 @@ public class RerollService {
             case CIVIC2 -> old.civics().get(1).id() + " → " + updated.civics().get(1).id();
             case ORIGIN -> old.origin().id() + " → " + updated.origin().id();
             case TRAITS -> old.speciesTraits().stream().map(SpeciesTrait::id).toList() + " → " + updated.speciesTraits().stream().map(SpeciesTrait::id).toList();
+            case HOMEWORLD -> old.homeworld().id() + " → " + updated.homeworld().id();
+            case SHIPSET -> old.shipset().id() + " → " + updated.shipset().id();
+            case LEADER -> (old.leaderClass() + "/" + (old.leaderTrait() != null ? old.leaderTrait().id() : "none"))
+                    + " → " + (updated.leaderClass() + "/" + (updated.leaderTrait() != null ? updated.leaderTrait().id() : "none"));
         };
     }
 }

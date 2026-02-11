@@ -4,8 +4,11 @@ const PREFIXES = [
   "auth_",
   "civic_",
   "origin_",
+  "trait_ruler_",
+  "leader_trait_",
   "trait_",
   "species_archetype_",
+  "pc_",
 ];
 
 export function humanizeId(id: string): string {

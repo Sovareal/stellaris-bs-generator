@@ -24,6 +24,8 @@ public class GameFileService {
     @Getter private ClausewitzNode origins;
     @Getter private ClausewitzNode speciesArchetypes;
     @Getter private ClausewitzNode traits;
+    @Getter private ClausewitzNode planetClasses;
+    @Getter private ClausewitzNode graphicalCultures;
 
     public void loadAll() throws IOException {
         Path gamePath = Path.of(properties.gamePath());
@@ -55,6 +57,12 @@ public class GameFileService {
 
         traits = DirectoryLoader.loadDirectory(common.resolve("traits"), globalVars);
         log.info("Loaded {} traits", traits.children().size());
+
+        planetClasses = DirectoryLoader.loadDirectory(common.resolve("planet_classes"), globalVars);
+        log.info("Loaded {} planet class entries", planetClasses.children().size());
+
+        graphicalCultures = DirectoryLoader.loadDirectory(common.resolve("graphical_culture"), globalVars);
+        log.info("Loaded {} graphical culture entries", graphicalCultures.children().size());
 
         long elapsed = System.currentTimeMillis() - start;
         log.info("Game file loading complete in {}ms", elapsed);

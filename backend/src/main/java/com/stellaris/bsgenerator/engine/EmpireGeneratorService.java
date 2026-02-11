@@ -19,6 +19,20 @@ public class EmpireGeneratorService {
     private static final int ETHICS_BUDGET = 3;
     private static final int CIVIC_COUNT = 2;
     private static final double GESTALT_CHANCE = 0.20;
+    private static final List<String> LEADER_CLASSES = List.of("official", "commander", "scientist");
+
+    /** Origins that fix the homeworld planet type (skip random selection). */
+    private static final Map<String, String> ORIGIN_FIXED_PLANETS = Map.ofEntries(
+            Map.entry("origin_life_seeded", "pc_gaia"),
+            Map.entry("origin_void_dwellers", "pc_habitat"),
+            Map.entry("origin_post_apocalyptic", "pc_nuked"),
+            Map.entry("origin_machine", "pc_machine"),
+            Map.entry("origin_remnants", "pc_relic"),
+            Map.entry("origin_shattered_ring", "pc_ringworld_habitable"),
+            Map.entry("origin_ocean_paradise", "pc_ocean"),
+            Map.entry("origin_red_giant", "pc_volcanic"),
+            Map.entry("origin_cosmic_dawn", "pc_volcanic")
+    );
 
     private final CompatibilityFilterService filterService;
     private final RequirementEvaluator evaluator;
@@ -58,17 +72,30 @@ public class EmpireGeneratorService {
 
         int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
-        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, traits={} ({}/{}pts)",
+        // 7. Pick homeworld planet (or use origin-fixed)
+        PlanetClass homeworld = pickHomeworld(origin);
+
+        // 8. Pick random shipset
+        GraphicalCulture shipset = pickShipset();
+
+        // 9. Pick leader class and starting trait
+        String leaderClass = pickLeaderClass();
+        StartingRulerTrait leaderTrait = pickLeaderTrait(leaderClass, state);
+
+        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, traits={} ({}/{}pts), homeworld={}, shipset={}, leader={}/{}",
                 ethics.stream().map(Ethic::id).toList(),
                 authority.id(),
                 civics.stream().map(Civic::id).toList(),
                 origin.id(),
                 archetype.id(),
                 traits.stream().map(SpeciesTrait::id).toList(),
-                pointsUsed, archetype.traitPoints());
+                pointsUsed, archetype.traitPoints(),
+                homeworld.id(), shipset.id(),
+                leaderClass, leaderTrait != null ? leaderTrait.id() : "none");
 
         return new GeneratedEmpire(ethics, authority, civics, origin,
-                archetype, traits, pointsUsed, archetype.traitPoints());
+                archetype, traits, pointsUsed, archetype.traitPoints(),
+                homeworld, shipset, leaderClass, leaderTrait);
     }
 
     private List<Ethic> pickEthics() {
@@ -232,6 +259,39 @@ public class EmpireGeneratorService {
         }
 
         return picked;
+    }
+
+    private PlanetClass pickHomeworld(Origin origin) {
+        String fixedPlanet = ORIGIN_FIXED_PLANETS.get(origin.id());
+        if (fixedPlanet != null) {
+            return new PlanetClass(fixedPlanet, "fixed");
+        }
+
+        var planets = filterService.getHabitablePlanetClasses();
+        if (planets.isEmpty()) {
+            throw new GenerationException("No habitable planet classes available");
+        }
+        return planets.get(random.nextInt(planets.size()));
+    }
+
+    private GraphicalCulture pickShipset() {
+        var shipsets = filterService.getSelectableShipsets();
+        if (shipsets.isEmpty()) {
+            throw new GenerationException("No selectable shipsets available");
+        }
+        return shipsets.get(random.nextInt(shipsets.size()));
+    }
+
+    private String pickLeaderClass() {
+        return LEADER_CLASSES.get(random.nextInt(LEADER_CLASSES.size()));
+    }
+
+    private StartingRulerTrait pickLeaderTrait(String leaderClass, EmpireState state) {
+        var compatible = filterService.getCompatibleRulerTraits(leaderClass, state);
+        if (compatible.isEmpty()) {
+            return null;
+        }
+        return compatible.get(random.nextInt(compatible.size()));
     }
 
     private Set<String> toIdSet(List<? extends Record> entities) {

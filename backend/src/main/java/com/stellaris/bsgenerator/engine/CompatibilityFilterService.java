@@ -143,4 +143,29 @@ public class CompatibilityFilterService {
                 .filter(a -> !a.id().equals("PRESAPIENT") && !a.id().equals("OTHER"))
                 .toList();
     }
+
+    /**
+     * Get all habitable planet classes (initial=yes).
+     */
+    public List<PlanetClass> getHabitablePlanetClasses() {
+        return gameDataManager.getPlanetClasses();
+    }
+
+    /**
+     * Get all player-selectable graphical cultures (shipsets).
+     */
+    public List<GraphicalCulture> getSelectableShipsets() {
+        return gameDataManager.getGraphicalCultures();
+    }
+
+    /**
+     * Get starting ruler traits compatible with the given leader class and empire state.
+     */
+    public List<StartingRulerTrait> getCompatibleRulerTraits(String leaderClass, EmpireState state) {
+        return gameDataManager.getStartingRulerTraits().stream()
+                .filter(t -> t.leaderClasses().contains(leaderClass))
+                .filter(t -> matchesForbidList(t.forbiddenOrigins(), state.origin()))
+                .filter(t -> matchesAllowSet(t.allowedEthics(), state.ethics()))
+                .toList();
+    }
 }

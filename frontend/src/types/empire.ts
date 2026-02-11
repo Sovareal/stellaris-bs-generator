@@ -31,13 +31,26 @@ export interface TraitDto {
   allowedArchetypes: string[];
 }
 
+export interface PlanetClassDto {
+  id: string;
+  climate: string;
+}
+
+export interface LeaderDto {
+  leaderClass: string;
+  traitId: string | null;
+}
+
 export type RerollCategory =
   | "ethics"
   | "authority"
   | "civic1"
   | "civic2"
   | "origin"
-  | "traits";
+  | "traits"
+  | "homeworld"
+  | "shipset"
+  | "leader";
 
 export interface EmpireResponse {
   ethics: EthicDto[];
@@ -48,6 +61,9 @@ export interface EmpireResponse {
   speciesTraits: TraitDto[];
   traitPointsUsed: number;
   traitPointsBudget: number;
+  homeworld: PlanetClassDto;
+  shipset: string;
+  leader: LeaderDto;
   rerollsAvailable: Record<string, boolean>;
 }
 

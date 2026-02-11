@@ -36,8 +36,12 @@ public final class DirectoryLoader {
         var allChildren = new ArrayList<ClausewitzNode>();
         for (Path file : files) {
             var fileVars = new HashMap<>(globalVariables);
-            ClausewitzNode fileRoot = parseFile(file, fileVars);
-            allChildren.addAll(fileRoot.children());
+            try {
+                ClausewitzNode fileRoot = parseFile(file, fileVars);
+                allChildren.addAll(fileRoot.children());
+            } catch (Exception e) {
+                log.warn("Skipping file {} due to parse error: {}", file.getFileName(), e.getMessage());
+            }
         }
 
         log.debug("Loaded {} top-level entries from {}", allChildren.size(), directory);

@@ -5,9 +5,9 @@ import com.stellaris.bsgenerator.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/empire")
@@ -29,6 +29,9 @@ public class EmpireController {
             List<TraitDto> speciesTraits,
             int traitPointsUsed,
             int traitPointsBudget,
+            PlanetClassDto homeworld,
+            String shipset,
+            LeaderDto leader,
             Map<String, Boolean> rerollsAvailable
     ) {
         static EmpireResponse from(GeneratedEmpire empire, GenerationSession session) {
@@ -41,20 +44,26 @@ public class EmpireController {
                     empire.speciesTraits().stream().map(TraitDto::from).toList(),
                     empire.traitPointsUsed(),
                     empire.traitPointsBudget(),
+                    PlanetClassDto.from(empire.homeworld()),
+                    empire.shipset().id(),
+                    LeaderDto.from(empire.leaderClass(), empire.leaderTrait()),
                     buildRerollMap(session)
             );
         }
 
         private static Map<String, Boolean> buildRerollMap(GenerationSession session) {
             boolean available = session.canReroll();
-            return Map.of(
-                    "ethics", available,
-                    "authority", available,
-                    "civic1", available,
-                    "civic2", available,
-                    "origin", available,
-                    "traits", available
-            );
+            var map = new LinkedHashMap<String, Boolean>();
+            map.put("ethics", available);
+            map.put("authority", available);
+            map.put("civic1", available);
+            map.put("civic2", available);
+            map.put("origin", available);
+            map.put("traits", available);
+            map.put("homeworld", available);
+            map.put("shipset", available);
+            map.put("leader", available);
+            return map;
         }
     }
 
@@ -82,6 +91,16 @@ public class EmpireController {
         static TraitDto from(SpeciesTrait t) { return new TraitDto(t.id(), t.cost(), t.allowedArchetypes()); }
     }
 
+    public record PlanetClassDto(String id, String climate) {
+        static PlanetClassDto from(PlanetClass p) { return new PlanetClassDto(p.id(), p.climate()); }
+    }
+
+    public record LeaderDto(String leaderClass, String traitId) {
+        static LeaderDto from(String leaderClass, StartingRulerTrait trait) {
+            return new LeaderDto(leaderClass, trait != null ? trait.id() : null);
+        }
+    }
+
     public record RerollRequest(String category) {}
 
     @PostMapping("/generate")
@@ -104,6 +123,9 @@ public class EmpireController {
             case "civic2" -> RerollCategory.CIVIC2;
             case "origin" -> RerollCategory.ORIGIN;
             case "traits" -> RerollCategory.TRAITS;
+            case "homeworld" -> RerollCategory.HOMEWORLD;
+            case "shipset" -> RerollCategory.SHIPSET;
+            case "leader" -> RerollCategory.LEADER;
             default -> throw new IllegalArgumentException("Unknown reroll category: " + request.category());
         };
 
