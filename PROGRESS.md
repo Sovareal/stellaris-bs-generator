@@ -4,15 +4,15 @@
 > primary context anchor across sessions — read it first to understand where we left off.
 
 ## Current Session Focus
-Post-Phase 5 playtest review. Four issues identified. Planning Phase 4B (generation fixes) and Phase 4C (new empire settings).
+Post-Phase 5 playtest review. Four issues identified. Planning Phase 6 (generation fixes) and Phase 7 (new empire settings).
 
 ## Last Completed Task
 Phase 5 — Frontend UI. Investigation of 4 issues from playtesting complete.
 
 ## Next Up
-Phase 4B: Tasks 4B.1–4B.3 — Gestalt empires, origin-specific traits, single-reroll fix
-Phase 4C: Tasks 4C.1–4C.4 — Shipset, homeworld planet, starting leader generation
-Then Phase 5B: Frontend updates for new settings
+Phase 6: Tasks 6.1–6.3 — Gestalt empires, origin-specific traits, single-reroll fix
+Phase 7: Tasks 7.1–7.4 — Shipset, homeworld planet, starting leader generation
+Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 
 ---
 
@@ -29,7 +29,7 @@ Then Phase 5B: Frontend updates for new settings
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 1.1 | Clausewitz Tokenizer | DONE | Single-pass char lexer. Handles |, /, ' chars found in real game files. 18 test cases. |
+| 1.1 | Clausewitz Tokenizer | DONE | Single-pass char lexer. Handles \|, /, ' chars found in real game files. 18 test cases. |
 | 1.2 | Clausewitz AST Parser | DONE | Recursive descent → ClausewitzNode tree. Variable resolution, bare values, repeated keys. 14 tests. |
 | 1.3 | Multi-File Loader | DONE | ScriptedVariableLoader + DirectoryLoader + GameFileService. BOM stripping, file-local var isolation. Integration test with real game files. |
 | 1.4 | Game Version Detection & Data Cache | DONE | GameVersion, FileFingerprint (SHA-256), ParsedDataCache (Jackson 3), GameDataManager, DataController. Endpoints: GET /api/data/version, POST /api/data/reload. |
@@ -70,37 +70,37 @@ Then Phase 5B: Frontend updates for new settings
 | 5.4 | Generate & Reroll Controls | DONE | GenerateButton (sparkles/spinner), RerollButton (dice/tooltip/disabled states), ErrorToast (dismissible) |
 | 5.5 | Session State (Zustand) | DONE | TypeScript types matching backend DTOs, typed API client with ApiError, Zustand store with generate/reroll/generationId |
 
-## Phase 4B: Generation Fixes (Post-Playtest)
+## Phase 6: Generation Fixes (Post-Playtest)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 4B.1 | Gestalt Empire Generation | NOT STARTED | Enable gestalt consciousness ethic selection (~15% chance). Branch to hive mind / machine intelligence authorities, gestalt civics, appropriate archetypes. Infrastructure exists but is bypassed. |
-| 4B.2 | Origin-Aware Trait Filtering | NOT STARTED | Add allowedOrigins/forbiddenOrigins/allowedEthics/forbiddenEthics/allowedCivics/forbiddenCivics to SpeciesTrait model + extractor. Update getCompatibleTraits() to accept EmpireState. Fixes: Overtuned traits only for Overtuned origin, etc. |
-| 4B.3 | Single Reroll Constraint | NOT STARTED | Replace per-category reroll tracking with single-use boolean. One reroll across entire empire per generation. Update backend GenerationSession + frontend reroll map. |
+| 6.1 | Gestalt Empire Generation | NOT STARTED | Enable gestalt consciousness ethic selection (~15% chance). Branch to hive mind / machine intelligence authorities, gestalt civics, appropriate archetypes. Infrastructure exists but is bypassed. |
+| 6.2 | Origin-Aware Trait Filtering | NOT STARTED | Add allowedOrigins/forbiddenOrigins/allowedEthics/forbiddenEthics/allowedCivics/forbiddenCivics to SpeciesTrait model + extractor. Update getCompatibleTraits() to accept EmpireState. Fixes: Overtuned traits only for Overtuned origin, etc. |
+| 6.3 | Single Reroll Constraint | NOT STARTED | Replace per-category reroll tracking with single-use boolean. One reroll across entire empire per generation. Update backend GenerationSession + frontend reroll map. |
 
-## Phase 4C: New Empire Settings
-
-| Task | Description | Status | Notes |
-|------|-------------|--------|-------|
-| 4C.1 | Planet Class Model & Extractor | NOT STARTED | Extract 10 habitable planet types (initial=yes) from common/planet_classes/. Add homeworld field to GeneratedEmpire. Origins with fixed planets (Life Seeded→gaia, Void Dwellers→habitat, etc.) skip selection. |
-| 4C.2 | Graphical Culture (Shipset) Model & Extractor | NOT STARTED | Extract 13 player-selectable shipsets from common/graphical_culture/. Handle origin restrictions (biogenesis origins block biogenesis_01/02). Add shipset field to GeneratedEmpire. |
-| 4C.3 | Starting Leader Model & Generation | NOT STARTED | Extract 3 leader classes (Official/Commander/Scientist) and starting ruler traits from common/traits/00_starting_ruler_traits.txt. Class-specific and multi-class traits. Some forbidden for specific origins. |
-| 4C.4 | Updated DTOs & API | NOT STARTED | Add homeworld, shipset, leader class + trait to EmpireResponse DTO. Update generate/reroll endpoints. New RerollCategories for new fields. |
-
-## Phase 5B: Frontend Updates for New Settings
+## Phase 7: New Empire Settings
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 5B.1 | New Empire Card Slots | NOT STARTED | Add Homeworld, Shipset, Leader Class + Trait slots to EmpireCard. Update TypeScript types. |
-| 5B.2 | Single Reroll UI Update | NOT STARTED | After any reroll, disable ALL dice buttons. Update tooltip text. |
+| 7.1 | Planet Class Model & Extractor | NOT STARTED | Extract 10 habitable planet types (initial=yes) from common/planet_classes/. Add homeworld field to GeneratedEmpire. Origins with fixed planets (Life Seeded→gaia, Void Dwellers→habitat, etc.) skip selection. |
+| 7.2 | Graphical Culture (Shipset) Model & Extractor | NOT STARTED | Extract 13 player-selectable shipsets from common/graphical_culture/. Handle origin restrictions (biogenesis origins block biogenesis_01/02). Add shipset field to GeneratedEmpire. |
+| 7.3 | Starting Leader Model & Generation | NOT STARTED | Extract 3 leader classes (Official/Commander/Scientist) and starting ruler traits from common/traits/00_starting_ruler_traits.txt. Class-specific and multi-class traits. Some forbidden for specific origins. |
+| 7.4 | Updated DTOs & API | NOT STARTED | Add homeworld, shipset, leader class + trait to EmpireResponse DTO. Update generate/reroll endpoints. New RerollCategories for new fields. |
 
-## Phase 6: Polish & Packaging
+## Phase 8: Frontend Updates for New Settings
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 6.1 | Localization Display Names | NOT STARTED | Depends on Phase 4C |
-| 6.2 | Error Handling & Edge Cases | NOT STARTED | Depends on 6.1 |
-| 6.3 | Tauri Build & Sidecar Packaging | NOT STARTED | Depends on 6.2 |
+| 8.1 | New Empire Card Slots | NOT STARTED | Add Homeworld, Shipset, Leader Class + Trait slots to EmpireCard. Update TypeScript types. |
+| 8.2 | Single Reroll UI Update | NOT STARTED | After any reroll, disable ALL dice buttons. Update tooltip text. |
+
+## Phase 9: Polish & Packaging
+
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| 9.1 | Localization Display Names | NOT STARTED | Depends on Phase 7 |
+| 9.2 | Error Handling & Edge Cases | NOT STARTED | Depends on 9.1 |
+| 9.3 | Tauri Build & Sidecar Packaging | NOT STARTED | Depends on 9.2 |
 
 ---
 
@@ -115,7 +115,7 @@ Then Phase 5B: Frontend updates for new settings
 - `getGestaltAuthorities()` — retrieves hive mind + machine intelligence (never called)
 - `pickArchetype()` lines 170-177 — correctly branches for gestalt (MACHINE/ROBOT for MI, non-robotic for HM) but unreachable
 
-**Fix (Task 4B.1):** Add ~15% gestalt branch in `pickEthics()`. When gestalt is chosen:
+**Fix (Task 6.1):** Add ~15% gestalt branch in `pickEthics()`. When gestalt is chosen:
 1. Ethics = `[ethic_gestalt_consciousness]` (cost 3, fills budget alone)
 2. Authority = random from `getGestaltAuthorities()` (hive mind or machine intelligence)
 3. Civics = from gestalt civic pool (already handled by requirement evaluator — gestalt civics have `potential = { ethics = { value = ethic_gestalt_consciousness } }`)
@@ -132,7 +132,7 @@ Then Phase 5B: Frontend updates for new settings
 
 **Current impact:** ~6 Overtuned-specific traits have `allowed_origins = { origin_overtuned }`. Currently most are filtered by `auto_mod = yes`, but `trait_spliced_adaptability` and `trait_juiced_power` (cost=1 each) may leak into non-Overtuned empires. More critically: traits that should appear FOR Overtuned empires are not being offered.
 
-**Fix (Task 4B.2):**
+**Fix (Task 6.2):**
 1. Add 6 fields to `SpeciesTrait` record
 2. Update `SpeciesTraitExtractor` to parse `allowed_origins`, `forbidden_origins`, etc.
 3. Change `getCompatibleTraits(String archetypeId)` → `getCompatibleTraits(String archetypeId, EmpireState state)`
@@ -146,7 +146,7 @@ Then Phase 5B: Frontend updates for new settings
 
 **Desired behavior:** Player gets ONE reroll total. After using it on any category, all other dice buttons become unavailable. This forces meaningful decision-making.
 
-**Fix (Task 4B.3):**
+**Fix (Task 6.3):**
 1. Replace `Set<RerollCategory> rerollsUsed` with `boolean hasRerolled`
 2. `canReroll()` returns `!hasRerolled` (no category parameter needed)
 3. `markRerolled()` sets `hasRerolled = true`
@@ -183,10 +183,10 @@ Then Phase 5B: Frontend updates for new settings
 | 2026-02-10 | Gradle over Maven | CLAUDE.md specifies Gradle 9.3+ |
 | 2026-02-10 | Git initialized | Track changes per implementation plan task |
 | 2026-02-10 | Jackson 3.x namespace | Spring Boot 4.0.2 uses Jackson 3 (tools.jackson.* package, not com.fasterxml.*). JsonMapper.builder().build() instead of new ObjectMapper(). |
-| 2026-02-10 | Extended identifier chars | Clausewitz format uses |, /, ' in identifiers (value:x|y|, trait/icon, etc.) — added to tokenizer isIdentPart. |
+| 2026-02-10 | Extended identifier chars | Clausewitz format uses \|, /, ' in identifiers (value:x\|y\|, trait/icon, etc.) — added to tokenizer isIdentPart. |
 | 2026-02-10 | application.yml over .properties | YAML is more readable for nested config (stellaris.*, spring.web.cors.*). Switched from .properties. |
 | 2026-02-10 | Lombok adoption | @Slf4j, @RequiredArgsConstructor, @Getter reduce service/controller boilerplate. Records kept for DTOs. |
-| 2026-02-10 | Configurable settings plan | game-path/cache-path defaults in application.yml. Phase 6 adds settings.json + frontend settings page for user overrides. |
+| 2026-02-10 | Configurable settings plan | game-path/cache-path defaults in application.yml. Phase 9 adds settings.json + frontend settings page for user overrides. |
 | 2026-02-11 | Task 3.1 pulled into Phase 2 | RequirementBlock model needed by Authority/Civic/Origin extractors, so built as prerequisite step A of Phase 2. |
 | 2026-02-11 | auto_mod filter for traits | Traits with `auto_mod = yes` must be filtered even if `initial` is not explicitly `no`. |
 | 2026-02-11 | Authority AI filter refined | Cannot filter on `hasCategory(COUNTRY_TYPE)` alone — auth_corporate has `country_type = { NOT = { value = primitive } }`. Must check for `Value("ai_empire")` specifically. |
@@ -194,7 +194,7 @@ Then Phase 5B: Frontend updates for new settings
 | 2026-02-11 | Gestalt empires must be supported | Playtest revealed 0% gestalt generation. Infrastructure exists (getGestaltEthic, getGestaltAuthorities, archetype branching) but pickEthics() never selects gestalt. Add ~15% branch. |
 | 2026-02-11 | Origin-aware trait filtering | SpeciesTrait needs allowedOrigins/forbiddenOrigins + 4 more restriction fields per game docs. Fixes Overtuned and other origin-specific traits. |
 | 2026-02-11 | Single reroll, not per-category | Player should get ONE reroll total across all categories. Forces meaningful trade-off decisions. |
-| 2026-02-11 | New empire settings planned | Shipset (13 selectable), homeworld planet (10 types, some origin-fixed), starting leader class + trait. New Phase 4C. |
+| 2026-02-11 | New empire settings planned | Shipset (13 selectable), homeworld planet (10 types, some origin-fixed), starting leader class + trait. Phase 7. |
 
 ## Blockers & Issues
 
@@ -214,4 +214,4 @@ Then Phase 5B: Frontend updates for new settings
 | 6 | 2026-02-11 | 3.2–3.3 | Phase 3 complete. EmpireState, RequirementEvaluator (pattern matching on sealed Requirement), CompatibilityFilterService. 5 new files, 25 tests. Fixed civic dedup in filter. |
 | 7 | 2026-02-11 | 4.1–4.3 | Phase 4 complete. EmpireGeneratorService (weighted random, ethics axis detection), RerollService (per-category reroll with locked selections), EmpireController REST API. 12 new files, 119 tests. Fixed isSameAxis bug for fanatic ethics. |
 | 8 | 2026-02-11 | 5.1, 5.3–5.5 | Phase 5 complete. shadcn/ui + Zustand + lucide-react. 14 new components, typed API client, Zustand store. Always-dark Stellaris theme. Empire card with ethics/authority/civics/origin/traits slots, generate + per-slot reroll buttons. 5 commits, clean build. |
-| 9 | 2026-02-11 | Investigation | Post-playtest review: 4 issues found. (1) Gestalt empires never generated — pickEthics() filters them out. (2) Origin-specific traits not filtered (Overtuned etc). (3) Reroll should be single-use not per-category. (4) Need shipset, homeworld planet, starting leader generation. Planned Phase 4B (3 fix tasks), 4C (4 new-feature tasks), 5B (2 frontend tasks). |
+| 9 | 2026-02-11 | Investigation | Post-playtest review: 4 issues found. (1) Gestalt empires never generated. (2) Origin-specific traits not filtered. (3) Reroll should be single-use. (4) Need shipset, homeworld, leader. Planned Phase 6 (3 fix tasks), Phase 7 (4 new tasks), Phase 8 (2 frontend tasks). |
