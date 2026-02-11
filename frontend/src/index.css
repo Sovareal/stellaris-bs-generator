@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --color-stellaris-bg: #0a0e17;
@@ -7,4 +11,77 @@
   --color-stellaris-accent: #4fc3f7;
   --color-stellaris-text: #e0e6ed;
   --color-stellaris-muted: #7a8ba8;
+
+  --animate-empire-enter: empire-enter 0.35s ease-out;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/* Always-dark Stellaris theme — no light mode, no toggle */
+:root {
+  --radius: 0.625rem;
+  --background: #0a0e17;
+  --foreground: #e0e6ed;
+  --card: #141b2d;
+  --card-foreground: #e0e6ed;
+  --popover: #141b2d;
+  --popover-foreground: #e0e6ed;
+  --primary: #4fc3f7;
+  --primary-foreground: #0a0e17;
+  --secondary: #1e2a45;
+  --secondary-foreground: #e0e6ed;
+  --muted: #1e2a45;
+  --muted-foreground: #7a8ba8;
+  --accent: #1e2a45;
+  --accent-foreground: #e0e6ed;
+  --destructive: #ef4444;
+  --border: #1e2a45;
+  --input: #1e2a45;
+  --ring: #4fc3f7;
+}
+
+@keyframes empire-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
