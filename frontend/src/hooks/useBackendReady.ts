@@ -1,18 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+import { api } from "@/lib/api";
 
 const BACKEND_URL = "http://localhost:8080";
 const POLL_INTERVAL_MS = 1000;
 const MAX_RETRIES = 30;
 
-interface HealthResponse {
-  status: string;
-  version: string;
-}
-
 interface BackendState {
   ready: boolean;
   error: string | null;
   version: string | null;
+  gameVersion: string | null;
 }
 
 export function useBackendReady(): BackendState {
@@ -20,6 +17,7 @@ export function useBackendReady(): BackendState {
     ready: false,
     error: null,
     version: null,
+    gameVersion: null,
   });
   const retriesRef = useRef(0);
 
@@ -33,9 +31,24 @@ export function useBackendReady(): BackendState {
       try {
         const res = await fetch(`${BACKEND_URL}/api/health`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: HealthResponse = await res.json();
+        const data: { status: string; version: string } = await res.json();
+
+        // Fetch game version after health check succeeds
+        let gameVersion: string | null = null;
+        try {
+          const versionData = await api.getVersion();
+          gameVersion = versionData.rawVersion;
+        } catch {
+          // Non-critical — game version display is optional
+        }
+
         if (!cancelled) {
-          setState({ ready: true, error: null, version: data.version });
+          setState({
+            ready: true,
+            error: null,
+            version: data.version,
+            gameVersion,
+          });
         }
       } catch {
         retriesRef.current++;
@@ -45,6 +58,7 @@ export function useBackendReady(): BackendState {
               ready: false,
               error: "Backend not reachable after 30s. Is it running?",
               version: null,
+              gameVersion: null,
             });
           }
         } else {
