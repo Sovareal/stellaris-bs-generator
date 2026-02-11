@@ -17,7 +17,7 @@ Update **LEARNING.md** after each completed phase.
 **TypeScript (Frontend):** Functional components + Hooks. shadcn/ui primitives. Tailwind utility classes. Zustand for state.
 
 ## Git
-Commit after each task, push after finishing each phase. Conventional-style messages. No co-author lines.
+Commit after each task, push after finishing each phase. Conventional-style messages. No co-author lines. Never add files listed in `.gitignore` to commits (no `git add -f` for ignored files).
 
 ## Key Paths
 - Stellaris game files: `F:\Games\SteamLibrary\steamapps\common\Stellaris`
