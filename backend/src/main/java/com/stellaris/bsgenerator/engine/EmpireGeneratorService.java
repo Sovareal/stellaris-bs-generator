@@ -54,7 +54,7 @@ public class EmpireGeneratorService {
         state = state.withSpeciesArchetype(archetype.id());
 
         // 6. Pick compatible traits within budget
-        List<SpeciesTrait> traits = pickTraits(archetype);
+        List<SpeciesTrait> traits = pickTraits(archetype, state);
 
         int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
@@ -197,8 +197,8 @@ public class EmpireGeneratorService {
         return archetypes.get(random.nextInt(archetypes.size()));
     }
 
-    private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype) {
-        var available = filterService.getCompatibleTraits(archetype.id());
+    private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state) {
+        var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
         int maxTraits = archetype.maxTraits();
 

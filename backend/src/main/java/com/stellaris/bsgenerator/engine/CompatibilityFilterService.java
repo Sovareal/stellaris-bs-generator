@@ -55,13 +55,47 @@ public class CompatibilityFilterService {
     }
 
     /**
-     * Get species traits compatible with the given archetype.
-     * Filters by allowed_archetypes matching the archetype ID.
+     * Get species traits compatible with the given archetype and empire state.
+     * Filters by allowed_archetypes, plus origin/civic/ethic restrictions.
      */
-    public List<SpeciesTrait> getCompatibleTraits(String archetypeId) {
+    public List<SpeciesTrait> getCompatibleTraits(String archetypeId, EmpireState state) {
         return gameDataManager.getSpeciesTraits().stream()
                 .filter(t -> t.allowedArchetypes().contains(archetypeId))
+                .filter(t -> matchesAllowList(t.allowedOrigins(), state.origin()))
+                .filter(t -> matchesForbidList(t.forbiddenOrigins(), state.origin()))
+                .filter(t -> matchesAllowSet(t.allowedCivics(), state.civics()))
+                .filter(t -> matchesForbidSet(t.forbiddenCivics(), state.civics()))
+                .filter(t -> matchesAllowSet(t.allowedEthics(), state.ethics()))
+                .filter(t -> matchesForbidSet(t.forbiddenEthics(), state.ethics()))
                 .toList();
+    }
+
+    /** If allowList is empty, trait is unrestricted. Otherwise, value must be in list. */
+    private boolean matchesAllowList(List<String> allowList, String value) {
+        return allowList.isEmpty() || (value != null && allowList.contains(value));
+    }
+
+    /** If forbidList is empty, trait is unrestricted. Otherwise, value must NOT be in list. */
+    private boolean matchesForbidList(List<String> forbidList, String value) {
+        return forbidList.isEmpty() || value == null || !forbidList.contains(value);
+    }
+
+    /** If allowList is empty, unrestricted. Otherwise, at least one value must be in the set. */
+    private boolean matchesAllowSet(List<String> allowList, java.util.Set<String> values) {
+        if (allowList.isEmpty()) return true;
+        for (var allowed : allowList) {
+            if (values.contains(allowed)) return true;
+        }
+        return false;
+    }
+
+    /** If forbidList is empty, unrestricted. Otherwise, none of the values must be in the set. */
+    private boolean matchesForbidSet(List<String> forbidList, java.util.Set<String> values) {
+        if (forbidList.isEmpty()) return true;
+        for (var forbidden : forbidList) {
+            if (values.contains(forbidden)) return false;
+        }
+        return true;
     }
 
     /**

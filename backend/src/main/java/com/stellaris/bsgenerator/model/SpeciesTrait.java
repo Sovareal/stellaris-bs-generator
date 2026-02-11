@@ -10,5 +10,11 @@ public record SpeciesTrait(
         boolean initial,
         boolean randomized,
         String dlcRequirement,
-        List<String> tags
+        List<String> tags,
+        List<String> allowedOrigins,
+        List<String> forbiddenOrigins,
+        List<String> allowedCivics,
+        List<String> forbiddenCivics,
+        List<String> allowedEthics,
+        List<String> forbiddenEthics
 ) {}

@@ -55,8 +55,23 @@ public class SpeciesTraitExtractor {
                     .map(ClausewitzNode::bareValues)
                     .orElse(List.of());
 
+            List<String> allowedOrigins = node.child("allowed_origins")
+                    .map(ClausewitzNode::bareValues).orElse(List.of());
+            List<String> forbiddenOrigins = node.child("forbidden_origins")
+                    .map(ClausewitzNode::bareValues).orElse(List.of());
+            List<String> allowedCivics = node.child("allowed_civics")
+                    .map(ClausewitzNode::bareValues).orElse(List.of());
+            List<String> forbiddenCivics = node.child("forbidden_civics")
+                    .map(ClausewitzNode::bareValues).orElse(List.of());
+            List<String> allowedEthics = node.child("allowed_ethics")
+                    .map(ClausewitzNode::bareValues).orElse(List.of());
+            List<String> forbiddenEthics = node.child("forbidden_ethics")
+                    .map(ClausewitzNode::bareValues).orElse(List.of());
+
             traits.add(new SpeciesTrait(id, cost, allowedArchetypes, opposites,
-                    true, randomized, dlcRequirement, tags));
+                    true, randomized, dlcRequirement, tags,
+                    allowedOrigins, forbiddenOrigins, allowedCivics, forbiddenCivics,
+                    allowedEthics, forbiddenEthics));
         }
 
         log.info("Extracted {} creation-eligible species traits", traits.size());

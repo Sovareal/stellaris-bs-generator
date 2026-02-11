@@ -159,7 +159,7 @@ class CompatibilityFilterServiceTest {
 
     @Test
     void biologicalTraitsFiltered() {
-        var traits = filterService.getCompatibleTraits("BIOLOGICAL");
+        var traits = filterService.getCompatibleTraits("BIOLOGICAL", EmpireState.empty());
         assertTrue(traits.size() > 10, "Should have many biological traits, got " + traits.size());
         assertTrue(traits.stream().allMatch(t -> t.allowedArchetypes().contains("BIOLOGICAL")),
                 "All traits should be allowed for BIOLOGICAL");
@@ -167,7 +167,7 @@ class CompatibilityFilterServiceTest {
 
     @Test
     void roboticTraitsFiltered() {
-        var traits = filterService.getCompatibleTraits("ROBOT");
+        var traits = filterService.getCompatibleTraits("ROBOT", EmpireState.empty());
         assertTrue(traits.size() > 3, "Should have some robot traits, got " + traits.size());
         assertTrue(traits.stream().allMatch(t -> t.allowedArchetypes().contains("ROBOT")),
                 "All traits should be allowed for ROBOT");

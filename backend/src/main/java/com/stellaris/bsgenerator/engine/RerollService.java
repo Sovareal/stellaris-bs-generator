@@ -172,7 +172,13 @@ public class RerollService {
 
     private GeneratedEmpire rerollTraits(GeneratedEmpire empire) {
         var archetype = empire.speciesArchetype();
-        var available = filterService.getCompatibleTraits(archetype.id());
+        var state = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withCivics(toIdSet(empire.civics()))
+                .withOrigin(empire.origin().id())
+                .withSpeciesArchetype(archetype.id());
+        var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
         int maxTraits = archetype.maxTraits();
 
