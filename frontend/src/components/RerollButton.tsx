@@ -38,7 +38,7 @@ export function RerollButton({ category, available }: RerollButtonProps) {
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {available ? `Reroll ${category}` : "Already rerolled"}
+        {available ? `Reroll ${category}` : "Reroll used"}
       </TooltipContent>
     </Tooltip>
   );

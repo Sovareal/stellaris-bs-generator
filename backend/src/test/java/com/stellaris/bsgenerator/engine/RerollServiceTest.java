@@ -59,12 +59,10 @@ class RerollServiceTest {
 
     @Test
     void rerollAuthority() {
-        var original = session.getEmpire().authority().id();
         var updated = rerollService.reroll(session, RerollCategory.AUTHORITY);
 
         assertNotNull(updated);
-        // Authority might be the same if only one is compatible, but session should track reroll
-        assertFalse(session.canReroll(RerollCategory.AUTHORITY), "Authority should be marked as rerolled");
+        assertFalse(session.canReroll(), "Reroll should be used up");
         assertEquals(2, updated.civics().size(), "Civics should still be 2");
     }
 
@@ -75,7 +73,7 @@ class RerollServiceTest {
 
         assertNotNull(updated);
         assertEquals(originalCivic2, updated.civics().get(1).id(), "Civic 2 should be unchanged");
-        assertFalse(session.canReroll(RerollCategory.CIVIC1));
+        assertFalse(session.canReroll());
     }
 
     @Test
@@ -85,17 +83,16 @@ class RerollServiceTest {
 
         assertNotNull(updated);
         assertEquals(originalCivic1, updated.civics().get(0).id(), "Civic 1 should be unchanged");
-        assertFalse(session.canReroll(RerollCategory.CIVIC2));
+        assertFalse(session.canReroll());
     }
 
     @Test
     void rerollOrigin() {
-        var original = session.getEmpire().origin().id();
         var updated = rerollService.reroll(session, RerollCategory.ORIGIN);
 
         assertNotNull(updated);
         assertEquals(session.getEmpire().authority().id(), updated.authority().id(), "Authority should be unchanged");
-        assertFalse(session.canReroll(RerollCategory.ORIGIN));
+        assertFalse(session.canReroll());
     }
 
     @Test
@@ -104,33 +101,40 @@ class RerollServiceTest {
 
         assertNotNull(updated);
         assertTrue(updated.traitPointsUsed() <= updated.traitPointsBudget());
-        assertFalse(session.canReroll(RerollCategory.TRAITS));
+        assertFalse(session.canReroll());
     }
 
     @Test
-    void cannotRerollSameCategoryTwice() {
+    void cannotRerollTwice() {
         rerollService.reroll(session, RerollCategory.ORIGIN);
+        // Second reroll of ANY category should fail
         assertThrows(IllegalStateException.class,
-                () -> rerollService.reroll(session, RerollCategory.ORIGIN));
+                () -> rerollService.reroll(session, RerollCategory.AUTHORITY));
     }
 
     @Test
-    void newGenerationResetsRerolls() {
-        rerollService.reroll(session, RerollCategory.ORIGIN);
-        assertFalse(session.canReroll(RerollCategory.ORIGIN));
+    void cannotRerollDifferentCategoryAfterFirst() {
+        rerollService.reroll(session, RerollCategory.CIVIC1);
+        // Even a different category should fail after one reroll
+        assertThrows(IllegalStateException.class,
+                () -> rerollService.reroll(session, RerollCategory.TRAITS));
+    }
 
-        // Generate new empire and reset session
+    @Test
+    void newGenerationResetsReroll() {
+        rerollService.reroll(session, RerollCategory.ORIGIN);
+        assertFalse(session.canReroll());
+
         var newEmpire = generator.generate();
         session.reset(newEmpire);
 
-        assertTrue(session.canReroll(RerollCategory.ORIGIN), "Rerolls should be reset after new generation");
+        assertTrue(session.canReroll(), "Reroll should be available after new generation");
     }
 
     @Test
     void rerollPreservesLockedSelections() {
         var original = session.getEmpire();
 
-        // Reroll civic 1 — everything else should stay the same
         var updated = rerollService.reroll(session, RerollCategory.CIVIC1);
 
         assertEquals(original.ethics(), updated.ethics(), "Ethics should be unchanged");

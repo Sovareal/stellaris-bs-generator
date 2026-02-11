@@ -30,8 +30,8 @@ public class RerollService {
      * @throws IllegalStateException if the category has already been rerolled
      */
     public GeneratedEmpire reroll(GenerationSession session, RerollCategory category) {
-        if (!session.canReroll(category)) {
-            throw new IllegalStateException("Category " + category + " has already been rerolled");
+        if (!session.canReroll()) {
+            throw new IllegalStateException("Reroll already used for this generation");
         }
 
         var empire = session.getEmpire();
@@ -44,7 +44,7 @@ public class RerollService {
             case TRAITS -> rerollTraits(empire);
         };
 
-        session.markRerolled(category);
+        session.markRerolled();
         session.setEmpire(updated);
 
         log.info("Rerolled {}: {}", category, describeChange(empire, updated, category));

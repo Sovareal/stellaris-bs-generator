@@ -46,13 +46,14 @@ public class EmpireController {
         }
 
         private static Map<String, Boolean> buildRerollMap(GenerationSession session) {
+            boolean available = session.canReroll();
             return Map.of(
-                    "ethics", session.canReroll(RerollCategory.ETHICS),
-                    "authority", session.canReroll(RerollCategory.AUTHORITY),
-                    "civic1", session.canReroll(RerollCategory.CIVIC1),
-                    "civic2", session.canReroll(RerollCategory.CIVIC2),
-                    "origin", session.canReroll(RerollCategory.ORIGIN),
-                    "traits", session.canReroll(RerollCategory.TRAITS)
+                    "ethics", available,
+                    "authority", available,
+                    "civic1", available,
+                    "civic2", available,
+                    "origin", available,
+                    "traits", available
             );
         }
     }
