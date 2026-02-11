@@ -154,6 +154,34 @@ class EmpireGeneratorServiceTest {
         assertTrue(empire.traitPointsUsed() <= empire.traitPointsBudget());
     }
 
+    @RepeatedTest(200)
+    void generate200IncludingGestalt() {
+        var empire = generator.generate();
+        assertNotNull(empire);
+
+        int totalCost = empire.ethics().stream().mapToInt(Ethic::cost).sum();
+        assertEquals(3, totalCost, "Ethics cost must equal 3");
+
+        boolean isGestalt = empire.ethics().stream().anyMatch(Ethic::isGestalt);
+        if (isGestalt) {
+            // Gestalt: single ethic, gestalt authority, compatible archetype
+            assertEquals(1, empire.ethics().size(), "Gestalt should have exactly 1 ethic");
+            assertTrue(empire.authority().isGestalt(),
+                    "Gestalt empire must have gestalt authority, got: " + empire.authority().id());
+
+            if ("auth_machine_intelligence".equals(empire.authority().id())) {
+                assertTrue(empire.speciesArchetype().robotic(),
+                        "Machine intelligence must have robotic archetype, got: " + empire.speciesArchetype().id());
+            } else {
+                assertFalse(empire.speciesArchetype().robotic(),
+                        "Hive mind must have non-robotic archetype, got: " + empire.speciesArchetype().id());
+            }
+        }
+
+        assertEquals(2, empire.civics().size());
+        assertTrue(empire.traitPointsUsed() <= empire.traitPointsBudget());
+    }
+
     private Set<String> toIdSet(java.util.List<Ethic> ethics) {
         var set = new HashSet<String>();
         for (var e : ethics) set.add(e.id());

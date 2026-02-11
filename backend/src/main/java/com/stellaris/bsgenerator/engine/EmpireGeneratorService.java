@@ -18,6 +18,7 @@ public class EmpireGeneratorService {
 
     private static final int ETHICS_BUDGET = 3;
     private static final int CIVIC_COUNT = 2;
+    private static final double GESTALT_CHANCE = 0.15;
 
     private final CompatibilityFilterService filterService;
     private final RequirementEvaluator evaluator;
@@ -71,6 +72,14 @@ public class EmpireGeneratorService {
     }
 
     private List<Ethic> pickEthics() {
+        // ~15% chance to generate a gestalt consciousness empire
+        if (random.nextDouble() < GESTALT_CHANCE) {
+            var gestalt = filterService.getGestaltEthic();
+            if (gestalt != null) {
+                return List.of(gestalt);
+            }
+        }
+
         var regularEthics = filterService.getRegularEthics();
 
         // Split into fanatic (cost 2) and regular (cost 1)
