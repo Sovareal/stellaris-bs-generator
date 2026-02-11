@@ -4,13 +4,13 @@
 > primary context anchor across sessions — read it first to understand where we left off.
 
 ## Current Session Focus
-Phase 4 complete. Preparing to implement Phase 5: Frontend UI.
+Phase 5 complete. Frontend UI fully implemented.
 
 ## Last Completed Task
-Phase 4 — Empire Generation Engine. Generator, reroll, REST API.
+Phase 5 — Frontend UI. All tasks (5.1, 5.3, 5.4, 5.5) complete.
 
 ## Next Up
-Phase 5: Tasks 5.1, 5.3–5.5 — Frontend UI (layout, empire card, controls, Zustand state)
+Phase 6: Tasks 6.1–6.3 — Localization, error handling, Tauri packaging
 
 ---
 
@@ -62,11 +62,11 @@ Phase 5: Tasks 5.1, 5.3–5.5 — Frontend UI (layout, empire card, controls, Zu
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 5.1 | App Layout & Theme | NOT STARTED | Can start after 0.2 |
-| 5.2 | Backend Connection Hook | DONE | useBackendReady hook implemented |
-| 5.3 | Empire Display Card | NOT STARTED | Depends on 5.1 |
-| 5.4 | Generate & Reroll Controls | NOT STARTED | Depends on 5.3 + 4.3 |
-| 5.5 | Session State (Zustand) | NOT STARTED | Depends on 5.4 |
+| 5.1 | App Layout & Theme | DONE | shadcn/ui (button/card/badge/tooltip), Stellaris dark theme, Header/Footer/LoadingScreen/ErrorScreen. Path aliases (@/). |
+| 5.2 | Backend Connection Hook | DONE | useBackendReady hook — now also fetches game version from /api/data/version |
+| 5.3 | Empire Display Card | DONE | EmpireView, EmpireCard, EmpireSlot, EthicsSlot (fanatic badges), TraitsSlot (cost coloring, point budget) |
+| 5.4 | Generate & Reroll Controls | DONE | GenerateButton (sparkles/spinner), RerollButton (dice/tooltip/disabled states), ErrorToast (dismissible) |
+| 5.5 | Session State (Zustand) | DONE | TypeScript types matching backend DTOs, typed API client with ApiError, Zustand store with generate/reroll/generationId |
 
 ## Phase 6: Polish & Packaging
 
@@ -112,3 +112,4 @@ Phase 5: Tasks 5.1, 5.3–5.5 — Frontend UI (layout, empire card, controls, Zu
 | 5 | 2026-02-11 | 2.1–2.5, 3.1 | Phase 2 complete. RequirementBlock model + parser (3.1 pulled forward). 6 entity models, 6 extractors, 7 test files. 25 new files, 1440 LOC. Extraction counts: 17 ethics, 7 authorities, 265 civics, 58 origins, 6 archetypes, 154 traits. All tests pass, bootRun verified. |
 | 6 | 2026-02-11 | 3.2–3.3 | Phase 3 complete. EmpireState, RequirementEvaluator (pattern matching on sealed Requirement), CompatibilityFilterService. 5 new files, 25 tests. Fixed civic dedup in filter. |
 | 7 | 2026-02-11 | 4.1–4.3 | Phase 4 complete. EmpireGeneratorService (weighted random, ethics axis detection), RerollService (per-category reroll with locked selections), EmpireController REST API. 12 new files, 119 tests. Fixed isSameAxis bug for fanatic ethics. |
+| 8 | 2026-02-11 | 5.1, 5.3–5.5 | Phase 5 complete. shadcn/ui + Zustand + lucide-react. 14 new components, typed API client, Zustand store. Always-dark Stellaris theme. Empire card with ethics/authority/civics/origin/traits slots, generate + per-slot reroll buttons. 5 commits, clean build. |
