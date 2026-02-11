@@ -4,13 +4,12 @@
 > primary context anchor across sessions — read it first to understand where we left off.
 
 ## Current Session Focus
-Post-Phase 5 playtest review. Four issues identified. Planning Phase 6 (generation fixes) and Phase 7 (new empire settings).
+Phase 6 complete. Generation fixes (gestalt, origin traits, single reroll) all done.
 
 ## Last Completed Task
-Phase 5 — Frontend UI. Investigation of 4 issues from playtesting complete.
+Phase 6 — Generation Fixes. All 3 tasks (6.1, 6.2, 6.3) complete.
 
 ## Next Up
-Phase 6: Tasks 6.1–6.3 — Gestalt empires, origin-specific traits, single-reroll fix
 Phase 7: Tasks 7.1–7.4 — Shipset, homeworld planet, starting leader generation
 Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 
@@ -74,9 +73,9 @@ Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 6.1 | Gestalt Empire Generation | NOT STARTED | Enable gestalt consciousness ethic selection (~15% chance). Branch to hive mind / machine intelligence authorities, gestalt civics, appropriate archetypes. Infrastructure exists but is bypassed. |
-| 6.2 | Origin-Aware Trait Filtering | NOT STARTED | Add allowedOrigins/forbiddenOrigins/allowedEthics/forbiddenEthics/allowedCivics/forbiddenCivics to SpeciesTrait model + extractor. Update getCompatibleTraits() to accept EmpireState. Fixes: Overtuned traits only for Overtuned origin, etc. |
-| 6.3 | Single Reroll Constraint | NOT STARTED | Replace per-category reroll tracking with single-use boolean. One reroll across entire empire per generation. Update backend GenerationSession + frontend reroll map. |
+| 6.1 | Gestalt Empire Generation | DONE | ~15% gestalt branch in pickEthics(). 200-rep stress test validates gestalt gets gestalt authorities, correct archetypes. |
+| 6.2 | Origin-Aware Trait Filtering | DONE | Added 6 restriction fields to SpeciesTrait. Extractor parses allowed/forbidden origins/civics/ethics. getCompatibleTraits() now takes EmpireState. |
+| 6.3 | Single Reroll Constraint | DONE | GenerationSession uses single boolean. One reroll total per generation. Frontend tooltip updated to "Reroll used". |
 
 ## Phase 7: New Empire Settings
 
@@ -200,7 +199,7 @@ Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 
 | Issue | Status | Notes |
 |-------|--------|-------|
-| Windows SDK missing | OPEN | Tauri Rust build fails — `kernel32.lib` not found. Need to install Windows 11 SDK via VS Installer |
+| Windows SDK missing | CLOSED | Tauri Rust build fails — `kernel32.lib` not found. Need to install Windows 11 SDK via VS Installer |
 
 ## Session History
 
@@ -215,3 +214,4 @@ Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings
 | 7 | 2026-02-11 | 4.1–4.3 | Phase 4 complete. EmpireGeneratorService (weighted random, ethics axis detection), RerollService (per-category reroll with locked selections), EmpireController REST API. 12 new files, 119 tests. Fixed isSameAxis bug for fanatic ethics. |
 | 8 | 2026-02-11 | 5.1, 5.3–5.5 | Phase 5 complete. shadcn/ui + Zustand + lucide-react. 14 new components, typed API client, Zustand store. Always-dark Stellaris theme. Empire card with ethics/authority/civics/origin/traits slots, generate + per-slot reroll buttons. 5 commits, clean build. |
 | 9 | 2026-02-11 | Investigation | Post-playtest review: 4 issues found. (1) Gestalt empires never generated. (2) Origin-specific traits not filtered. (3) Reroll should be single-use. (4) Need shipset, homeworld, leader. Planned Phase 6 (3 fix tasks), Phase 7 (4 new tasks), Phase 8 (2 frontend tasks). |
+| 10 | 2026-02-11 | 6.1–6.3 | Phase 6 complete. Gestalt generation (~15% chance), origin/civic/ethic-aware trait filtering (6 new fields on SpeciesTrait), single-reroll constraint (boolean replaces EnumSet). 3 commits, all tests pass. |
