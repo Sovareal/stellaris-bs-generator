@@ -18,7 +18,7 @@ public class EmpireGeneratorService {
 
     private static final int ETHICS_BUDGET = 3;
     private static final int CIVIC_COUNT = 2;
-    private static final double GESTALT_CHANCE = 0.15;
+    private static final double GESTALT_CHANCE = 0.20;
 
     private final CompatibilityFilterService filterService;
     private final RequirementEvaluator evaluator;
