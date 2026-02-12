@@ -53,6 +53,35 @@ public class RequirementEvaluator {
             }
         }
 
+        // Evaluate cross-category OR blocks (e.g., OR { authority = {...} civics = {...} })
+        for (var orGroup : block.crossCategoryOrs()) {
+            boolean anyBranchPasses = false;
+            for (var branch : orGroup.entrySet()) {
+                RequirementCategory category = branch.getKey();
+                List<Requirement> requirements = branch.getValue();
+
+                // If this category isn't selected yet, treat as possible (defer)
+                if (!state.hasCategory(category)) {
+                    anyBranchPasses = true;
+                    break;
+                }
+
+                Set<String> stateValues = state.valuesForCategory(category);
+                boolean allSatisfied = true;
+                for (var req : requirements) {
+                    if (!evaluateRequirement(req, stateValues)) {
+                        allSatisfied = false;
+                        break;
+                    }
+                }
+                if (allSatisfied) {
+                    anyBranchPasses = true;
+                    break;
+                }
+            }
+            if (!anyBranchPasses) return false;
+        }
+
         return true;
     }
 

@@ -39,8 +39,21 @@ public class StartingRulerTraitExtractor {
             List<String> allowedEthics = node.child("allowed_ethics")
                     .map(ClausewitzNode::bareValues)
                     .orElse(List.of());
+            List<String> allowedOrigins = node.child("allowed_origins")
+                    .map(ClausewitzNode::bareValues)
+                    .orElse(List.of());
+            List<String> allowedCivics = node.child("allowed_civics")
+                    .map(ClausewitzNode::bareValues)
+                    .orElse(List.of());
+            List<String> forbiddenCivics = node.child("forbidden_civics")
+                    .map(ClausewitzNode::bareValues)
+                    .orElse(List.of());
+            List<String> forbiddenEthics = node.child("forbidden_ethics")
+                    .map(ClausewitzNode::bareValues)
+                    .orElse(List.of());
 
-            traits.add(new StartingRulerTrait(id, leaderClasses, forbiddenOrigins, allowedEthics));
+            traits.add(new StartingRulerTrait(id, leaderClasses, forbiddenOrigins, allowedEthics,
+                    allowedOrigins, allowedCivics, forbiddenCivics, forbiddenEthics));
         }
 
         log.info("Extracted {} starting ruler traits", traits.size());

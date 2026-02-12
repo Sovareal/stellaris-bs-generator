@@ -34,6 +34,9 @@ IMPLEMENTATION_PLAN.md
 PROGRESS.md
 REQUIREMENTS.md
 LEARNING.md
+ISSUES.md
+RESOLVED_ISSUES.md
+core_logic.md
 
 # === Environment / Secrets ===
 .env

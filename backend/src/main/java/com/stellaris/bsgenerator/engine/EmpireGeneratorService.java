@@ -63,11 +63,20 @@ public class EmpireGeneratorService {
         Origin origin = pickOrigin(state);
         state = state.withOrigin(origin.id());
 
-        // 5. Pick species archetype
+        // 5. Pick species archetype and species class
         SpeciesArchetype archetype = pickArchetype(state);
         state = state.withSpeciesArchetype(archetype.id());
+        String speciesClass = pickSpeciesClass(archetype);
+        state = state.withSpeciesClass(speciesClass);
 
-        // 6. Pick compatible traits within budget
+        // 5b. Post-validate civics against archetype/species class
+        // Some civics have species_archetype requirements that couldn't be checked earlier
+        if (!civicsStillValid(civics, state)) {
+            civics = pickCivics(state, CIVIC_COUNT);
+            state = state.withCivics(toIdSet(civics));
+        }
+
+        // 6. Pick compatible traits within budget (filtered by species class)
         List<SpeciesTrait> traits = pickTraits(archetype, state);
 
         int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
@@ -82,19 +91,19 @@ public class EmpireGeneratorService {
         String leaderClass = pickLeaderClass();
         StartingRulerTrait leaderTrait = pickLeaderTrait(leaderClass, state);
 
-        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, traits={} ({}/{}pts), homeworld={}, shipset={}, leader={}/{}",
+        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, speciesClass={}, traits={} ({}/{}pts), homeworld={}, shipset={}, leader={}/{}",
                 ethics.stream().map(Ethic::id).toList(),
                 authority.id(),
                 civics.stream().map(Civic::id).toList(),
                 origin.id(),
-                archetype.id(),
+                archetype.id(), speciesClass,
                 traits.stream().map(SpeciesTrait::id).toList(),
                 pointsUsed, archetype.traitPoints(),
                 homeworld.id(), shipset.id(),
                 leaderClass, leaderTrait != null ? leaderTrait.id() : "none");
 
         return new GeneratedEmpire(ethics, authority, civics, origin,
-                archetype, traits, pointsUsed, archetype.traitPoints(),
+                archetype, speciesClass, traits, pointsUsed, archetype.traitPoints(),
                 homeworld, shipset, leaderClass, leaderTrait);
     }
 
@@ -196,7 +205,9 @@ public class EmpireGeneratorService {
         if (compatible.isEmpty()) {
             throw new GenerationException("No compatible origins for current state");
         }
-        return WeightedRandom.select(compatible, Origin::randomWeight, random);
+        // Cap origin_default weight to normal range (game file has weight=100, others ~5)
+        return WeightedRandom.select(compatible, o ->
+                "origin_default".equals(o.id()) ? 5 : o.randomWeight(), random);
     }
 
     private SpeciesArchetype pickArchetype(EmpireState state) {
@@ -222,6 +233,15 @@ public class EmpireGeneratorService {
 
         // Uniform random for archetypes (no weight field)
         return archetypes.get(random.nextInt(archetypes.size()));
+    }
+
+    private String pickSpeciesClass(SpeciesArchetype archetype) {
+        var classes = filterService.getSpeciesClassesForArchetype(archetype.id());
+        if (classes.isEmpty()) {
+            // Fallback: use archetype id as species class (e.g., MACHINE archetype → MACHINE class)
+            return archetype.id();
+        }
+        return classes.get(random.nextInt(classes.size())).id();
     }
 
     private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state) {
@@ -292,6 +312,15 @@ public class EmpireGeneratorService {
             return null;
         }
         return compatible.get(random.nextInt(compatible.size()));
+    }
+
+    private boolean civicsStillValid(List<Civic> civics, EmpireState state) {
+        for (var civic : civics) {
+            if (!evaluator.evaluateBoth(civic.potential(), civic.possible(), state)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private Set<String> toIdSet(List<? extends Record> entities) {

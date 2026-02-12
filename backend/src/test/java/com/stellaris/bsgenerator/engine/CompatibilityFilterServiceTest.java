@@ -44,7 +44,7 @@ class CompatibilityFilterServiceTest {
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
-                new StartingRulerTraitExtractor());
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor());
         gameDataManager.loadGameData(false);
 
         var evaluator = new RequirementEvaluator();
@@ -181,11 +181,13 @@ class CompatibilityFilterServiceTest {
     // --- Selectable archetypes ---
 
     @Test
-    void selectableArchetypesExcludePresapientAndOther() {
+    void selectableArchetypesExcludeNonPlayerTypes() {
         var archetypes = filterService.getSelectableArchetypes();
         assertTrue(archetypes.stream().noneMatch(a -> a.id().equals("PRESAPIENT")));
         assertTrue(archetypes.stream().noneMatch(a -> a.id().equals("OTHER")));
-        assertTrue(archetypes.size() >= 4, "Should have at least BIOLOGICAL, ROBOT, MACHINE, LITHOID");
+        assertTrue(archetypes.stream().noneMatch(a -> a.id().equals("ROBOT")),
+                "ROBOT archetype should be excluded (requires game_started, 0/0 trait points)");
+        assertTrue(archetypes.size() >= 3, "Should have at least BIOLOGICAL, MACHINE, LITHOID");
     }
 
     // --- Full chain test ---

@@ -155,7 +155,8 @@ public class RerollService {
                 .withAuthority(empire.authority().id())
                 .withCivics(toCivicIds(empire.civics()))
                 .withOrigin(empire.origin().id())
-                .withSpeciesArchetype(archetype.id());
+                .withSpeciesArchetype(archetype.id())
+                .withSpeciesClass(empire.speciesClass());
         var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
         int maxTraits = archetype.maxTraits();
@@ -220,6 +221,8 @@ public class RerollService {
     private GeneratedEmpire rerollLeader(GeneratedEmpire empire) {
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withCivics(toCivicIds(empire.civics()))
                 .withOrigin(empire.origin().id());
 
         // Pick a potentially different leader class
@@ -253,6 +256,7 @@ public class RerollService {
         List<Civic> civics;
         Origin origin;
         SpeciesArchetype speciesArchetype;
+        String speciesClass;
         List<SpeciesTrait> speciesTraits;
         int traitPointsUsed;
         int traitPointsBudget;
@@ -267,6 +271,7 @@ public class RerollService {
             this.civics = e.civics();
             this.origin = e.origin();
             this.speciesArchetype = e.speciesArchetype();
+            this.speciesClass = e.speciesClass();
             this.speciesTraits = e.speciesTraits();
             this.traitPointsUsed = e.traitPointsUsed();
             this.traitPointsBudget = e.traitPointsBudget();
@@ -278,7 +283,7 @@ public class RerollService {
 
         GeneratedEmpire build() {
             return new GeneratedEmpire(ethics, authority, civics, origin,
-                    speciesArchetype, speciesTraits, traitPointsUsed, traitPointsBudget,
+                    speciesArchetype, speciesClass, speciesTraits, traitPointsUsed, traitPointsBudget,
                     homeworld, shipset, leaderClass, leaderTrait);
         }
     }

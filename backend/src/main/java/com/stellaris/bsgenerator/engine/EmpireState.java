@@ -66,7 +66,7 @@ public record EmpireState(
             case SPECIES_CLASS -> speciesClass != null ? Set.of(speciesClass) : Set.of();
             case SPECIES_ARCHETYPE -> speciesArchetype != null ? Set.of(speciesArchetype) : Set.of();
             case GRAPHICAL_CULTURE -> Set.of(); // Not tracked in empire state
-            case COUNTRY_TYPE -> Set.of(); // Not relevant for player empires
+            case COUNTRY_TYPE -> Set.of("default"); // Player empires are country_type "default"
         };
     }
 
@@ -82,7 +82,8 @@ public record EmpireState(
             case TRAITS -> !traits.isEmpty();
             case SPECIES_CLASS -> speciesClass != null;
             case SPECIES_ARCHETYPE -> speciesArchetype != null;
-            case GRAPHICAL_CULTURE, COUNTRY_TYPE -> false;
+            case COUNTRY_TYPE -> true; // Always "default" for player empires
+            case GRAPHICAL_CULTURE -> false;
         };
     }
 }

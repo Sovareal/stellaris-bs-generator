@@ -45,13 +45,14 @@ export function EmpireCard({ empire }: EmpireCardProps) {
         <EmpireSlot
           label="Origin"
           value={humanizeId(empire.origin.id)}
-          sublabel={empire.origin.dlcRequirement ?? undefined}
+          sublabel={empire.origin.dlcRequirement ? `Requires ${empire.origin.dlcRequirement} DLC` : undefined}
           category="origin"
           rerollAvailable={empire.rerollsAvailable["origin"] ?? false}
         />
 
         <TraitsSlot
           archetype={empire.speciesArchetype}
+          speciesClass={empire.speciesClass}
           traits={empire.speciesTraits}
           pointsUsed={empire.traitPointsUsed}
           pointsBudget={empire.traitPointsBudget}

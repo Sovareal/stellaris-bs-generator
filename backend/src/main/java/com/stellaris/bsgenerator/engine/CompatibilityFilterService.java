@@ -61,6 +61,7 @@ public class CompatibilityFilterService {
     public List<SpeciesTrait> getCompatibleTraits(String archetypeId, EmpireState state) {
         return gameDataManager.getSpeciesTraits().stream()
                 .filter(t -> t.allowedArchetypes().contains(archetypeId))
+                .filter(t -> matchesAllowList(t.allowedSpeciesClasses(), state.speciesClass()))
                 .filter(t -> matchesAllowList(t.allowedOrigins(), state.origin()))
                 .filter(t -> matchesForbidList(t.forbiddenOrigins(), state.origin()))
                 .filter(t -> matchesAllowSet(t.allowedCivics(), state.civics()))
@@ -140,7 +141,16 @@ public class CompatibilityFilterService {
      */
     public List<SpeciesArchetype> getSelectableArchetypes() {
         return gameDataManager.getSpeciesArchetypes().stream()
-                .filter(a -> !a.id().equals("PRESAPIENT") && !a.id().equals("OTHER"))
+                .filter(a -> !a.id().equals("PRESAPIENT") && !a.id().equals("OTHER") && !a.id().equals("ROBOT"))
+                .toList();
+    }
+
+    /**
+     * Get species classes belonging to the given archetype.
+     */
+    public List<SpeciesClass> getSpeciesClassesForArchetype(String archetypeId) {
+        return gameDataManager.getSpeciesClasses().stream()
+                .filter(sc -> sc.archetype().equals(archetypeId))
                 .toList();
     }
 
@@ -166,6 +176,10 @@ public class CompatibilityFilterService {
                 .filter(t -> t.leaderClasses().contains(leaderClass))
                 .filter(t -> matchesForbidList(t.forbiddenOrigins(), state.origin()))
                 .filter(t -> matchesAllowSet(t.allowedEthics(), state.ethics()))
+                .filter(t -> matchesAllowList(t.allowedOrigins(), state.origin()))
+                .filter(t -> matchesAllowSet(t.allowedCivics(), state.civics()))
+                .filter(t -> matchesForbidSet(t.forbiddenCivics(), state.civics()))
+                .filter(t -> matchesForbidSet(t.forbiddenEthics(), state.ethics()))
                 .toList();
     }
 }

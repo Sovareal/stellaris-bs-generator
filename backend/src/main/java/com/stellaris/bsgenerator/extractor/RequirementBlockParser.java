@@ -45,12 +45,22 @@ public final class RequirementBlockParser {
         }
 
         Map<RequirementCategory, List<Requirement>> categories = new EnumMap<>(RequirementCategory.class);
+        List<Map<RequirementCategory, List<Requirement>>> crossCategoryOrs = new ArrayList<>();
 
         for (var child : node.children()) {
             if (child.key() == null) continue;
 
             // Skip tooltip text and always = yes/no
             if (child.key().equals("text") || child.key().equals("always")) continue;
+
+            // Handle top-level OR blocks that span multiple categories
+            if (child.key().equals("OR") && child.isBlock()) {
+                var orGroup = parseCrossCategoryOr(child);
+                if (!orGroup.isEmpty()) {
+                    crossCategoryOrs.add(orGroup);
+                }
+                continue;
+            }
 
             RequirementCategory category = RequirementCategory.fromKey(child.key());
             if (category == null) continue; // Unrecognized key
@@ -63,7 +73,32 @@ public final class RequirementBlockParser {
             }
         }
 
-        return categories.isEmpty() ? null : new RequirementBlock(Map.copyOf(categories));
+        if (categories.isEmpty() && crossCategoryOrs.isEmpty()) return null;
+        return new RequirementBlock(Map.copyOf(categories), List.copyOf(crossCategoryOrs));
+    }
+
+    /**
+     * Parse a cross-category OR block like:
+     * <pre>
+     * OR = {
+     *     authority = { value = auth_corporate }
+     *     civics = { value = civic_galactic_sovereign_megacorp }
+     * }
+     * </pre>
+     * Returns a map of category → requirements (each branch is a disjunct).
+     */
+    private static Map<RequirementCategory, List<Requirement>> parseCrossCategoryOr(ClausewitzNode orNode) {
+        Map<RequirementCategory, List<Requirement>> branches = new EnumMap<>(RequirementCategory.class);
+        for (var child : orNode.children()) {
+            if (child.key() == null || !child.isBlock()) continue;
+            RequirementCategory category = RequirementCategory.fromKey(child.key());
+            if (category == null) continue;
+            List<Requirement> reqs = parseCategoryBlock(child);
+            if (!reqs.isEmpty()) {
+                branches.computeIfAbsent(category, _ -> new ArrayList<>()).addAll(reqs);
+            }
+        }
+        return branches.isEmpty() ? Map.of() : Map.copyOf(branches);
     }
 
     /**
