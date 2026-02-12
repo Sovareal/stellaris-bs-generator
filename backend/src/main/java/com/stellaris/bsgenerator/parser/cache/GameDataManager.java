@@ -29,7 +29,8 @@ public class GameDataManager {
             "species_archetypes",
             "traits",
             "planet_classes",
-            "graphical_culture"
+            "graphical_culture",
+            "species_classes"
     );
 
     private final ParserProperties properties;
@@ -44,6 +45,7 @@ public class GameDataManager {
     private final PlanetClassExtractor planetClassExtractor;
     private final GraphicalCultureExtractor graphicalCultureExtractor;
     private final StartingRulerTraitExtractor startingRulerTraitExtractor;
+    private final SpeciesClassExtractor speciesClassExtractor;
 
     @Getter private GameVersion gameVersion;
     @Getter private List<Ethic> ethics;
@@ -55,6 +57,7 @@ public class GameDataManager {
     @Getter private List<PlanetClass> planetClasses;
     @Getter private List<GraphicalCulture> graphicalCultures;
     @Getter private List<StartingRulerTrait> startingRulerTraits;
+    @Getter private List<SpeciesClass> speciesClasses;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
@@ -132,10 +135,12 @@ public class GameDataManager {
         planetClasses = planetClassExtractor.extract(gameFileService.getPlanetClasses());
         graphicalCultures = graphicalCultureExtractor.extract(gameFileService.getGraphicalCultures());
         startingRulerTraits = startingRulerTraitExtractor.extract(gameFileService.getTraits());
+        speciesClasses = speciesClassExtractor.extract(gameFileService.getSpeciesClasses());
 
-        log.info("Extracted: {} ethics, {} authorities, {} civics, {} origins, {} archetypes, {} traits, {} planets, {} shipsets, {} ruler traits",
+        log.info("Extracted: {} ethics, {} authorities, {} civics, {} origins, {} archetypes, {} traits, {} planets, {} shipsets, {} ruler traits, {} species classes",
                 ethics.size(), authorities.size(), civics.size(), origins.size(),
                 speciesArchetypes.size(), speciesTraits.size(),
-                planetClasses.size(), graphicalCultures.size(), startingRulerTraits.size());
+                planetClasses.size(), graphicalCultures.size(), startingRulerTraits.size(),
+                speciesClasses.size());
     }
 }

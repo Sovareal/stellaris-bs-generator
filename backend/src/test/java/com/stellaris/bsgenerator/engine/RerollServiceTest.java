@@ -44,7 +44,7 @@ class RerollServiceTest {
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
-                new StartingRulerTraitExtractor());
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor());
         gameDataManager.loadGameData(false);
 
         var evaluator = new RequirementEvaluator();

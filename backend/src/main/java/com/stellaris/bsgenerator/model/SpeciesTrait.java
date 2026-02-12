@@ -6,6 +6,7 @@ public record SpeciesTrait(
         String id,
         int cost,
         List<String> allowedArchetypes,
+        List<String> allowedSpeciesClasses,
         List<String> opposites,
         boolean initial,
         boolean randomized,

@@ -34,7 +34,7 @@ class GameDataManagerTest {
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
-                new StartingRulerTraitExtractor());
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor());
     }
 
     @Test
@@ -70,6 +70,11 @@ class GameDataManagerTest {
 
         assertNotNull(manager.getSpeciesTraits());
         assertFalse(manager.getSpeciesTraits().isEmpty(), "Should have species traits");
+
+        assertNotNull(manager.getSpeciesClasses());
+        assertFalse(manager.getSpeciesClasses().isEmpty(), "Should have species classes");
+        assertTrue(manager.getSpeciesClasses().size() >= 15,
+                "Should have at least 15 playable species classes, got " + manager.getSpeciesClasses().size());
     }
 
     @Test
@@ -109,7 +114,7 @@ class GameDataManagerTest {
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
-                new StartingRulerTraitExtractor());
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor());
 
         assertThrows(IOException.class, () -> manager.loadGameData(false));
     }

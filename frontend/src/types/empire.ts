@@ -58,6 +58,7 @@ export interface EmpireResponse {
   civics: CivicDto[];
   origin: OriginDto;
   speciesArchetype: ArchetypeDto;
+  speciesClass: string;
   speciesTraits: TraitDto[];
   traitPointsUsed: number;
   traitPointsBudget: number;

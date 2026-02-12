@@ -5,6 +5,7 @@ import type { ArchetypeDto, TraitDto } from "@/types/empire";
 
 interface TraitsSlotProps {
   archetype: ArchetypeDto;
+  speciesClass: string;
   traits: TraitDto[];
   pointsUsed: number;
   pointsBudget: number;
@@ -17,7 +18,11 @@ function traitColor(cost: number): string {
   return "text-muted-foreground";             // zero cost = neutral
 }
 
-export function TraitsSlot({ archetype, traits, pointsUsed, pointsBudget, rerollAvailable }: TraitsSlotProps) {
+export function TraitsSlot({ archetype, speciesClass, traits, pointsUsed, pointsBudget, rerollAvailable }: TraitsSlotProps) {
+  const speciesLabel = speciesClass !== archetype.id
+    ? `${humanizeId(archetype.id)} — ${humanizeId(speciesClass)}`
+    : humanizeId(archetype.id);
+
   return (
     <div className="flex items-start justify-between gap-4 py-2">
       <div className="flex flex-col gap-1.5 min-w-0">
@@ -26,7 +31,7 @@ export function TraitsSlot({ archetype, traits, pointsUsed, pointsBudget, reroll
             Species Traits
           </span>
           <span className="text-xs text-muted-foreground">
-            {humanizeId(archetype.id)}
+            {speciesLabel}
             {archetype.robotic && " (Robotic)"}
           </span>
         </div>

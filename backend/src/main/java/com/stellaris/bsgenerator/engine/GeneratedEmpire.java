@@ -13,6 +13,7 @@ public record GeneratedEmpire(
         List<Civic> civics,
         Origin origin,
         SpeciesArchetype speciesArchetype,
+        String speciesClass,
         List<SpeciesTrait> speciesTraits,
         int traitPointsUsed,
         int traitPointsBudget,
