@@ -4,14 +4,13 @@
 > primary context anchor across sessions — read it first to understand where we left off.
 
 ## Current Session Focus
-Phase 7 complete. New empire settings (homeworld, shipset, starting leader) implemented.
+Phase 10 in progress. Tasks 10.1–10.3 (localization fixes, homeworld constraint, display fix) complete. Task 10.4 (multi-species origins) and 10.5 (error handling) remaining.
 
 ## Last Completed Task
-Phase 7 — New Empire Settings. All 4 tasks (7.1–7.4) complete. Also fixed Clausewitz parser for `hsv { }` syntax.
+Task 10.3 — Trait points display fix (picks/max + pts remaining)
 
 ## Next Up
-Phase 8: Tasks 8.1–8.2 — Frontend updates for new settings (already partially done in 7.4)
-Phase 9: Tasks 9.1–9.3 — Polish & packaging
+Task 10.4: Multi-species origins (Necrophage, Syncretic Evolution, Rogue Servitor, Driven Assimilator)
 
 ---
 
@@ -93,13 +92,30 @@ Phase 9: Tasks 9.1–9.3 — Polish & packaging
 | 8.1 | New Empire Card Slots | DONE | Completed as part of Task 7.4 — Homeworld/Shipset/Leader slots in EmpireCard, TypeScript types updated, format.ts extended. |
 | 8.2 | Single Reroll UI Update | DONE | Already working from Phase 6.3 — single boolean reroll, all dice disabled after any reroll. |
 
-## Phase 9: Polish & Packaging
+## Phase 9: Bug Fixes & Data Quality (ISSUES.md)
+
+*Species class model/extractor/filtering was completed in Phase 7+8 (SpeciesClass.java, SpeciesClassExtractor.java, allowedSpeciesClasses on SpeciesTrait, pickSpeciesClass in generator, TraitsSlot display).*
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| 9.1 | Localization Display Names | NOT STARTED | Depends on Phase 7 |
-| 9.2 | Error Handling & Edge Cases | NOT STARTED | Depends on 9.1 |
-| 9.3 | Tauri Build & Sidecar Packaging | NOT STARTED | Depends on 9.2 |
+| 9.1 | Fix country_type evaluation in EmpireState | DONE | Return Set.of("default") for COUNTRY_TYPE, hasCategory returns true. Filters ~40+ non-player civics. |
+| 9.2 | Handle cross-category OR blocks in RequirementBlockParser | DONE | Added crossCategoryOrs to RequirementBlock, parseCrossCategoryOr in parser, evaluator handles OR disjunctions. |
+| 9.3 | Exclude ROBOT archetype + post-validate civics | DONE | ROBOT excluded from getSelectableArchetypes. Post-validation of civics after archetype selection. Test updated. |
+| 9.4 | Fix leader trait extraction — add 4 missing fields | DONE | Added allowedOrigins, allowedCivics, forbiddenCivics, forbiddenEthics to StartingRulerTrait. Extracts + filters all 6 fields. |
+| 9.5 | Fix shipset extraction — filter non-shipset cultures | DONE | Excluded solarpunk_01, wilderness_01 (city-set-only). Count drops from 22 to 20. |
+| 9.6 | Frontend display fixes | DONE | DLC sublabel "Requires X DLC", origin_default weight capped to 5, trait_robot_/trait_machine_ prefixes, shipset display names. |
+| 9.7 | Generate core_logic.md | DONE | Created core_logic.md with pipeline description, caching, update plan. Added to .gitignore. |
+
+## Phase 10: Polish & Issue Fixes
+
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| 10.1 | Localization Service Fixes | DONE | Fixed LINE_PATTERN regex (`:` without digit), added `$variable$` resolution (two-pass). 4 dedicated tests. |
+| 10.2 | Homeworld Trait Constraint | DONE | Added `allowedPlanetClasses` to SpeciesTrait. Generator & reroll constrain homeworld to trait-compatible planets (e.g., Aquatic → Ocean). |
+| 10.3 | Trait Points Display Fix | DONE | TraitsSlot now shows "{picks}/{max} picks · {remaining} pts remaining" instead of ambiguous "used / budget". |
+| 10.4 | Multi-Species Origins | NOT STARTED | Necrophage, Syncretic Evolution, Rogue Servitor, Driven Assimilator need secondary species generation. |
+| 10.5 | Error Handling & Edge Cases | NOT STARTED | Depends on 10.4 |
+| 10.6 | Tauri Build & Sidecar Packaging | NOT STARTED | Depends on 10.5 |
 
 ---
 
@@ -152,6 +168,47 @@ Phase 9: Tasks 9.1–9.3 — Polish & packaging
 4. `buildRerollMap()` returns all-false after any single reroll
 5. Frontend already disables all buttons when any reroll is in flight — just needs to also disable when `rerollsAvailable` is all-false (already works)
 
+### Issue 5: Species-Specific Traits Assigned to Wrong Species (2026-02-11)
+
+**Reported:** Lithoid species getting `trait_camouflage` (Reptilian/Aquatic/Arthropoid only) and `trait_permeable_skin` (Aquatic/Molluscoid only).
+
+**Root Cause:** Stellaris traits have TWO-LEVEL species restrictions:
+1. `allowed_archetypes = { BIOLOGICAL LITHOID }` — broad category (our code checks this ✓)
+2. `species_class = { AQUATIC ART REP }` — specific species class (our code does NOT check this ✗)
+
+Example: `trait_camouflage` has `allowed_archetypes = { BIOLOGICAL LITHOID }` AND `species_class = { AQUATIC ART REP }`. A Lithoid passes the archetype check (LITHOID is in allowed_archetypes) but should FAIL because species class LITHOID is NOT in `{ AQUATIC ART REP }`.
+
+**Species Class → Archetype Mapping (playable):**
+| Species Class | Archetype | DLC |
+|---|---|---|
+| HUM, MAM, REP, AVI, ART, MOL, FUN | BIOLOGICAL | Base |
+| PLANT | BIOLOGICAL | Plantoids |
+| NECROID | BIOLOGICAL | Necroids |
+| AQUATIC | BIOLOGICAL | Aquatics |
+| TOX | BIOLOGICAL | Toxoids |
+| INF | BIOLOGICAL | Infernals |
+| BIOGENESIS_01 | BIOLOGICAL | BioGenesis |
+| MINDWARDEN | BIOLOGICAL | The Shroud |
+| LITHOID | LITHOID | Lithoids |
+| ROBOT | ROBOT | Base |
+| MACHINE | MACHINE | Synthetic Dawn |
+
+**Trait `species_class` Syntax:** `species_class = { CLASS_ID1 CLASS_ID2 ... }` — space-separated. Empty = unrestricted within allowed archetypes.
+
+**Scope:** ~67 trait occurrences of `species_class` across 6 files (04_species_traits, 09_ascension_traits, 12_astral_planes_traits, 15_biogenesis_species_traits, 16_infernals_traits, 17_shroud_species_traits).
+
+**What's Missing:**
+1. `SpeciesTrait` model has NO `allowedSpeciesClasses` field
+2. `SpeciesTraitExtractor` does NOT parse `species_class` from traits
+3. Generator picks species ARCHETYPE but never picks a species CLASS
+4. `EmpireState.speciesClass` field EXISTS but is NEVER populated during generation
+5. `CompatibilityFilterService.getCompatibleTraits()` does NOT filter by species class
+
+**Fix: Phase 9** — 3 tasks:
+1. Extract species classes from game files, add `allowedSpeciesClasses` to `SpeciesTrait`, parse it
+2. Pick a random species class during generation, filter traits by it
+3. Update API DTOs and frontend to display species class
+
 ### Issue 4: New Empire Settings Needed
 
 **Shipset (Graphical Culture):**
@@ -185,7 +242,7 @@ Phase 9: Tasks 9.1–9.3 — Polish & packaging
 | 2026-02-10 | Extended identifier chars | Clausewitz format uses \|, /, ' in identifiers (value:x\|y\|, trait/icon, etc.) — added to tokenizer isIdentPart. |
 | 2026-02-10 | application.yml over .properties | YAML is more readable for nested config (stellaris.*, spring.web.cors.*). Switched from .properties. |
 | 2026-02-10 | Lombok adoption | @Slf4j, @RequiredArgsConstructor, @Getter reduce service/controller boilerplate. Records kept for DTOs. |
-| 2026-02-10 | Configurable settings plan | game-path/cache-path defaults in application.yml. Phase 9 adds settings.json + frontend settings page for user overrides. |
+| 2026-02-10 | Configurable settings plan | game-path/cache-path defaults in application.yml. Phase 10 adds settings.json + frontend settings page for user overrides. |
 | 2026-02-11 | Task 3.1 pulled into Phase 2 | RequirementBlock model needed by Authority/Civic/Origin extractors, so built as prerequisite step A of Phase 2. |
 | 2026-02-11 | auto_mod filter for traits | Traits with `auto_mod = yes` must be filtered even if `initial` is not explicitly `no`. |
 | 2026-02-11 | Authority AI filter refined | Cannot filter on `hasCategory(COUNTRY_TYPE)` alone — auth_corporate has `country_type = { NOT = { value = primitive } }`. Must check for `Value("ai_empire")` specifically. |
@@ -196,6 +253,7 @@ Phase 9: Tasks 9.1–9.3 — Polish & packaging
 | 2026-02-11 | New empire settings planned | Shipset (13 selectable), homeworld planet (10 types, some origin-fixed), starting leader class + trait. Phase 7. |
 | 2026-02-11 | Parser fix: value-typed blocks | `hsv { 0.5 0.3 0.7 }` / `rgb { }` syntax was breaking the Clausewitz parser. Fixed by consuming `{ block }` after scalar value when next token is OPEN_BRACE. Planet_classes files were ALL failing before this fix. |
 | 2026-02-11 | DirectoryLoader resilience | Added try-catch around individual file parsing in DirectoryLoader. Skips unparseable files with a warning instead of failing the entire directory. |
+| 2026-02-11 | Species class trait filtering needed | Traits have `species_class = { }` restriction in addition to `allowed_archetypes`. ~67 trait entries have species_class restrictions. Generator must pick a species class and filter traits accordingly. Phase 9. |
 
 ## Blockers & Issues
 
@@ -218,3 +276,6 @@ Phase 9: Tasks 9.1–9.3 — Polish & packaging
 | 9 | 2026-02-11 | Investigation | Post-playtest review: 4 issues found. (1) Gestalt empires never generated. (2) Origin-specific traits not filtered. (3) Reroll should be single-use. (4) Need shipset, homeworld, leader. Planned Phase 6 (3 fix tasks), Phase 7 (4 new tasks), Phase 8 (2 frontend tasks).   |
 | 10 | 2026-02-11 | 6.1–6.3 | Phase 6 complete. Gestalt generation (~20% chance), origin/civic/ethic-aware trait filtering (6 new fields on SpeciesTrait), single-reroll constraint (boolean replaces EnumSet). 3 commits, all tests pass.                                                                  |
 | 11 | 2026-02-11 | 7.1–7.4, 8.1–8.2 | Phase 7+8 complete. New empire settings: homeworld (10 habitable + 9 origin-fixed), shipset (22 selectable), starting leader (3 classes + 34 traits). Fixed Clausewitz parser for `hsv { }` value-typed blocks. DirectoryLoader resilience for unparseable files. 9 new files, all 456 tests pass. |
+| 12 | 2026-02-11 | Investigation | Species-class trait bug: traits with `species_class = { }` restrictions not enforced. Lithoid getting Reptilian/Aquatic-only traits. Root cause: SpeciesTrait missing allowedSpeciesClasses field, generator never picks species class. Planned Phase 9 (3 tasks). |
+| 13 | 2026-02-12 | 9.1–9.7 | Phase 9 complete. 13 issues fixed: country_type eval filters ~40+ non-player civics, cross-category OR blocks for corporate civics, ROBOT archetype excluded + civic post-validation, 4 new leader trait restriction fields, shipset non-shipset filter, frontend display fixes (DLC sublabel, origin_default weight, trait prefixes, shipset names), core_logic.md. All tests pass. |
+| 14 | 2026-02-16 | 10.1–10.3 | Phase 10 partial. LocalizationService: fixed regex for `:` without digit, added `$variable$` resolution (two-pass). Homeworld: added `allowedPlanetClasses` to SpeciesTrait, generator+reroll constrain homeworld by traits. TraitsSlot: now shows picks + pts remaining. 5 issues resolved, all tests pass. |

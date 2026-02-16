@@ -2,6 +2,7 @@ package com.stellaris.bsgenerator.parser.cache;
 
 import com.stellaris.bsgenerator.extractor.*;
 import com.stellaris.bsgenerator.model.*;
+import com.stellaris.bsgenerator.parser.LocalizationService;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import lombok.Getter;
@@ -46,6 +47,7 @@ public class GameDataManager {
     private final GraphicalCultureExtractor graphicalCultureExtractor;
     private final StartingRulerTraitExtractor startingRulerTraitExtractor;
     private final SpeciesClassExtractor speciesClassExtractor;
+    private final LocalizationService localizationService;
 
     @Getter private GameVersion gameVersion;
     @Getter private List<Ethic> ethics;
@@ -96,6 +98,7 @@ public class GameDataManager {
         // Parse fresh
         gameFileService.loadAll();
         extractTypedData();
+        localizationService.load();
 
         // Save to cache
         Map<String, com.stellaris.bsgenerator.parser.ast.ClausewitzNode> data = Map.of(
@@ -120,6 +123,7 @@ public class GameDataManager {
         try {
             gameFileService.loadAll();
             extractTypedData();
+            localizationService.load();
         } catch (IOException e) {
             log.error("Failed to re-parse game files: {}", e.getMessage(), e);
         }

@@ -2,6 +2,7 @@ package com.stellaris.bsgenerator.engine;
 
 import com.stellaris.bsgenerator.extractor.*;
 import com.stellaris.bsgenerator.model.*;
+import com.stellaris.bsgenerator.parser.LocalizationService;
 import com.stellaris.bsgenerator.parser.cache.GameDataManager;
 import com.stellaris.bsgenerator.parser.cache.ParsedDataCache;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
@@ -47,7 +48,8 @@ class EmpireGeneratorServiceTest {
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
-                new StartingRulerTraitExtractor(), new SpeciesClassExtractor());
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
+                new LocalizationService(props));
         gameDataManager.loadGameData(false);
 
         evaluator = new RequirementEvaluator();

@@ -43,6 +43,10 @@ public class SpeciesTraitExtractor {
             List<String> allowedSpeciesClasses = node.child("species_class")
                     .map(ClausewitzNode::bareValues).orElse(List.of());
 
+            // Parse allowed_planet_classes (e.g., allowed_planet_classes = { pc_ocean })
+            List<String> allowedPlanetClasses = node.child("allowed_planet_classes")
+                    .map(ClausewitzNode::bareValues).orElse(List.of());
+
             // Parse opposites: either bare values or quoted strings
             List<String> opposites = node.child("opposites")
                     .map(this::parseOpposites)
@@ -73,7 +77,7 @@ public class SpeciesTraitExtractor {
                     .map(ClausewitzNode::bareValues).orElse(List.of());
 
             traits.add(new SpeciesTrait(id, cost, allowedArchetypes, allowedSpeciesClasses,
-                    opposites, true, randomized, dlcRequirement, tags,
+                    allowedPlanetClasses, opposites, true, randomized, dlcRequirement, tags,
                     allowedOrigins, forbiddenOrigins, allowedCivics, forbiddenCivics,
                     allowedEthics, forbiddenEthics));
         }

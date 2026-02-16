@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmpireSlot } from "@/components/EmpireSlot";
 import { EthicsSlot } from "@/components/EthicsSlot";
 import { TraitsSlot } from "@/components/TraitsSlot";
-import { humanizeId } from "@/lib/format";
+import { displayName, humanizeId } from "@/lib/format";
 import type { EmpireResponse } from "@/types/empire";
 
 interface EmpireCardProps {
@@ -10,9 +10,13 @@ interface EmpireCardProps {
 }
 
 export function EmpireCard({ empire }: EmpireCardProps) {
-  const leaderValue = empire.leader.traitId
-    ? `${humanizeId(empire.leader.leaderClass)} — ${humanizeId(empire.leader.traitId)}`
-    : humanizeId(empire.leader.leaderClass);
+  const leaderClassName = humanizeId(empire.leader.leaderClass);
+  const leaderTraitName = empire.leader.traitId
+    ? (empire.leader.traitDisplayName ?? humanizeId(empire.leader.traitId))
+    : null;
+  const leaderValue = leaderTraitName
+    ? `${leaderClassName} — ${leaderTraitName}`
+    : leaderClassName;
 
   return (
     <Card className="w-full max-w-2xl animate-empire-enter">
@@ -24,7 +28,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
 
         <EmpireSlot
           label="Authority"
-          value={humanizeId(empire.authority.id)}
+          value={displayName(empire.authority)}
           sublabel={empire.authority.isGestalt ? "Gestalt Consciousness" : undefined}
           category="authority"
           rerollAvailable={empire.rerollsAvailable["authority"] ?? false}
@@ -34,7 +38,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           <EmpireSlot
             key={civic.id}
             label={`Civic ${i + 1}`}
-            value={humanizeId(civic.id)}
+            value={displayName(civic)}
             category={i === 0 ? "civic1" : "civic2"}
             rerollAvailable={
               empire.rerollsAvailable[i === 0 ? "civic1" : "civic2"] ?? false
@@ -44,7 +48,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
 
         <EmpireSlot
           label="Origin"
-          value={humanizeId(empire.origin.id)}
+          value={displayName(empire.origin)}
           sublabel={empire.origin.dlcRequirement ? `Requires ${empire.origin.dlcRequirement} DLC` : undefined}
           category="origin"
           rerollAvailable={empire.rerollsAvailable["origin"] ?? false}
@@ -53,6 +57,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
         <TraitsSlot
           archetype={empire.speciesArchetype}
           speciesClass={empire.speciesClass}
+          speciesClassName={empire.speciesClassName}
           traits={empire.speciesTraits}
           pointsUsed={empire.traitPointsUsed}
           pointsBudget={empire.traitPointsBudget}
@@ -61,7 +66,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
 
         <EmpireSlot
           label="Homeworld"
-          value={humanizeId(empire.homeworld.id)}
+          value={displayName(empire.homeworld)}
           sublabel={empire.homeworld.climate !== "fixed" ? `${empire.homeworld.climate} climate` : "Fixed by origin"}
           category="homeworld"
           rerollAvailable={empire.homeworld.climate !== "fixed" && (empire.rerollsAvailable["homeworld"] ?? false)}
@@ -69,7 +74,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
 
         <EmpireSlot
           label="Shipset"
-          value={humanizeId(empire.shipset)}
+          value={empire.shipsetName ?? humanizeId(empire.shipset)}
           category="shipset"
           rerollAvailable={empire.rerollsAvailable["shipset"] ?? false}
         />

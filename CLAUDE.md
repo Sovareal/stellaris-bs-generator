@@ -1,14 +1,20 @@
 # Claude Code — Project Instructions
 
 ## Session Start
-Read **PROGRESS.md** first every session. Update it when starting AND after completing each task.
+Read **ISSUES.md** first every session. This file will contain issues and problems clarification found during manual testing. If any issues present on this file - analyze them, plan how to fix them and update **IMPLEMENTATION_PLAN.md** and **PROGRESS.md** accordingly. 
+Read **PROGRESS.md** second every session. Update it when starting AND after completing each task.
+
+## Phase completion
 Update **LEARNING.md** after each completed phase.
+Any issues resolved from **ISSUES.md** should removed from it and there summary resolution added to **RESOLVED_ISSUES.md**
 
 ## Working Documents (gitignored, local only)
 - **REQUIREMENTS.md** — Game data reference, entity fields, Clausewitz syntax
 - **IMPLEMENTATION_PLAN.md** — 6 phases, 25 tasks, dependency graph
 - **PROGRESS.md** — Task status, decisions log, blockers, session history
 - **LEARNING.md** — Per-phase retrospective: tools, lessons, Claude cost tips
+- **ISSUES.md** - New unresolved issues list found during the testing and needed to be planned for fix
+- **RESOLVED_ISSUES.md** - List of resolved issues with quick summary and minimum details.
 
 ## Code Style
 
@@ -34,3 +40,4 @@ Commit after each task, push after finishing each phase. Conventional-style mess
 6. **Compact between phases.** `/compact` with focus instructions when switching phases.
 7. **Write directly, don't init-then-edit.** Use Write when target content is known.
 8. **Parallelize only independent tasks.** Phase 2 extractors (2.1–2.5) can parallel. Sequential chains (1.1→1.2→1.3→1.4) stay in main thread.
+9. **Do not start new task/phase if less than 10% current session limit.**Made to avoid lost/interupted work decisions.

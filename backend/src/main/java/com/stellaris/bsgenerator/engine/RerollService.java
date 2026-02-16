@@ -197,12 +197,34 @@ public class RerollService {
                 .filter(p -> !p.id().equals(empire.homeworld().id()))
                 .toList();
 
+        // Constrain by trait allowed_planet_classes (e.g., Aquatic → pc_ocean only)
+        Set<String> traitPlanetRestriction = collectTraitPlanetClasses(empire.speciesTraits());
+        if (!traitPlanetRestriction.isEmpty()) {
+            planets = planets.stream()
+                    .filter(p -> traitPlanetRestriction.contains(p.id()))
+                    .toList();
+        }
+
         if (planets.isEmpty()) {
             throw new GenerationException("No alternative homeworld planets available");
         }
 
         var newPlanet = planets.get(random.nextInt(planets.size()));
         return copyWith(empire, b -> b.homeworld = newPlanet);
+    }
+
+    private Set<String> collectTraitPlanetClasses(java.util.List<com.stellaris.bsgenerator.model.SpeciesTrait> traits) {
+        Set<String> result = null;
+        for (var trait : traits) {
+            if (!trait.allowedPlanetClasses().isEmpty()) {
+                if (result == null) {
+                    result = new java.util.HashSet<>(trait.allowedPlanetClasses());
+                } else {
+                    result.retainAll(trait.allowedPlanetClasses());
+                }
+            }
+        }
+        return result != null ? result : Set.of();
     }
 
     private GeneratedEmpire rerollShipset(GeneratedEmpire empire) {

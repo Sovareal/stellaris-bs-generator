@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { RerollButton } from "@/components/RerollButton";
-import { humanizeId } from "@/lib/format";
+import { displayName } from "@/lib/format";
 import type { EthicDto } from "@/types/empire";
 
 interface EthicsSlotProps {
@@ -25,7 +25,7 @@ export function EthicsSlot({ ethics, rerollAvailable }: EthicsSlotProps) {
               {ethic.isFanatic && (
                 <span className="text-primary font-semibold mr-1">Fanatic</span>
               )}
-              {humanizeId(ethic.id)}
+              {displayName(ethic)}
             </Badge>
           ))}
         </div>

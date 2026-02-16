@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.parser.cache;
 
 import com.stellaris.bsgenerator.extractor.*;
+import com.stellaris.bsgenerator.parser.LocalizationService;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,8 @@ class GameDataManagerTest {
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
-                new StartingRulerTraitExtractor(), new SpeciesClassExtractor());
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
+                new LocalizationService(props));
     }
 
     @Test
@@ -114,7 +116,8 @@ class GameDataManagerTest {
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
-                new StartingRulerTraitExtractor(), new SpeciesClassExtractor());
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
+                new LocalizationService(props));
 
         assertThrows(IOException.class, () -> manager.loadGameData(false));
     }

@@ -81,8 +81,8 @@ public class EmpireGeneratorService {
 
         int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
-        // 7. Pick homeworld planet (or use origin-fixed)
-        PlanetClass homeworld = pickHomeworld(origin);
+        // 7. Pick homeworld planet (or use origin-fixed, constrained by traits)
+        PlanetClass homeworld = pickHomeworld(origin, traits);
 
         // 8. Pick random shipset
         GraphicalCulture shipset = pickShipset();
@@ -281,17 +281,44 @@ public class EmpireGeneratorService {
         return picked;
     }
 
-    private PlanetClass pickHomeworld(Origin origin) {
+    private PlanetClass pickHomeworld(Origin origin, List<SpeciesTrait> traits) {
         String fixedPlanet = ORIGIN_FIXED_PLANETS.get(origin.id());
         if (fixedPlanet != null) {
             return new PlanetClass(fixedPlanet, "fixed");
         }
 
         var planets = filterService.getHabitablePlanetClasses();
+
+        // Constrain by trait allowed_planet_classes (e.g., Aquatic → pc_ocean only)
+        Set<String> traitPlanetRestriction = collectTraitPlanetClasses(traits);
+        if (!traitPlanetRestriction.isEmpty()) {
+            planets = planets.stream()
+                    .filter(p -> traitPlanetRestriction.contains(p.id()))
+                    .toList();
+        }
+
         if (planets.isEmpty()) {
             throw new GenerationException("No habitable planet classes available");
         }
         return planets.get(random.nextInt(planets.size()));
+    }
+
+    /**
+     * Collect the intersection of allowed_planet_classes from all traits that have restrictions.
+     * If multiple traits restrict planet classes, the homeworld must satisfy ALL of them.
+     */
+    private Set<String> collectTraitPlanetClasses(List<SpeciesTrait> traits) {
+        Set<String> result = null;
+        for (var trait : traits) {
+            if (!trait.allowedPlanetClasses().isEmpty()) {
+                if (result == null) {
+                    result = new HashSet<>(trait.allowedPlanetClasses());
+                } else {
+                    result.retainAll(trait.allowedPlanetClasses());
+                }
+            }
+        }
+        return result != null ? result : Set.of();
     }
 
     private GraphicalCulture pickShipset() {

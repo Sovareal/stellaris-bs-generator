@@ -56,6 +56,13 @@ const SPECIES_CLASS_NAMES: Record<string, string> = {
   ROBOT: "Robot",
 };
 
+/**
+ * Returns the display name from localization data, falling back to humanizeId.
+ */
+export function displayName(item: { displayName?: string | null; id: string }): string {
+  return item.displayName ?? humanizeId(item.id);
+}
+
 export function humanizeId(id: string): string {
   // Check display name maps first
   if (SHIPSET_NAMES[id]) return SHIPSET_NAMES[id];
