@@ -186,6 +186,40 @@ class EmpireGeneratorServiceTest {
         assertTrue(empire.traitPointsUsed() <= empire.traitPointsBudget());
     }
 
+    @RepeatedTest(200)
+    void secondarySpeciesValidWhenPresent() {
+        var empire = generator.generate();
+        var secondary = empire.secondarySpecies();
+
+        // Check if this empire should have a secondary species
+        boolean originRequiresSecondary = empire.origin().secondarySpecies() != null;
+        boolean civicRequiresSecondary = empire.civics().stream()
+                .anyMatch(c -> c.secondarySpecies() != null);
+
+        if (originRequiresSecondary || civicRequiresSecondary) {
+            assertNotNull(secondary, "Empire with origin " + empire.origin().id()
+                    + " and civics " + empire.civics().stream().map(c -> c.id()).toList()
+                    + " should have a secondary species");
+
+            // Secondary species class should differ from primary
+            assertNotEquals(empire.speciesClass(), secondary.speciesClass(),
+                    "Secondary species class should differ from primary");
+
+            // Trait budget should be respected
+            assertTrue(secondary.traitPointsUsed() <= secondary.traitPointsBudget(),
+                    "Secondary species trait points used (" + secondary.traitPointsUsed()
+                    + ") should not exceed budget (" + secondary.traitPointsBudget() + ")");
+
+            // Total picks should not exceed max
+            int totalPicks = secondary.enforcedTraits().size() + secondary.additionalTraits().size();
+            assertTrue(totalPicks <= secondary.maxTraitPicks(),
+                    "Total secondary species picks (" + totalPicks
+                    + ") should not exceed max (" + secondary.maxTraitPicks() + ")");
+        } else {
+            assertNull(secondary, "Empire without secondary species origin/civic should have null secondary species");
+        }
+    }
+
     private Set<String> toIdSet(java.util.List<Ethic> ethics) {
         var set = new HashSet<String>();
         for (var e : ethics) set.add(e.id());

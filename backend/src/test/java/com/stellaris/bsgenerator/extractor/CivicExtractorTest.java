@@ -74,6 +74,39 @@ class CivicExtractorTest {
     }
 
     @Test
+    void rogueServitorHasSecondarySpeciesNoEnforcedTraits() {
+        var servitor = civics.stream().filter(c -> c.id().equals("civic_machine_servitor")).findFirst().orElseThrow();
+        assertNotNull(servitor.secondarySpecies(), "Rogue Servitor should have secondary species config");
+        assertEquals("civic_machine_servitor_secondary_species", servitor.secondarySpecies().title());
+        assertTrue(servitor.secondarySpecies().enforcedTraitIds().isEmpty(),
+                "Bio-Trophy species should have no enforced traits");
+    }
+
+    @Test
+    void drivenAssimilatorHasSecondarySpeciesWithCybernetic() {
+        var assimilator = civics.stream().filter(c -> c.id().equals("civic_machine_assimilator")).findFirst().orElseThrow();
+        assertNotNull(assimilator.secondarySpecies(), "Driven Assimilator should have secondary species config");
+        assertEquals("civic_machine_assimilator_secondary_species", assimilator.secondarySpecies().title());
+        assertEquals(1, assimilator.secondarySpecies().enforcedTraitIds().size());
+        assertEquals("trait_cybernetic", assimilator.secondarySpecies().enforcedTraitIds().get(0));
+    }
+
+    @Test
+    void hiveBodysnatcherHasSecondarySpeciesWithHiveMind() {
+        var bodysnatcher = civics.stream().filter(c -> c.id().equals("civic_hive_bodysnatcher")).findFirst().orElseThrow();
+        assertNotNull(bodysnatcher.secondarySpecies(), "Hive Bodysnatcher should have secondary species config");
+        assertEquals("civic_hive_bodysnatcher_secondary_species", bodysnatcher.secondarySpecies().title());
+        assertEquals(1, bodysnatcher.secondarySpecies().enforcedTraitIds().size());
+        assertEquals("trait_hive_mind", bodysnatcher.secondarySpecies().enforcedTraitIds().get(0));
+    }
+
+    @Test
+    void regularCivicHasNoSecondarySpecies() {
+        var corvee = civics.stream().filter(c -> c.id().equals("civic_corvee_system")).findFirst().orElseThrow();
+        assertNull(corvee.secondarySpecies(), "Regular civics should have no secondary species");
+    }
+
+    @Test
     void pickableAtStartDefaultsTrue() {
         var corvee = civics.stream().filter(c -> c.id().equals("civic_corvee_system")).findFirst().orElseThrow();
         assertTrue(corvee.pickableAtStart());

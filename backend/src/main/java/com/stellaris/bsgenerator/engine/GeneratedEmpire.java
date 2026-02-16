@@ -20,5 +20,6 @@ public record GeneratedEmpire(
         PlanetClass homeworld,
         GraphicalCulture shipset,
         String leaderClass,
-        StartingRulerTrait leaderTrait
+        StartingRulerTrait leaderTrait,
+        SecondarySpecies secondarySpecies
 ) {}

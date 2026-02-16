@@ -21,6 +21,14 @@ public class EmpireGeneratorService {
     private static final double GESTALT_CHANCE = 0.20;
     private static final List<String> LEADER_CLASSES = List.of("official", "commander", "scientist");
 
+    private static final int SECONDARY_SPECIES_BUDGET = 2;
+    private static final int SECONDARY_SPECIES_MAX_PICKS = 5;
+    private static final Map<String, Integer> ENFORCED_TRAIT_COSTS = Map.of(
+            "trait_syncretic_proles", 1,
+            "trait_cybernetic", 0,
+            "trait_hive_mind", 0
+    );
+
     /** Origins that fix the homeworld planet type (skip random selection). */
     private static final Map<String, String> ORIGIN_FIXED_PLANETS = Map.ofEntries(
             Map.entry("origin_life_seeded", "pc_gaia"),
@@ -91,7 +99,10 @@ public class EmpireGeneratorService {
         String leaderClass = pickLeaderClass();
         StartingRulerTrait leaderTrait = pickLeaderTrait(leaderClass, state);
 
-        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, speciesClass={}, traits={} ({}/{}pts), homeworld={}, shipset={}, leader={}/{}",
+        // 10. Generate secondary species if origin/civic requires one
+        SecondarySpecies secondarySpecies = generateSecondarySpecies(origin, civics, speciesClass);
+
+        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, speciesClass={}, traits={} ({}/{}pts), homeworld={}, shipset={}, leader={}/{}, secondarySpecies={}",
                 ethics.stream().map(Ethic::id).toList(),
                 authority.id(),
                 civics.stream().map(Civic::id).toList(),
@@ -100,11 +111,101 @@ public class EmpireGeneratorService {
                 traits.stream().map(SpeciesTrait::id).toList(),
                 pointsUsed, archetype.traitPoints(),
                 homeworld.id(), shipset.id(),
-                leaderClass, leaderTrait != null ? leaderTrait.id() : "none");
+                leaderClass, leaderTrait != null ? leaderTrait.id() : "none",
+                secondarySpecies != null ? secondarySpecies.speciesClass() : "none");
 
         return new GeneratedEmpire(ethics, authority, civics, origin,
                 archetype, speciesClass, traits, pointsUsed, archetype.traitPoints(),
-                homeworld, shipset, leaderClass, leaderTrait);
+                homeworld, shipset, leaderClass, leaderTrait, secondarySpecies);
+    }
+
+    /**
+     * Generate a secondary species if the origin or any civic requires one.
+     * Origin is checked first, then civics (first match wins).
+     */
+    SecondarySpecies generateSecondarySpecies(Origin origin, List<Civic> civics, String primarySpeciesClass) {
+        // Find the first secondary species config: origin first, then civics
+        SecondarySpeciesConfig config = origin.secondarySpecies();
+        if (config == null) {
+            config = civics.stream()
+                    .map(Civic::secondarySpecies)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (config == null) return null;
+
+        // Pick a biological species class different from primary
+        var bioClasses = filterService.getSpeciesClassesForArchetype("BIOLOGICAL");
+        var candidates = bioClasses.stream()
+                .filter(sc -> !sc.id().equals(primarySpeciesClass))
+                .toList();
+        if (candidates.isEmpty()) candidates = bioClasses;
+        String secondaryClass = candidates.get(random.nextInt(candidates.size())).id();
+
+        // Resolve enforced traits
+        List<SpeciesTrait> enforcedTraits = config.enforcedTraitIds().stream()
+                .map(traitId -> new SpeciesTrait(
+                        traitId,
+                        ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0),
+                        List.of("BIOLOGICAL"), List.of(), List.of(), List.of(),
+                        true, false, null, List.of(),
+                        List.of(), List.of(), List.of(), List.of(), List.of(), List.of()))
+                .toList();
+
+        int enforcedCost = enforcedTraits.stream().mapToInt(SpeciesTrait::cost).sum();
+        int remainingBudget = SECONDARY_SPECIES_BUDGET - enforcedCost;
+        int remainingPicks = SECONDARY_SPECIES_MAX_PICKS - enforcedTraits.size();
+
+        // Build a minimal state for trait filtering (secondary species is always biological)
+        var secondaryState = EmpireState.empty()
+                .withSpeciesArchetype("BIOLOGICAL")
+                .withSpeciesClass(secondaryClass);
+
+        // Pick additional traits from compatible pool
+        var available = filterService.getCompatibleTraits("BIOLOGICAL", secondaryState);
+        // Remove enforced traits from available pool
+        var enforcedIds = new HashSet<>(config.enforcedTraitIds());
+        available = available.stream()
+                .filter(t -> !enforcedIds.contains(t.id()))
+                .toList();
+
+        List<SpeciesTrait> additionalTraits = new ArrayList<>();
+        Set<String> pickedIds = new HashSet<>(enforcedIds);
+        Set<String> excludedByOpposites = new HashSet<>();
+        // Collect opposites from enforced traits
+        for (var enforced : enforcedTraits) {
+            excludedByOpposites.addAll(enforced.opposites());
+        }
+        int pointsSpent = enforcedCost;
+
+        var shuffled = new ArrayList<>(available);
+        Collections.shuffle(shuffled, random);
+
+        for (var trait : shuffled) {
+            if (additionalTraits.size() >= remainingPicks) break;
+            if (pickedIds.contains(trait.id())) continue;
+            if (excludedByOpposites.contains(trait.id())) continue;
+
+            int newTotal = pointsSpent + trait.cost();
+            if (newTotal > SECONDARY_SPECIES_BUDGET) continue;
+            if (newTotal < 0) continue;
+
+            additionalTraits.add(trait);
+            pickedIds.add(trait.id());
+            pointsSpent = newTotal;
+            excludedByOpposites.addAll(trait.opposites());
+        }
+
+        return new SecondarySpecies(
+                config.title(),
+                secondaryClass,
+                enforcedTraits,
+                additionalTraits,
+                pointsSpent,
+                SECONDARY_SPECIES_BUDGET,
+                SECONDARY_SPECIES_MAX_PICKS
+        );
     }
 
     private List<Ethic> pickEthics() {

@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { EmpireSlot } from "@/components/EmpireSlot";
 import { EthicsSlot } from "@/components/EthicsSlot";
+import { SecondarySpeciesSlot } from "@/components/SecondarySpeciesSlot";
 import { TraitsSlot } from "@/components/TraitsSlot";
 import { displayName, humanizeId } from "@/lib/format";
 import type { EmpireResponse } from "@/types/empire";
@@ -63,6 +64,13 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           pointsBudget={empire.traitPointsBudget}
           rerollAvailable={empire.rerollsAvailable["traits"] ?? false}
         />
+
+        {empire.secondarySpecies && (
+          <SecondarySpeciesSlot
+            secondarySpecies={empire.secondarySpecies}
+            rerollAvailable={empire.rerollsAvailable["secondaryspecies"] ?? false}
+          />
+        )}
 
         <EmpireSlot
           label="Homeworld"

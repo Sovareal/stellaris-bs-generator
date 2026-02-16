@@ -22,6 +22,33 @@ public class EmpireController {
     // In-memory session (single user desktop app)
     private GenerationSession session;
 
+    public record SecondarySpeciesDto(
+            String title,
+            String titleDisplayName,
+            String speciesClass,
+            String speciesClassName,
+            List<TraitDto> enforcedTraits,
+            List<TraitDto> additionalTraits,
+            int traitPointsUsed,
+            int traitPointsBudget,
+            int maxTraitPicks
+    ) {
+        static SecondarySpeciesDto from(SecondarySpecies ss, LocalizationService loc) {
+            if (ss == null) return null;
+            return new SecondarySpeciesDto(
+                    ss.title(),
+                    loc.getDisplayName(ss.title()),
+                    ss.speciesClass(),
+                    loc.getDisplayName(ss.speciesClass()),
+                    ss.enforcedTraits().stream().map(t -> TraitDto.from(t, loc)).toList(),
+                    ss.additionalTraits().stream().map(t -> TraitDto.from(t, loc)).toList(),
+                    ss.traitPointsUsed(),
+                    ss.traitPointsBudget(),
+                    ss.maxTraitPicks()
+            );
+        }
+    }
+
     public record EmpireResponse(
             List<EthicDto> ethics,
             AuthorityDto authority,
@@ -37,6 +64,7 @@ public class EmpireController {
             String shipset,
             String shipsetName,
             LeaderDto leader,
+            SecondarySpeciesDto secondarySpecies,
             Map<String, Boolean> rerollsAvailable
     ) {
         static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc) {
@@ -55,11 +83,12 @@ public class EmpireController {
                     empire.shipset().id(),
                     loc.getDisplayName(empire.shipset().id()),
                     LeaderDto.from(empire.leaderClass(), empire.leaderTrait(), loc),
-                    buildRerollMap(session)
+                    SecondarySpeciesDto.from(empire.secondarySpecies(), loc),
+                    buildRerollMap(empire, session)
             );
         }
 
-        private static Map<String, Boolean> buildRerollMap(GenerationSession session) {
+        private static Map<String, Boolean> buildRerollMap(GeneratedEmpire empire, GenerationSession session) {
             boolean available = session.canReroll();
             var map = new LinkedHashMap<String, Boolean>();
             map.put("ethics", available);
@@ -71,6 +100,9 @@ public class EmpireController {
             map.put("homeworld", available);
             map.put("shipset", available);
             map.put("leader", available);
+            if (empire.secondarySpecies() != null) {
+                map.put("secondaryspecies", available);
+            }
             return map;
         }
     }
@@ -152,6 +184,7 @@ public class EmpireController {
             case "homeworld" -> RerollCategory.HOMEWORLD;
             case "shipset" -> RerollCategory.SHIPSET;
             case "leader" -> RerollCategory.LEADER;
+            case "secondaryspecies" -> RerollCategory.SECONDARY_SPECIES;
             default -> throw new IllegalArgumentException("Unknown reroll category: " + request.category());
         };
 

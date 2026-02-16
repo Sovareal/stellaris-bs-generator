@@ -9,5 +9,6 @@ public enum RerollCategory {
     TRAITS,
     HOMEWORLD,
     SHIPSET,
-    LEADER
+    LEADER,
+    SECONDARY_SPECIES
 }

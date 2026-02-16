@@ -49,6 +49,18 @@ export interface LeaderDto {
   traitDisplayName: string | null;
 }
 
+export interface SecondarySpeciesDto {
+  title: string;
+  titleDisplayName: string | null;
+  speciesClass: string;
+  speciesClassName: string | null;
+  enforcedTraits: TraitDto[];
+  additionalTraits: TraitDto[];
+  traitPointsUsed: number;
+  traitPointsBudget: number;
+  maxTraitPicks: number;
+}
+
 export type RerollCategory =
   | "ethics"
   | "authority"
@@ -58,7 +70,8 @@ export type RerollCategory =
   | "traits"
   | "homeworld"
   | "shipset"
-  | "leader";
+  | "leader"
+  | "secondaryspecies";
 
 export interface EmpireResponse {
   ethics: EthicDto[];
@@ -75,6 +88,7 @@ export interface EmpireResponse {
   shipset: string;
   shipsetName: string | null;
   leader: LeaderDto;
+  secondarySpecies: SecondarySpeciesDto | null;
   rerollsAvailable: Record<string, boolean>;
 }
 

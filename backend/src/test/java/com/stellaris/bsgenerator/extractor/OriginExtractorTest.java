@@ -61,6 +61,30 @@ class OriginExtractorTest {
     }
 
     @Test
+    void necrophageHasSecondarySpecies() {
+        var necro = origins.stream().filter(o -> o.id().equals("origin_necrophage")).findFirst().orElseThrow();
+        assertNotNull(necro.secondarySpecies(), "Necrophage should have secondary species config");
+        assertEquals("civic_necrophage_secondary_species", necro.secondarySpecies().title());
+        assertTrue(necro.secondarySpecies().enforcedTraitIds().isEmpty(),
+                "Necrophage prepatent species should have no enforced traits");
+    }
+
+    @Test
+    void syncreticEvolutionHasSecondarySpeciesWithEnforcedTrait() {
+        var syncretic = origins.stream().filter(o -> o.id().equals("origin_syncretic_evolution")).findFirst().orElseThrow();
+        assertNotNull(syncretic.secondarySpecies(), "Syncretic Evolution should have secondary species config");
+        assertEquals("civic_syncretic_evolution_secondary_species", syncretic.secondarySpecies().title());
+        assertEquals(1, syncretic.secondarySpecies().enforcedTraitIds().size());
+        assertEquals("trait_syncretic_proles", syncretic.secondarySpecies().enforcedTraitIds().get(0));
+    }
+
+    @Test
+    void originDefaultHasNoSecondarySpecies() {
+        var def = origins.stream().filter(o -> o.id().equals("origin_default")).findFirst().orElseThrow();
+        assertNull(def.secondarySpecies(), "origin_default should have no secondary species");
+    }
+
+    @Test
     void allOriginsHaveNonNegativeWeight() {
         for (var origin : origins) {
             assertTrue(origin.randomWeight() >= 0, origin.id() + " should have non-negative random weight");

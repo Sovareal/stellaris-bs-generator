@@ -45,3 +45,6 @@
 
 ### Issue 2b: "Humanoid Jinxed" trait name shows species prefix
 **Fix:** Same regex fix as Issue 2a. `trait_humanoid_jinxed: "Jinxed"` now stored with correct key and resolves to "Jinxed".
+
+### Issue 3: Multi-species origins/civics missing secondary species
+**Fix:** Added `SecondarySpeciesConfig` (parsed from `has_secondary_species` blocks in game data) and `SecondarySpecies` (generated output) models. `OriginExtractor` and `CivicExtractor` now parse `has_secondary_species` with title and enforced traits. `EmpireGeneratorService.generateSecondarySpecies()` picks a BIOLOGICAL species class different from primary, applies enforced traits (hardcoded cost map for 3 special traits), and fills remaining budget with random compatible traits. Supported: Necrophage (prepatent, no enforced), Syncretic Evolution (trait_syncretic_proles, cost=1), Rogue Servitor (bio-trophy, no enforced), Driven Assimilator (trait_cybernetic, cost=0), Hive Bodysnatcher (trait_hive_mind, cost=0). Reroll support for secondary species slot + auto-regeneration when origin/civic rerolls change secondary species requirement. Frontend `SecondarySpeciesSlot` component with enforced trait "locked" badges.

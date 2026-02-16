@@ -7,5 +7,6 @@ public record Origin(
         RequirementBlock potential,
         RequirementBlock possible,
         String dlcRequirement,
-        int randomWeight
+        int randomWeight,
+        SecondarySpeciesConfig secondarySpecies
 ) {}

@@ -7,5 +7,6 @@ public record Civic(
         RequirementBlock potential,
         RequirementBlock possible,
         boolean pickableAtStart,
-        int randomWeight
+        int randomWeight,
+        SecondarySpeciesConfig secondarySpecies
 ) {}

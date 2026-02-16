@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.extractor;
 
 import com.stellaris.bsgenerator.model.Civic;
+import com.stellaris.bsgenerator.model.SecondarySpeciesConfig;
 import com.stellaris.bsgenerator.model.requirement.RequirementBlock;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,9 @@ public class CivicExtractor {
                     .map(rw -> rw.childInt("base", 1))
                     .orElse(1);
 
-            civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight));
+            SecondarySpeciesConfig secondarySpecies = OriginExtractor.parseSecondarySpecies(node);
+
+            civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies));
         }
 
         log.info("Extracted {} civics", civics.size());

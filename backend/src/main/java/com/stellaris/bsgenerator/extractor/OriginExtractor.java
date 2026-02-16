@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.extractor;
 
 import com.stellaris.bsgenerator.model.Origin;
+import com.stellaris.bsgenerator.model.SecondarySpeciesConfig;
 import com.stellaris.bsgenerator.model.requirement.RequirementBlock;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import lombok.extern.slf4j.Slf4j;
@@ -49,10 +50,25 @@ public class OriginExtractor {
                     .map(rw -> rw.childInt("base", 1))
                     .orElse(1);
 
-            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight));
+            SecondarySpeciesConfig secondarySpecies = parseSecondarySpecies(node);
+
+            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies));
         }
 
         log.info("Extracted {} playable origins", origins.size());
         return origins;
+    }
+
+    static SecondarySpeciesConfig parseSecondarySpecies(ClausewitzNode node) {
+        return node.child("has_secondary_species").map(ssNode -> {
+            String title = ssNode.childValue("title").orElse(null);
+            List<String> traitIds = ssNode.child("traits")
+                    .map(traitsNode -> traitsNode.children("trait").stream()
+                            .map(ClausewitzNode::value)
+                            .filter(v -> v != null)
+                            .toList())
+                    .orElse(List.of());
+            return new SecondarySpeciesConfig(title, traitIds);
+        }).orElse(null);
     }
 }

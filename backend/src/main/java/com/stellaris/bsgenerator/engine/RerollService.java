@@ -45,6 +45,7 @@ public class RerollService {
             case HOMEWORLD -> rerollHomeworld(empire);
             case SHIPSET -> rerollShipset(empire);
             case LEADER -> rerollLeader(empire);
+            case SECONDARY_SPECIES -> rerollSecondarySpecies(empire);
         };
 
         session.markRerolled();
@@ -127,7 +128,13 @@ public class RerollService {
         var newCivic = WeightedRandom.select(compatible, Civic::randomWeight, random);
         var newCivics = new ArrayList<>(empire.civics());
         newCivics.set(index, newCivic);
-        return copyWith(empire, b -> b.civics = List.copyOf(newCivics));
+        var civicsList = List.copyOf(newCivics);
+        // Re-generate secondary species when civics change (may gain or lose secondary species from civic)
+        var newSecondary = generatorService.generateSecondarySpecies(empire.origin(), civicsList, empire.speciesClass());
+        return copyWith(empire, b -> {
+            b.civics = civicsList;
+            b.secondarySpecies = newSecondary;
+        });
     }
 
     private GeneratedEmpire rerollOrigin(GeneratedEmpire empire) {
@@ -145,7 +152,23 @@ public class RerollService {
         }
 
         var newOrigin = WeightedRandom.select(compatible, Origin::randomWeight, random);
-        return copyWith(empire, b -> b.origin = newOrigin);
+        // Re-generate secondary species when origin changes (may gain or lose secondary species)
+        var newSecondary = generatorService.generateSecondarySpecies(newOrigin, empire.civics(), empire.speciesClass());
+        return copyWith(empire, b -> {
+            b.origin = newOrigin;
+            b.secondarySpecies = newSecondary;
+        });
+    }
+
+    private GeneratedEmpire rerollSecondarySpecies(GeneratedEmpire empire) {
+        if (empire.secondarySpecies() == null) {
+            throw new GenerationException("No secondary species to reroll");
+        }
+        var newSecondary = generatorService.generateSecondarySpecies(empire.origin(), empire.civics(), empire.speciesClass());
+        if (newSecondary == null) {
+            throw new GenerationException("Failed to generate secondary species");
+        }
+        return copyWith(empire, b -> b.secondarySpecies = newSecondary);
     }
 
     private GeneratedEmpire rerollTraits(GeneratedEmpire empire) {
@@ -286,6 +309,7 @@ public class RerollService {
         GraphicalCulture shipset;
         String leaderClass;
         StartingRulerTrait leaderTrait;
+        SecondarySpecies secondarySpecies;
 
         EmpireBuilder(GeneratedEmpire e) {
             this.ethics = e.ethics();
@@ -301,12 +325,13 @@ public class RerollService {
             this.shipset = e.shipset();
             this.leaderClass = e.leaderClass();
             this.leaderTrait = e.leaderTrait();
+            this.secondarySpecies = e.secondarySpecies();
         }
 
         GeneratedEmpire build() {
             return new GeneratedEmpire(ethics, authority, civics, origin,
                     speciesArchetype, speciesClass, speciesTraits, traitPointsUsed, traitPointsBudget,
-                    homeworld, shipset, leaderClass, leaderTrait);
+                    homeworld, shipset, leaderClass, leaderTrait, secondarySpecies);
         }
     }
 
@@ -342,6 +367,8 @@ public class RerollService {
             case SHIPSET -> old.shipset().id() + " → " + updated.shipset().id();
             case LEADER -> (old.leaderClass() + "/" + (old.leaderTrait() != null ? old.leaderTrait().id() : "none"))
                     + " → " + (updated.leaderClass() + "/" + (updated.leaderTrait() != null ? updated.leaderTrait().id() : "none"));
+            case SECONDARY_SPECIES -> (old.secondarySpecies() != null ? old.secondarySpecies().speciesClass() : "none")
+                    + " → " + (updated.secondarySpecies() != null ? updated.secondarySpecies().speciesClass() : "none");
         };
     }
 }
