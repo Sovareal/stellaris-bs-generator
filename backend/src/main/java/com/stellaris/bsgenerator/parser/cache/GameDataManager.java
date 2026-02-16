@@ -1,9 +1,9 @@
 package com.stellaris.bsgenerator.parser.cache;
 
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.extractor.*;
 import com.stellaris.bsgenerator.model.*;
 import com.stellaris.bsgenerator.parser.LocalizationService;
-import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -13,15 +13,20 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GameDataManager {
+
+    public enum DataStatus { LOADING, READY, ERROR }
+
+    @Getter private volatile DataStatus dataStatus = DataStatus.LOADING;
+    @Getter private volatile String dataError = null;
 
     private static final List<String> PARSED_SUBDIRECTORIES = List.of(
             "ethics",
@@ -34,7 +39,7 @@ public class GameDataManager {
             "species_classes"
     );
 
-    private final ParserProperties properties;
+    private final SettingsService settingsService;
     private final GameFileService gameFileService;
     private final ParsedDataCache cache;
     private final EthicExtractor ethicExtractor;
@@ -64,14 +69,26 @@ public class GameDataManager {
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         try {
+            String effectivePath = settingsService.getEffectiveGamePath();
+            Path gamePath = Path.of(effectivePath);
+            if (!Files.isDirectory(gamePath)) {
+                dataStatus = DataStatus.ERROR;
+                dataError = "Game path does not exist or is not a directory: " + gamePath;
+                log.error(dataError);
+                return;
+            }
             loadGameData(false);
-        } catch (IOException e) {
+            dataStatus = DataStatus.READY;
+            dataError = null;
+        } catch (Exception e) {
+            dataStatus = DataStatus.ERROR;
+            dataError = e.getMessage();
             log.error("Failed to load game data on startup: {}", e.getMessage(), e);
         }
     }
 
     public void loadGameData(boolean forceReload) throws IOException {
-        Path gamePath = Path.of(properties.gamePath());
+        Path gamePath = Path.of(settingsService.getEffectiveGamePath());
 
         // Detect version
         gameVersion = GameVersion.fromLauncherSettings(gamePath);
@@ -112,19 +129,30 @@ public class GameDataManager {
     }
 
     public void forceReload() throws IOException {
-        loadGameData(true);
+        dataStatus = DataStatus.LOADING;
+        dataError = null;
+        try {
+            loadGameData(true);
+            dataStatus = DataStatus.READY;
+            dataError = null;
+        } catch (Exception e) {
+            dataStatus = DataStatus.ERROR;
+            dataError = e.getMessage();
+            throw e;
+        }
     }
 
     private void restoreFromCache(ParsedDataCache.CacheEntry cached) {
         // For now, cached data isn't directly restored to GameFileService
         // since ClausewitzNode serialization/deserialization would need custom handling.
         // Instead, we re-parse (fast enough at < 5s) and only use fingerprint for staleness check.
-        // TODO: Implement full cache restore when parse time becomes a concern.
         try {
             gameFileService.loadAll();
             extractTypedData();
             localizationService.load();
         } catch (IOException e) {
+            dataStatus = DataStatus.ERROR;
+            dataError = e.getMessage();
             log.error("Failed to re-parse game files: {}", e.getMessage(), e);
         }
     }

@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.parser.loader;
 
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import lombok.Getter;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class GameFileService {
 
     private final ParserProperties properties;
+    private final SettingsService settingsService;
 
     @Getter private ClausewitzNode ethics;
     @Getter private ClausewitzNode authorities;
@@ -29,7 +31,7 @@ public class GameFileService {
     @Getter private ClausewitzNode speciesClasses;
 
     public void loadAll() throws IOException {
-        Path gamePath = Path.of(properties.gamePath());
+        Path gamePath = Path.of(settingsService.getEffectiveGamePath());
         Path common = gamePath.resolve("common");
 
         log.info("Loading game files from {}", gamePath);

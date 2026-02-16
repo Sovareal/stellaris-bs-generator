@@ -6,6 +6,7 @@ import com.stellaris.bsgenerator.parser.LocalizationService;
 import com.stellaris.bsgenerator.parser.cache.GameDataManager;
 import com.stellaris.bsgenerator.parser.cache.ParsedDataCache;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
@@ -40,16 +41,17 @@ class EmpireGeneratorServiceTest {
     @BeforeAll
     static void setUp() throws IOException {
         var props = new ParserProperties(GAME_PATH, tempDir.toString());
-        var gameFileService = new GameFileService(props);
+        var settingsService = new SettingsService(props);
+        var gameFileService = new GameFileService(props, settingsService);
         var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
         var cache = new ParsedDataCache(props, mapper);
-        gameDataManager = new GameDataManager(props, gameFileService, cache,
+        gameDataManager = new GameDataManager(settingsService, gameFileService, cache,
                 new EthicExtractor(), new AuthorityExtractor(),
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
                 new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
-                new LocalizationService(props));
+                new LocalizationService(props, settingsService));
         gameDataManager.loadGameData(false);
 
         evaluator = new RequirementEvaluator();

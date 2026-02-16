@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.parser;
 
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -35,12 +36,13 @@ public class LocalizationService {
     private static final Pattern VAR_REFERENCE = Pattern.compile("\\$([^$]+)\\$");
 
     private final ParserProperties properties;
+    private final SettingsService settingsService;
 
     @Getter
     private Map<String, String> localizations = Map.of();
 
     public void load() {
-        Path locDir = Path.of(properties.gamePath())
+        Path locDir = Path.of(settingsService.getEffectiveGamePath())
                 .resolve("localisation")
                 .resolve("english");
 

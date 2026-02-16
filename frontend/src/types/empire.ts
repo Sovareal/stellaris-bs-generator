@@ -102,3 +102,9 @@ export interface ErrorResponse {
   message: string;
   status: number;
 }
+
+export interface SettingsResponse {
+  gamePath: string;
+  valid: boolean;
+  validationMessage: string;
+}

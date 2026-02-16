@@ -8,14 +8,23 @@ const MAX_RETRIES = 30;
 interface BackendState {
   ready: boolean;
   error: string | null;
+  needsSetup: boolean;
   version: string | null;
   gameVersion: string | null;
+}
+
+interface HealthResponse {
+  status: string;
+  version: string;
+  dataStatus: string;
+  dataError: string | null;
 }
 
 export function useBackendReady(): BackendState {
   const [state, setState] = useState<BackendState>({
     ready: false,
     error: null,
+    needsSetup: false,
     version: null,
     gameVersion: null,
   });
@@ -31,9 +40,29 @@ export function useBackendReady(): BackendState {
       try {
         const res = await fetch(`${BACKEND_URL}/api/health`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: { status: string; version: string } = await res.json();
+        const data: HealthResponse = await res.json();
 
-        // Fetch game version after health check succeeds
+        if (data.dataStatus === "loading") {
+          // Still loading — keep polling
+          timer = setTimeout(poll, POLL_INTERVAL_MS);
+          return;
+        }
+
+        if (data.dataStatus === "error") {
+          // Data failed to load — needs setup
+          if (!cancelled) {
+            setState({
+              ready: false,
+              error: data.dataError,
+              needsSetup: true,
+              version: data.version,
+              gameVersion: null,
+            });
+          }
+          return;
+        }
+
+        // dataStatus === "ready"
         let gameVersion: string | null = null;
         try {
           const versionData = await api.getVersion();
@@ -46,6 +75,7 @@ export function useBackendReady(): BackendState {
           setState({
             ready: true,
             error: null,
+            needsSetup: false,
             version: data.version,
             gameVersion,
           });
@@ -57,6 +87,7 @@ export function useBackendReady(): BackendState {
             setState({
               ready: false,
               error: "Backend not reachable after 30s. Is it running?",
+              needsSetup: false,
               version: null,
               gameVersion: null,
             });

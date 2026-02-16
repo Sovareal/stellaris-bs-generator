@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.parser;
 
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.config.SettingsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
@@ -21,7 +22,7 @@ class LocalizationServiceTest {
     @EnabledIf("gameFilesExist")
     void loadsLocalizationKeys() {
         var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
-        var service = new LocalizationService(props);
+        var service = new LocalizationService(props, new SettingsService(props));
         service.load();
 
         assertFalse(service.getLocalizations().isEmpty(), "Should load localization keys");
@@ -33,7 +34,7 @@ class LocalizationServiceTest {
     void resolvesKeyWithoutVersionDigit() {
         // origin_void_machines: "Voidforged" (no digit after colon)
         var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
-        var service = new LocalizationService(props);
+        var service = new LocalizationService(props, new SettingsService(props));
         service.load();
 
         String name = service.getDisplayName("origin_void_machines");
@@ -46,7 +47,7 @@ class LocalizationServiceTest {
     void resolvesVariableReferences() {
         // trait_fleeting_lithoid:0 "$trait_fleeting$" should resolve to "Fleeting"
         var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
-        var service = new LocalizationService(props);
+        var service = new LocalizationService(props, new SettingsService(props));
         service.load();
 
         String fleeting = service.getDisplayName("trait_fleeting");
@@ -63,7 +64,7 @@ class LocalizationServiceTest {
     void resolvesTrWithoutDigit() {
         // trait_humanoid_jinxed: "Jinxed" (no digit after colon)
         var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
-        var service = new LocalizationService(props);
+        var service = new LocalizationService(props, new SettingsService(props));
         service.load();
 
         String name = service.getDisplayName("trait_humanoid_jinxed");

@@ -4,6 +4,7 @@ import com.stellaris.bsgenerator.model.Authority;
 import com.stellaris.bsgenerator.model.requirement.Requirement;
 import com.stellaris.bsgenerator.model.requirement.RequirementCategory;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,8 @@ class AuthorityExtractorTest {
 
     @BeforeAll
     static void setUp() throws IOException {
-        var service = new GameFileService(new ParserProperties(GAME_PATH, null));
+        var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
+        var service = new GameFileService(props, new SettingsService(props));
         service.loadAll();
         authorities = new AuthorityExtractor().extract(service.getAuthorities());
     }

@@ -2,6 +2,7 @@ package com.stellaris.bsgenerator.extractor;
 
 import com.stellaris.bsgenerator.model.SpeciesTrait;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,8 @@ class SpeciesTraitExtractorTest {
 
     @BeforeAll
     static void setUp() throws IOException {
-        var service = new GameFileService(new ParserProperties(GAME_PATH, null));
+        var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
+        var service = new GameFileService(props, new SettingsService(props));
         service.loadAll();
         traits = new SpeciesTraitExtractor().extract(service.getTraits());
     }

@@ -32,11 +32,15 @@ public class DataController {
         return VersionResponse.from(gv);
     }
 
-    public record ReloadResponse(String status) {}
+    public record ReloadResponse(String status, String dataStatus) {}
 
     @PostMapping("/reload")
-    public ReloadResponse reload() throws IOException {
-        gameDataManager.forceReload();
-        return new ReloadResponse("reloaded");
+    public ReloadResponse reload() {
+        try {
+            gameDataManager.forceReload();
+            return new ReloadResponse("reloaded", gameDataManager.getDataStatus().name().toLowerCase());
+        } catch (IOException e) {
+            return new ReloadResponse("error", gameDataManager.getDataStatus().name().toLowerCase());
+        }
     }
 }

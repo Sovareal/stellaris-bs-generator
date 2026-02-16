@@ -3,6 +3,7 @@ package com.stellaris.bsgenerator.parser.cache;
 import com.stellaris.bsgenerator.extractor.*;
 import com.stellaris.bsgenerator.parser.LocalizationService;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -27,16 +28,17 @@ class GameDataManagerTest {
 
     private GameDataManager createManager() {
         var props = new ParserProperties(GAME_PATH, tempDir.toString());
-        var gameFileService = new GameFileService(props);
+        var settingsService = new SettingsService(props);
+        var gameFileService = new GameFileService(props, settingsService);
         var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
         var cache = new ParsedDataCache(props, mapper);
-        return new GameDataManager(props, gameFileService, cache,
+        return new GameDataManager(settingsService, gameFileService, cache,
                 new EthicExtractor(), new AuthorityExtractor(),
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
                 new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
-                new LocalizationService(props));
+                new LocalizationService(props, settingsService));
     }
 
     @Test
@@ -108,16 +110,17 @@ class GameDataManagerTest {
     @Test
     void missingGamePathHandled() {
         var props = new ParserProperties(tempDir.resolve("nonexistent").toString(), tempDir.toString());
-        var gameFileService = new GameFileService(props);
+        var settingsService = new SettingsService(props);
+        var gameFileService = new GameFileService(props, settingsService);
         var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
         var cache = new ParsedDataCache(props, mapper);
-        var manager = new GameDataManager(props, gameFileService, cache,
+        var manager = new GameDataManager(settingsService, gameFileService, cache,
                 new EthicExtractor(), new AuthorityExtractor(),
                 new CivicExtractor(), new OriginExtractor(),
                 new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
                 new PlanetClassExtractor(), new GraphicalCultureExtractor(),
                 new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
-                new LocalizationService(props));
+                new LocalizationService(props, settingsService));
 
         assertThrows(IOException.class, () -> manager.loadGameData(false));
     }

@@ -1,4 +1,4 @@
-import type { EmpireResponse, RerollCategory, VersionResponse } from "@/types/empire";
+import type { EmpireResponse, RerollCategory, SettingsResponse, VersionResponse } from "@/types/empire";
 
 const BASE_URL = "http://localhost:8080";
 
@@ -45,4 +45,13 @@ export const api = {
 
   getVersion: () =>
     request<VersionResponse>("/api/data/version"),
+
+  getSettings: () =>
+    request<SettingsResponse>("/api/settings"),
+
+  saveSettings: (gamePath: string) =>
+    request<SettingsResponse>("/api/settings", {
+      method: "PUT",
+      body: JSON.stringify({ gamePath }),
+    }),
 };

@@ -3,6 +3,7 @@ package com.stellaris.bsgenerator.extractor;
 import com.stellaris.bsgenerator.model.Ethic;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,8 @@ class EthicExtractorTest {
 
     @BeforeAll
     static void setUp() throws IOException {
-        var service = new GameFileService(new ParserProperties(GAME_PATH, null));
+        var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
+        var service = new GameFileService(props, new SettingsService(props));
         service.loadAll();
         ethics = new EthicExtractor().extract(service.getEthics());
     }

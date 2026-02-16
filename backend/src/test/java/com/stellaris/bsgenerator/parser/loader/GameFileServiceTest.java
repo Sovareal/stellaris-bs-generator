@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.parser.loader;
 
 import com.stellaris.bsgenerator.parser.config.ParserProperties;
+import com.stellaris.bsgenerator.config.SettingsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
@@ -21,8 +22,8 @@ class GameFileServiceTest {
     @Test
     @EnabledIf("gameFilesExist")
     void loadAllFromRealGameFiles() throws IOException {
-        var props = new ParserProperties(GAME_PATH, null);
-        var service = new GameFileService(props);
+        var props = new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"));
+        var service = new GameFileService(props, new SettingsService(props));
         service.loadAll();
 
         assertNotNull(service.getEthics());

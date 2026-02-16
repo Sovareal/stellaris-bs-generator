@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ErrorScreen } from "@/components/ErrorScreen";
 import { EmpireView } from "@/components/EmpireView";
+import { SettingsPage } from "@/components/SettingsPage";
 
 function App() {
   const backend = useBackendReady();
@@ -14,11 +15,24 @@ function App() {
       <div className="min-h-screen bg-background text-foreground flex flex-col">
         <Header gameVersion={backend.gameVersion} />
 
-        {!backend.ready && !backend.error && <LoadingScreen />}
-        {backend.error && <ErrorScreen message={backend.error} />}
+        {!backend.ready && !backend.error && !backend.needsSetup && (
+          <LoadingScreen />
+        )}
+        {backend.error && !backend.needsSetup && (
+          <ErrorScreen message={backend.error} />
+        )}
+        {backend.needsSetup && (
+          <SettingsPage
+            onSaved={() => window.location.reload()}
+            errorMessage={backend.error}
+          />
+        )}
         {backend.ready && <EmpireView />}
 
-        <Footer connected={backend.ready} appVersion={backend.version ?? "0.1.0"} />
+        <Footer
+          connected={backend.ready}
+          appVersion={backend.version ?? "0.1.0"}
+        />
       </div>
     </TooltipProvider>
   );
