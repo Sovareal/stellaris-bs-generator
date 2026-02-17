@@ -25,24 +25,49 @@ You get one reroll per category if you don't like a pick.
 
 ## Building & Running
 
-### Backend
-```bash
-gradle :backend:bootJar      # Build JAR
-gradle :backend:bootRun       # Run dev server on :8080
-gradle :backend:test          # Run tests
-```
-
-### Frontend
-```bash
-cd frontend
-npm install                   # Install dependencies
-npm run dev                   # Dev mode (UI only, :5173)
-npm run tauri:dev             # Full app (Tauri + backend sidecar)
-npm run tauri:build           # Production build
-```
-
 ### Prerequisites
-- Java 25 (Amazon Corretto)
+- Java 25 (Amazon Corretto) — needed for building; bundled in the installer for end users
 - Node.js 24+
 - Rust (for Tauri)
 - Stellaris installed locally
+
+### Development
+
+```bash
+# Backend
+gradlew.bat :backend:bootJar      # Build JAR
+gradlew.bat :backend:bootRun      # Run dev server on :8080
+gradlew.bat :backend:test         # Run tests
+
+# Frontend
+cd frontend
+npm install                        # Install dependencies (first time)
+npm run dev                        # Dev mode (UI only, :5173)
+npm run tauri dev                  # Full app (Tauri + backend sidecar)
+```
+
+### Production Build
+
+Build the NSIS installer (Windows):
+
+```bash
+cd frontend
+npm run tauri build
+```
+
+This runs the full pipeline automatically:
+1. `gradlew.bat :backend:bootJar` — compiles the Spring Boot backend into a fat JAR
+2. Copies `backend.jar` into `src-tauri/`
+3. `scripts/bundle-jre.bat` — uses `jlink` to create a minimal JRE (~50 MB) with only the modules Spring Boot needs
+4. `npm run build` — builds the React frontend
+5. Compiles the Tauri Rust shell in release mode
+6. Packages everything into an NSIS installer
+
+The installer is output to:
+```
+frontend/src-tauri/target/release/bundle/nsis/Stellaris BS Generator_0.1.0_x64-setup.exe
+```
+
+### Running the Installed App
+
+The installer bundles a minimal JRE — no system Java installation required. On launch, the Tauri shell starts the Spring Boot backend using the bundled JRE and opens the UI. The app will prompt you to set your Stellaris game path on first run if it can't find the default location.
