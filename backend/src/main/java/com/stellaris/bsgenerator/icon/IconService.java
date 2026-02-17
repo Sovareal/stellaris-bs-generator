@@ -111,7 +111,7 @@ public class IconService {
             case "authorities" -> gamePath.resolve("gfx/interface/icons/governments/authorities/" + id + ".dds");
             case "civics" -> gamePath.resolve("gfx/interface/icons/governments/civics/" + id + ".dds");
             case "origins" -> resolveOriginIcon(gamePath, id);
-            case "traits" -> gamePath.resolve("gfx/interface/icons/traits/" + id + ".dds");
+            case "traits" -> resolveTraitIcon(gamePath, id);
             case "leadertraits" -> resolveLeaderTraitIcon(gamePath, id);
             case "planets" -> gamePath.resolve("gfx/interface/icons/planet_backgrounds/" + id + ".dds");
             default -> {
@@ -119,6 +119,19 @@ public class IconService {
                 yield null;
             }
         };
+    }
+
+    private Path resolveTraitIcon(Path gamePath, String traitId) {
+        // Check if the trait has a custom icon path
+        if (gameDataManager.getSpeciesTraits() != null) {
+            for (var trait : gameDataManager.getSpeciesTraits()) {
+                if (trait.id().equals(traitId) && trait.iconPath() != null) {
+                    return gamePath.resolve(trait.iconPath());
+                }
+            }
+        }
+        // Fallback: direct ID match
+        return gamePath.resolve("gfx/interface/icons/traits/" + traitId + ".dds");
     }
 
     private Path resolveOriginIcon(Path gamePath, String originId) {

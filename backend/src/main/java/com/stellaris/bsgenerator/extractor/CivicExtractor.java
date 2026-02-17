@@ -40,7 +40,15 @@ public class CivicExtractor {
 
             SecondarySpeciesConfig secondarySpecies = OriginExtractor.parseSecondarySpecies(node);
 
-            civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies));
+            // Parse civic-enforced traits: traits = { trait = trait_aquatic }
+            List<String> enforcedTraitIds = node.child("traits")
+                    .map(t -> t.children().stream()
+                            .filter(c -> "trait".equals(c.key()) && c.isLeaf())
+                            .map(ClausewitzNode::value)
+                            .toList())
+                    .orElse(List.of());
+
+            civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies, enforcedTraitIds));
         }
 
         log.info("Extracted {} civics", civics.size());

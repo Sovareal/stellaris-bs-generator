@@ -21,7 +21,7 @@ export function EmpireSlot({ label, value, sublabel, category, rerollAvailable, 
         </span>
         <span className="text-foreground font-medium truncate flex items-center gap-1.5">
           {iconCategory && iconId && (
-            <EntityIcon category={iconCategory} id={iconId} size={18} />
+            <EntityIcon category={iconCategory} id={iconId} size={36} />
           )}
           {value}
         </span>

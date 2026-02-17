@@ -42,7 +42,7 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
         <div className="flex flex-wrap gap-1.5">
           {traits.map((trait) => (
             <Badge key={trait.id} variant="secondary" className="flex items-center gap-1">
-              <EntityIcon category="traits" id={trait.id} size={14} />
+              <EntityIcon category="traits" id={trait.id} size={24} />
               {trait.enforced && (
                 <span className="text-xs text-yellow-500" title="Locked by origin">🔒</span>
               )}
@@ -56,7 +56,7 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
           ))}
         </div>
         <span className="text-xs text-muted-foreground">
-          {traits.length}/{archetype.maxTraits} picks · {pointsBudget - pointsUsed} pts remaining
+          {traits.filter(t => !t.enforced).length}/{archetype.maxTraits} picks · {pointsBudget - pointsUsed} pts remaining
         </span>
       </div>
       <RerollButton category="traits" available={rerollAvailable} />

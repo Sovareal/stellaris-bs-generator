@@ -9,9 +9,19 @@ interface EntityIconProps {
 }
 
 export function EntityIcon({ category, id, size = 16, className = "" }: EntityIconProps) {
-  const [hidden, setHidden] = useState(false);
+  const [errored, setErrored] = useState(false);
 
-  if (hidden) return null;
+  if (errored) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center flex-shrink-0 rounded bg-muted text-muted-foreground text-[10px] ${className}`}
+        style={{ width: size, height: size }}
+        title={id}
+      >
+        ?
+      </span>
+    );
+  }
 
   return (
     <img
@@ -20,7 +30,7 @@ export function EntityIcon({ category, id, size = 16, className = "" }: EntityIc
       width={size}
       height={size}
       className={`inline-block flex-shrink-0 ${className}`}
-      onError={() => setHidden(true)}
+      onError={() => setErrored(true)}
     />
   );
 }

@@ -18,5 +18,6 @@ public record SpeciesTrait(
         List<String> allowedCivics,
         List<String> forbiddenCivics,
         List<String> allowedEthics,
-        List<String> forbiddenEthics
+        List<String> forbiddenEthics,
+        String iconPath
 ) {}

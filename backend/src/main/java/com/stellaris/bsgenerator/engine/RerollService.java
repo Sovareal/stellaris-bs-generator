@@ -61,7 +61,9 @@ public class RerollService {
             var candidateEthics = newEmpire.ethics();
 
             var state = EmpireState.empty()
-                    .withEthics(toEthicIds(candidateEthics));
+                    .withEthics(toEthicIds(candidateEthics))
+                    .withSpeciesArchetype(empire.speciesArchetype().id())
+                    .withSpeciesClass(empire.speciesClass());
             if (!evaluator.evaluateBoth(empire.authority().potential(), empire.authority().possible(), state)) {
                 continue;
             }
@@ -90,7 +92,9 @@ public class RerollService {
 
     private GeneratedEmpire rerollAuthority(GeneratedEmpire empire) {
         var state = EmpireState.empty()
-                .withEthics(toEthicIds(empire.ethics()));
+                .withEthics(toEthicIds(empire.ethics()))
+                .withSpeciesArchetype(empire.speciesArchetype().id())
+                .withSpeciesClass(empire.speciesClass());
         var compatible = filterService.getCompatibleAuthorities(state).stream()
                 .filter(a -> !a.id().equals(empire.authority().id()))
                 .filter(a -> {
@@ -115,6 +119,8 @@ public class RerollService {
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
+                .withSpeciesArchetype(empire.speciesArchetype().id())
+                .withSpeciesClass(empire.speciesClass())
                 .withCivics(Set.of(otherCivicId));
 
         var compatible = filterService.getCompatibleCivics(state).stream()
@@ -141,6 +147,8 @@ public class RerollService {
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
+                .withSpeciesArchetype(empire.speciesArchetype().id())
+                .withSpeciesClass(empire.speciesClass())
                 .withCivics(toCivicIds(empire.civics()));
 
         var compatible = filterService.getCompatibleOrigins(state).stream()
@@ -184,8 +192,11 @@ public class RerollService {
         int budget = archetype.traitPoints();
         int maxTraits = archetype.maxTraits();
 
-        // Preserve origin enforced traits
+        // Preserve origin + civic enforced traits
         var enforcedIds = new HashSet<>(empire.origin().enforcedTraitIds());
+        for (var civic : empire.civics()) {
+            enforcedIds.addAll(civic.enforcedTraitIds());
+        }
         List<SpeciesTrait> enforced = empire.speciesTraits().stream()
                 .filter(t -> enforcedIds.contains(t.id()))
                 .toList();

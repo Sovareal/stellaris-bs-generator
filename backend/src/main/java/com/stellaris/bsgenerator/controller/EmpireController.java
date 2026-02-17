@@ -68,8 +68,11 @@ public class EmpireController {
             Map<String, Boolean> rerollsAvailable
     ) {
         static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc) {
-            // Mark origin enforced species traits
+            // Mark origin + civic enforced species traits
             var enforcedIds = new java.util.HashSet<>(empire.origin().enforcedTraitIds());
+            for (var civic : empire.civics()) {
+                enforcedIds.addAll(civic.enforcedTraitIds());
+            }
             var traitDtos = empire.speciesTraits().stream()
                     .map(t -> enforcedIds.contains(t.id()) ? TraitDto.fromEnforced(t, loc) : TraitDto.from(t, loc))
                     .toList();

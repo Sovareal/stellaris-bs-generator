@@ -76,10 +76,13 @@ public class SpeciesTraitExtractor {
             List<String> forbiddenEthics = node.child("forbidden_ethics")
                     .map(ClausewitzNode::bareValues).orElse(List.of());
 
+            // Parse icon path override (e.g. icon = "gfx/interface/icons/traits/trait_primitive.dds")
+            String iconPath = node.childValue("icon").orElse(null);
+
             traits.add(new SpeciesTrait(id, cost, allowedArchetypes, allowedSpeciesClasses,
                     allowedPlanetClasses, opposites, true, randomized, dlcRequirement, tags,
                     allowedOrigins, forbiddenOrigins, allowedCivics, forbiddenCivics,
-                    allowedEthics, forbiddenEthics));
+                    allowedEthics, forbiddenEthics, iconPath));
         }
 
         log.info("Extracted {} creation-eligible species traits", traits.size());

@@ -182,4 +182,14 @@ public class CompatibilityFilterService {
                 .filter(t -> matchesForbidSet(t.forbiddenEthics(), state.ethics()))
                 .toList();
     }
+
+    /**
+     * Look up a species trait by ID from the full trait list.
+     */
+    public SpeciesTrait findTraitById(String traitId) {
+        return gameDataManager.getSpeciesTraits().stream()
+                .filter(t -> t.id().equals(traitId))
+                .findFirst()
+                .orElse(null);
+    }
 }

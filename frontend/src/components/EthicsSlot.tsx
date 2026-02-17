@@ -23,10 +23,7 @@ export function EthicsSlot({ ethics, rerollAvailable }: EthicsSlotProps) {
               variant={ethic.isFanatic ? "default" : "secondary"}
               className={`${ethic.isFanatic ? "bg-primary/20 text-primary border-primary/30" : ""} flex items-center gap-1`}
             >
-              <EntityIcon category="ethics" id={ethic.id} size={16} />
-              {ethic.isFanatic && (
-                <span className="text-primary font-semibold">Fanatic</span>
-              )}
+              <EntityIcon category="ethics" id={ethic.id} size={32} />
               {displayName(ethic)}
             </Badge>
           ))}

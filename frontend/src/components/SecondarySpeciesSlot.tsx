@@ -36,7 +36,7 @@ export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: Seco
         <div className="flex flex-wrap gap-1.5">
           {secondarySpecies.enforcedTraits.map((trait) => (
             <Badge key={trait.id} variant="outline" className="border-primary/40 flex items-center gap-1">
-              <EntityIcon category="traits" id={trait.id} size={14} />
+              <EntityIcon category="traits" id={trait.id} size={24} />
               <span className={traitColor(trait.cost)}>
                 {displayName(trait)}
               </span>
@@ -48,7 +48,7 @@ export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: Seco
           ))}
           {secondarySpecies.additionalTraits.map((trait) => (
             <Badge key={trait.id} variant="secondary" className="flex items-center gap-1">
-              <EntityIcon category="traits" id={trait.id} size={14} />
+              <EntityIcon category="traits" id={trait.id} size={24} />
               <span className={traitColor(trait.cost)}>
                 {displayName(trait)}
               </span>
@@ -59,7 +59,7 @@ export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: Seco
           ))}
         </div>
         <span className="text-xs text-muted-foreground">
-          {totalPicks}/{secondarySpecies.maxTraitPicks} picks · {ptsRemaining} pts remaining
+          {secondarySpecies.additionalTraits.length}/{secondarySpecies.maxTraitPicks} picks · {ptsRemaining} pts remaining
         </span>
       </div>
       <RerollButton category="secondaryspecies" available={rerollAvailable} />

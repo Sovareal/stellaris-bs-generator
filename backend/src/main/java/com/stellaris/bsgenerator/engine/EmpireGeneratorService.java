@@ -50,7 +50,8 @@ public class EmpireGeneratorService {
             Map.entry("origin_shattered_ring", "pc_ringworld_habitable"),
             Map.entry("origin_ocean_paradise", "pc_ocean"),
             Map.entry("origin_red_giant", "pc_volcanic"),
-            Map.entry("origin_cosmic_dawn", "pc_volcanic")
+            Map.entry("origin_cosmic_dawn", "pc_volcanic"),
+            Map.entry("origin_void_machines", "pc_habitat")
     );
 
     private final CompatibilityFilterService filterService;
@@ -74,33 +75,41 @@ public class EmpireGeneratorService {
         Authority authority = pickAuthority(state);
         state = state.withAuthority(authority.id());
 
-        // 3. Pick compatible civics (2)
-        List<Civic> civics = pickCivics(state, CIVIC_COUNT);
-        state = state.withCivics(toIdSet(civics));
-
-        // 4. Pick compatible origin
-        Origin origin = pickOrigin(state);
-        state = state.withOrigin(origin.id());
-
-        // 5. Pick species archetype and species class
+        // 3. Pick species archetype and species class (before origin/civics so they can validate)
         SpeciesArchetype archetype = pickArchetype(state);
         state = state.withSpeciesArchetype(archetype.id());
         String speciesClass = pickSpeciesClass(archetype);
         state = state.withSpeciesClass(speciesClass);
 
-        // 5b. Post-validate civics against archetype/species class
-        // Some civics have species_archetype requirements that couldn't be checked earlier
+        // 4. Pick compatible civics (now with archetype in state)
+        List<Civic> civics = pickCivics(state, CIVIC_COUNT);
+        state = state.withCivics(toIdSet(civics));
+
+        // 5. Pick compatible origin (now with archetype + species class in state)
+        Origin origin = pickOrigin(state);
+        state = state.withOrigin(origin.id());
+
+        // 5b. Post-validate civics against origin (some origins restrict civics)
         if (!civicsStillValid(civics, state)) {
             civics = pickCivics(state, CIVIC_COUNT);
             state = state.withCivics(toIdSet(civics));
         }
 
-        // 6. Pick compatible traits within budget (filtered by species class)
-        // Exclude origin enforced trait IDs from the random pool
-        List<SpeciesTrait> traits = pickTraits(archetype, state, origin.enforcedTraitIds());
+        // 6. Collect all enforced trait IDs (origin + civics)
+        var allEnforcedTraitIds = new ArrayList<>(origin.enforcedTraitIds());
+        for (var civic : civics) {
+            for (var traitId : civic.enforcedTraitIds()) {
+                if (!allEnforcedTraitIds.contains(traitId)) {
+                    allEnforcedTraitIds.add(traitId);
+                }
+            }
+        }
 
-        // 6b. Prepend origin enforced species traits (free, not from normal pool)
-        traits = prependEnforcedTraits(origin, traits);
+        // Pick compatible traits within budget, excluding enforced trait IDs from the random pool
+        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds);
+
+        // 6b. Prepend enforced species traits (free, not from normal pool)
+        traits = prependEnforcedTraits(allEnforcedTraitIds, traits);
 
         int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
@@ -165,7 +174,7 @@ public class EmpireGeneratorService {
                         ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0),
                         List.of("BIOLOGICAL"), List.of(), List.of(), List.of(),
                         true, false, null, List.of(),
-                        List.of(), List.of(), List.of(), List.of(), List.of(), List.of()))
+                        List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null))
                 .toList();
 
         int enforcedCost = enforcedTraits.stream().mapToInt(SpeciesTrait::cost).sum();
@@ -406,17 +415,43 @@ public class EmpireGeneratorService {
      * Prepend origin enforced species traits to the picked traits list.
      * Enforced traits are free (cost 0) and created as stubs since they have initial=no.
      */
-    private List<SpeciesTrait> prependEnforcedTraits(Origin origin, List<SpeciesTrait> pickedTraits) {
-        if (origin.enforcedTraitIds().isEmpty()) return pickedTraits;
+    /** Costs for civic-enforced traits (e.g., trait_aquatic from civic_anglers is free). */
+    private static final Map<String, Integer> CIVIC_ENFORCED_TRAIT_COSTS = Map.of(
+            "trait_aquatic", 0,
+            "trait_robot_aquatic", 0,
+            "trait_storm_touched", 0,
+            "trait_tankbound", 0,
+            "trait_stargazer", 0
+    );
+
+    private List<SpeciesTrait> prependEnforcedTraits(List<String> enforcedTraitIds, List<SpeciesTrait> pickedTraits) {
+        if (enforcedTraitIds.isEmpty()) return pickedTraits;
 
         List<SpeciesTrait> result = new ArrayList<>();
-        for (var traitId : origin.enforcedTraitIds()) {
-            int cost = ORIGIN_ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0);
-            result.add(new SpeciesTrait(
-                    traitId, cost,
-                    List.of(), List.of(), List.of(), List.of(),
-                    true, false, null, List.of(),
-                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of()));
+        for (var traitId : enforcedTraitIds) {
+            // Look up real trait data first; fall back to stub with 0 cost
+            var realTrait = filterService.findTraitById(traitId);
+            if (realTrait != null) {
+                // Use real trait but override cost to 0 (enforced traits are free)
+                result.add(new SpeciesTrait(
+                        realTrait.id(), 0,
+                        realTrait.allowedArchetypes(), realTrait.allowedSpeciesClasses(),
+                        realTrait.allowedPlanetClasses(), realTrait.opposites(),
+                        true, false, realTrait.dlcRequirement(), realTrait.tags(),
+                        realTrait.allowedOrigins(), realTrait.forbiddenOrigins(),
+                        realTrait.allowedCivics(), realTrait.forbiddenCivics(),
+                        realTrait.allowedEthics(), realTrait.forbiddenEthics(),
+                        realTrait.iconPath()));
+            } else {
+                int cost = ORIGIN_ENFORCED_TRAIT_COSTS.containsKey(traitId)
+                        ? ORIGIN_ENFORCED_TRAIT_COSTS.get(traitId)
+                        : CIVIC_ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0);
+                result.add(new SpeciesTrait(
+                        traitId, cost,
+                        List.of(), List.of(), List.of(), List.of(),
+                        true, false, null, List.of(),
+                        List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null));
+            }
         }
         result.addAll(pickedTraits);
         return result;
