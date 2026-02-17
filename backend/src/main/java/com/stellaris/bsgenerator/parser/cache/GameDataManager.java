@@ -2,6 +2,8 @@ package com.stellaris.bsgenerator.parser.cache;
 
 import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.extractor.*;
+import com.stellaris.bsgenerator.icon.IconService;
+import com.stellaris.bsgenerator.icon.LeaderTraitGfxParser;
 import com.stellaris.bsgenerator.model.*;
 import com.stellaris.bsgenerator.parser.LocalizationService;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
@@ -9,6 +11,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +57,14 @@ public class GameDataManager {
     private final SpeciesClassExtractor speciesClassExtractor;
     private final LocalizationService localizationService;
 
+    private IconService iconService;
+
+    @Lazy
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setIconService(IconService iconService) {
+        this.iconService = iconService;
+    }
+
     @Getter private GameVersion gameVersion;
     @Getter private List<Ethic> ethics;
     @Getter private List<Authority> authorities;
@@ -65,6 +76,7 @@ public class GameDataManager {
     @Getter private List<GraphicalCulture> graphicalCultures;
     @Getter private List<StartingRulerTrait> startingRulerTraits;
     @Getter private List<SpeciesClass> speciesClasses;
+    @Getter private Map<String, String> leaderTraitGfxMap;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
@@ -131,6 +143,9 @@ public class GameDataManager {
     public void forceReload() throws IOException {
         dataStatus = DataStatus.LOADING;
         dataError = null;
+        if (iconService != null) {
+            iconService.clearCache();
+        }
         try {
             loadGameData(true);
             dataStatus = DataStatus.READY;
@@ -169,10 +184,20 @@ public class GameDataManager {
         startingRulerTraits = startingRulerTraitExtractor.extract(gameFileService.getTraits());
         speciesClasses = speciesClassExtractor.extract(gameFileService.getSpeciesClasses());
 
-        log.info("Extracted: {} ethics, {} authorities, {} civics, {} origins, {} archetypes, {} traits, {} planets, {} shipsets, {} ruler traits, {} species classes",
+        // Parse leader trait GFX mappings
+        Path gamePath = Path.of(settingsService.getEffectiveGamePath());
+        Path gfxFile = gamePath.resolve("interface/icons/traits/leader_traits.gfx");
+        try {
+            leaderTraitGfxMap = LeaderTraitGfxParser.parse(gfxFile);
+        } catch (IOException e) {
+            log.warn("Failed to parse leader_traits.gfx: {}", e.getMessage());
+            leaderTraitGfxMap = Map.of();
+        }
+
+        log.info("Extracted: {} ethics, {} authorities, {} civics, {} origins, {} archetypes, {} traits, {} planets, {} shipsets, {} ruler traits, {} species classes, {} leader GFX",
                 ethics.size(), authorities.size(), civics.size(), origins.size(),
                 speciesArchetypes.size(), speciesTraits.size(),
                 planetClasses.size(), graphicalCultures.size(), startingRulerTraits.size(),
-                speciesClasses.size());
+                speciesClasses.size(), leaderTraitGfxMap.size());
     }
 }

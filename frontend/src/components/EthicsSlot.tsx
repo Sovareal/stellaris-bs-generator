@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { EntityIcon } from "@/components/EntityIcon";
 import { RerollButton } from "@/components/RerollButton";
 import { displayName } from "@/lib/format";
 import type { EthicDto } from "@/types/empire";
@@ -20,10 +21,11 @@ export function EthicsSlot({ ethics, rerollAvailable }: EthicsSlotProps) {
             <Badge
               key={ethic.id}
               variant={ethic.isFanatic ? "default" : "secondary"}
-              className={ethic.isFanatic ? "bg-primary/20 text-primary border-primary/30" : ""}
+              className={`${ethic.isFanatic ? "bg-primary/20 text-primary border-primary/30" : ""} flex items-center gap-1`}
             >
+              <EntityIcon category="ethics" id={ethic.id} size={16} />
               {ethic.isFanatic && (
-                <span className="text-primary font-semibold mr-1">Fanatic</span>
+                <span className="text-primary font-semibold">Fanatic</span>
               )}
               {displayName(ethic)}
             </Badge>

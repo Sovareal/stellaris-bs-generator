@@ -1,6 +1,9 @@
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmpireSlot } from "@/components/EmpireSlot";
+import { EntityIcon } from "@/components/EntityIcon";
 import { EthicsSlot } from "@/components/EthicsSlot";
+import { RerollButton } from "@/components/RerollButton";
 import { SecondarySpeciesSlot } from "@/components/SecondarySpeciesSlot";
 import { TraitsSlot } from "@/components/TraitsSlot";
 import { displayName, humanizeId } from "@/lib/format";
@@ -12,12 +15,6 @@ interface EmpireCardProps {
 
 export function EmpireCard({ empire }: EmpireCardProps) {
   const leaderClassName = humanizeId(empire.leader.leaderClass);
-  const leaderTraitNames = empire.leader.traits
-    .map((t) => t.displayName ?? humanizeId(t.id))
-    .join(", ");
-  const leaderValue = leaderTraitNames
-    ? `${leaderClassName} — ${leaderTraitNames}`
-    : leaderClassName;
 
   return (
     <Card className="w-full max-w-2xl animate-empire-enter">
@@ -33,6 +30,8 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           sublabel={empire.authority.isGestalt ? "Gestalt Consciousness" : undefined}
           category="authority"
           rerollAvailable={empire.rerollsAvailable["authority"] ?? false}
+          iconCategory="authorities"
+          iconId={empire.authority.id}
         />
 
         {empire.civics.map((civic, i) => (
@@ -44,6 +43,8 @@ export function EmpireCard({ empire }: EmpireCardProps) {
             rerollAvailable={
               empire.rerollsAvailable[i === 0 ? "civic1" : "civic2"] ?? false
             }
+            iconCategory="civics"
+            iconId={civic.id}
           />
         ))}
 
@@ -53,6 +54,8 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           sublabel={empire.origin.dlcRequirement ? `Requires ${empire.origin.dlcRequirement} DLC` : undefined}
           category="origin"
           rerollAvailable={empire.rerollsAvailable["origin"] ?? false}
+          iconCategory="origins"
+          iconId={empire.origin.id}
         />
 
         <TraitsSlot
@@ -78,6 +81,8 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           sublabel={empire.homeworld.climate !== "fixed" ? `${empire.homeworld.climate} climate` : "Fixed by origin"}
           category="homeworld"
           rerollAvailable={empire.homeworld.climate !== "fixed" && (empire.rerollsAvailable["homeworld"] ?? false)}
+          iconCategory="planets"
+          iconId={empire.homeworld.id}
         />
 
         <EmpireSlot
@@ -87,12 +92,25 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           rerollAvailable={empire.rerollsAvailable["shipset"] ?? false}
         />
 
-        <EmpireSlot
-          label="Starting Leader"
-          value={leaderValue}
-          category="leader"
-          rerollAvailable={empire.rerollsAvailable["leader"] ?? false}
-        />
+        <div className="flex items-start justify-between gap-4 py-2 border-b border-border last:border-b-0">
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Starting Leader
+            </span>
+            <span className="text-foreground font-medium">{leaderClassName}</span>
+            {empire.leader.traits.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {empire.leader.traits.map((trait) => (
+                  <Badge key={trait.id} variant="secondary" className="flex items-center gap-1">
+                    <EntityIcon category="leadertraits" id={trait.id} size={14} />
+                    <span>{trait.displayName ?? humanizeId(trait.id)}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          <RerollButton category="leader" available={empire.rerollsAvailable["leader"] ?? false} />
+        </div>
       </CardContent>
     </Card>
   );

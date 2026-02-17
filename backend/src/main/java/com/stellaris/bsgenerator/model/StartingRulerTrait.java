@@ -26,5 +26,6 @@ public record StartingRulerTrait(
         List<String> forbiddenCivics,
         List<String> forbiddenEthics,
         int cost,
-        List<String> opposites
+        List<String> opposites,
+        String gfxKey
 ) {}

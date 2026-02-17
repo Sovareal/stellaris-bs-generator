@@ -11,5 +11,6 @@ public record Origin(
         String dlcRequirement,
         int randomWeight,
         SecondarySpeciesConfig secondarySpecies,
-        List<String> enforcedTraitIds
+        List<String> enforcedTraitIds,
+        String iconPath
 ) {}

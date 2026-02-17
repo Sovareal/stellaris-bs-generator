@@ -56,8 +56,13 @@ public class StartingRulerTraitExtractor {
                     .map(ClausewitzNode::bareValues)
                     .orElse(List.of());
 
+            // Extract GFX key from inline_script ICON field (e.g. "GFX_leader_trait_principled")
+            String gfxKey = node.child("inline_script")
+                    .flatMap(n -> n.childValue("ICON"))
+                    .orElse(null);
+
             traits.add(new StartingRulerTrait(id, leaderClasses, forbiddenOrigins, allowedEthics,
-                    allowedOrigins, allowedCivics, forbiddenCivics, forbiddenEthics, cost, opposites));
+                    allowedOrigins, allowedCivics, forbiddenCivics, forbiddenEthics, cost, opposites, gfxKey));
         }
 
         log.info("Extracted {} starting ruler traits", traits.size());

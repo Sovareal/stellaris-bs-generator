@@ -61,7 +61,10 @@ public class OriginExtractor {
                             .toList())
                     .orElse(List.of());
 
-            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds));
+            // Parse icon path (e.g. "gfx/interface/icons/origins/origins_default.dds")
+            String iconPath = node.childValue("icon").orElse(null);
+
+            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath));
         }
 
         log.info("Extracted {} playable origins", origins.size());

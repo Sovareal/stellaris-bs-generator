@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { EntityIcon } from "@/components/EntityIcon";
 import { RerollButton } from "@/components/RerollButton";
 import { displayName, humanizeId } from "@/lib/format";
 import type { ArchetypeDto, TraitDto } from "@/types/empire";
@@ -40,9 +41,10 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
         </div>
         <div className="flex flex-wrap gap-1.5">
           {traits.map((trait) => (
-            <Badge key={trait.id} variant="secondary">
+            <Badge key={trait.id} variant="secondary" className="flex items-center gap-1">
+              <EntityIcon category="traits" id={trait.id} size={14} />
               {trait.enforced && (
-                <span className="mr-1 text-xs text-yellow-500" title="Locked by origin">🔒</span>
+                <span className="text-xs text-yellow-500" title="Locked by origin">🔒</span>
               )}
               <span className={traitColor(trait.cost)}>
                 {displayName(trait)}

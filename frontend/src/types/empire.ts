@@ -48,6 +48,7 @@ export interface LeaderTraitDto {
   id: string;
   displayName: string | null;
   cost: number;
+  gfxKey: string | null;
 }
 
 export interface LeaderDto {

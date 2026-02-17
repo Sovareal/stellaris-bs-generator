@@ -159,12 +159,12 @@ public class EmpireController {
         }
     }
 
-    public record LeaderTraitDto(String id, String displayName, int cost) {}
+    public record LeaderTraitDto(String id, String displayName, int cost, String gfxKey) {}
 
     public record LeaderDto(String leaderClass, List<LeaderTraitDto> traits) {
         static LeaderDto from(String leaderClass, List<StartingRulerTrait> leaderTraits, LocalizationService loc) {
             var traitDtos = leaderTraits.stream()
-                    .map(t -> new LeaderTraitDto(t.id(), loc.getDisplayName(t.id()), t.cost()))
+                    .map(t -> new LeaderTraitDto(t.id(), loc.getDisplayName(t.id()), t.cost(), t.gfxKey()))
                     .toList();
             return new LeaderDto(leaderClass, traitDtos);
         }
