@@ -4,10 +4,10 @@
 > primary context anchor across sessions — read it first to understand where we left off.
 
 ## Current Session Focus
-Phase 10 complete. All tasks 10.1–10.6 done.
+Phase 10 complete. All tasks 10.1–10.6 done. Post-build issues resolved.
 
 ## Last Completed Task
-Task 10.6 — Tauri build & sidecar packaging (JRE bundling, NSIS installer, bundled JRE in prod)
+Post-build fixes — CORS for production Tauri origin, hidden console window, backend log file capture
 
 ## Next Up
 Project complete — all phases done.
@@ -282,3 +282,4 @@ Example: `trait_camouflage` has `allowed_archetypes = { BIOLOGICAL LITHOID }` AN
 | 15 | 2026-02-16 | 10.4 | Multi-species origins & civics. New models: SecondarySpeciesConfig (parsed from has_secondary_species), SecondarySpecies (generated output). Updated Origin/Civic records + extractors. EmpireGeneratorService.generateSecondarySpecies() with enforced trait cost map, BIOLOGICAL archetype, different species class. RerollService: SECONDARY_SPECIES category + auto-regen on origin/civic reroll. Frontend: SecondarySpeciesSlot with locked enforced traits. 7 new tests, 667 total pass. |
 | 16 | 2026-02-16 | 10.5 | Error handling & edge cases. Backend: DataStatus enum (LOADING/READY/ERROR) on GameDataManager, health endpoint returns dataStatus+dataError, SettingsService for configurable game path (reads/writes settings.json), SettingsController GET/PUT /api/settings with validation, GlobalExceptionHandler IOException+catch-all handlers, DataController reload no longer throws. Frontend: useBackendReady parses dataStatus (loading→poll, ready→done, error→needsSetup), SettingsPage with path input+validation, App.tsx routes needsSetup→SettingsPage, ErrorScreen optional title prop. 12 test files updated. 667 tests pass, TypeScript clean. |
 | 17 | 2026-02-17 | 10.6 | Tauri build & sidecar packaging. Created scripts/bundle-jre.bat (jlink with 18 modules, ~50MB). Updated tauri.conf.json: NSIS target, jre/**/* + backend.jar resources, beforeBuildCommand chains bootJar→copy→bundle-jre→npm build. Updated lib.rs: find_java_executable() uses bundled jre/bin/java.exe in prod, system java in dev. NSIS installer produced (52MB). |
+| 18 | 2026-02-17 | Post-build fixes | Fixed two production installer issues: (1) CORS — changed to allow all origins (`*`) since local-only desktop app, (2) hidden console window via CREATE_NO_WINDOW flag, (3) backend stdout/stderr redirected to AppData log file for diagnostics, (4) RunEvent::Exit handler for reliable cleanup. Investigated civic_pyrolatry report — confirmed it's "Fire Cult" from Infernals DLC, UI correctly shows localized display name. |

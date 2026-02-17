@@ -53,8 +53,11 @@
 
 ### Issue: Production app shows "Backend not reachable after 30s" despite backend running
 **Root cause:** CORS. Backend only allowed `http://localhost:5173` (Vite dev). In production Tauri, frontend is served from `https://tauri.localhost` — all API requests blocked by CORS.
-**Fix:** Added `https://tauri.localhost` to `spring.web.cors.allowed-origins` in `application.yml`.
+**Fix:** Changed `WebConfig` CORS to allow all origins (`*`) since this is a local-only desktop app with no security risk. Removed the configurable `spring.web.cors.allowed-origins` property (unnecessary complexity for a desktop app).
 
 ### Issue: Backend opens visible console window in production
 **Root cause:** `Command::new("java")` on Windows spawns with a visible console by default.
-**Fix:** Added `CREATE_NO_WINDOW` (0x08000000) creation flag via `CommandExt::creation_flags()` in production mode only (dev keeps console for debugging). Switched from `on_window_event(Destroyed)` to `RunEvent::Exit` handler for more reliable backend process cleanup on all exit paths (Alt+F4, crash, etc.).
+**Fix:** Added `CREATE_NO_WINDOW` (0x08000000) creation flag via `CommandExt::creation_flags()` in production mode only (dev keeps console for debugging). Switched from `on_window_event(Destroyed)` to `RunEvent::Exit` handler for more reliable backend process cleanup on all exit paths (Alt+F4, crash, etc.). Added backend stdout/stderr redirect to `AppData/Local/.../logs/backend.log` for diagnostics.
+
+### Non-issue: "civic_pyrolatry" reported as non-existent civic
+**Investigation:** `civic_pyrolatry` is "Fire Cult" from the Infernals DLC — a legitimate civic. The internal ID appeared in backend logs, but the UI correctly displays the localized name "Fire Cult" via `LocalizationService`. All entity display names go through localization on the backend (`getDisplayName()`) and the frontend falls back to `humanizeId()` only when localization returns null. No fix needed.
