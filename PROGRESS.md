@@ -4,13 +4,13 @@
 > primary context anchor across sessions — read it first to understand where we left off.
 
 ## Current Session Focus
-Phase 10 in progress. Tasks 10.1–10.5 complete. Task 10.6 (Tauri build) remaining.
+Phase 10 complete. All tasks 10.1–10.6 done.
 
 ## Last Completed Task
-Task 10.5 — Error handling & edge cases (DataStatus, health endpoint, SettingsService, SettingsPage)
+Task 10.6 — Tauri build & sidecar packaging (JRE bundling, NSIS installer, bundled JRE in prod)
 
 ## Next Up
-Task 10.6: Tauri build & sidecar packaging
+Project complete — all phases done.
 
 ---
 
@@ -115,7 +115,7 @@ Task 10.6: Tauri build & sidecar packaging
 | 10.3 | Trait Points Display Fix | DONE | TraitsSlot now shows "{picks}/{max} picks · {remaining} pts remaining" instead of ambiguous "used / budget". |
 | 10.4 | Multi-Species Origins | DONE | SecondarySpeciesConfig/SecondarySpecies models, extractor parsing, generation with enforced traits + random traits, reroll support (SECONDARY_SPECIES category + auto-regen on origin/civic reroll), SecondarySpeciesSlot frontend component. 5 origins/civics supported. 667 tests pass. |
 | 10.5 | Error Handling & Edge Cases | DONE | DataStatus enum on GameDataManager (LOADING/READY/ERROR). Health endpoint returns dataStatus+dataError. SettingsService reads/writes settings.json for configurable game path. SettingsController GET/PUT /api/settings with validation. GlobalExceptionHandler: IOException + catch-all handlers. Frontend: useBackendReady parses dataStatus (loading→poll, ready→done, error→needsSetup). SettingsPage component with path input, validation display. App.tsx routes needsSetup→SettingsPage. ErrorScreen gets optional title prop. 12 test files updated for SettingsService injection. 667 tests pass. |
-| 10.6 | Tauri Build & Sidecar Packaging | NOT STARTED | Depends on 10.5 |
+| 10.6 | Tauri Build & Sidecar Packaging | DONE | JRE bundling via jlink (~50MB), NSIS installer (52MB), bundled JRE in prod mode, scripts/bundle-jre.bat |
 
 ---
 
@@ -281,3 +281,4 @@ Example: `trait_camouflage` has `allowed_archetypes = { BIOLOGICAL LITHOID }` AN
 | 14 | 2026-02-16 | 10.1–10.3 | Phase 10 partial. LocalizationService: fixed regex for `:` without digit, added `$variable$` resolution (two-pass). Homeworld: added `allowedPlanetClasses` to SpeciesTrait, generator+reroll constrain homeworld by traits. TraitsSlot: now shows picks + pts remaining. 5 issues resolved, all tests pass. |
 | 15 | 2026-02-16 | 10.4 | Multi-species origins & civics. New models: SecondarySpeciesConfig (parsed from has_secondary_species), SecondarySpecies (generated output). Updated Origin/Civic records + extractors. EmpireGeneratorService.generateSecondarySpecies() with enforced trait cost map, BIOLOGICAL archetype, different species class. RerollService: SECONDARY_SPECIES category + auto-regen on origin/civic reroll. Frontend: SecondarySpeciesSlot with locked enforced traits. 7 new tests, 667 total pass. |
 | 16 | 2026-02-16 | 10.5 | Error handling & edge cases. Backend: DataStatus enum (LOADING/READY/ERROR) on GameDataManager, health endpoint returns dataStatus+dataError, SettingsService for configurable game path (reads/writes settings.json), SettingsController GET/PUT /api/settings with validation, GlobalExceptionHandler IOException+catch-all handlers, DataController reload no longer throws. Frontend: useBackendReady parses dataStatus (loading→poll, ready→done, error→needsSetup), SettingsPage with path input+validation, App.tsx routes needsSetup→SettingsPage, ErrorScreen optional title prop. 12 test files updated. 667 tests pass, TypeScript clean. |
+| 17 | 2026-02-17 | 10.6 | Tauri build & sidecar packaging. Created scripts/bundle-jre.bat (jlink with 18 modules, ~50MB). Updated tauri.conf.json: NSIS target, jre/**/* + backend.jar resources, beforeBuildCommand chains bootJar→copy→bundle-jre→npm build. Updated lib.rs: find_java_executable() uses bundled jre/bin/java.exe in prod, system java in dev. NSIS installer produced (52MB). |

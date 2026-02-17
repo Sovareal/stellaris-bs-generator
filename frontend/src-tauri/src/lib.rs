@@ -28,8 +28,24 @@ fn find_backend_jar(app: &tauri::App) -> Option<std::path::PathBuf> {
     None
 }
 
-fn spawn_backend(jar_path: &std::path::Path) -> Result<Child, String> {
-    Command::new("java")
+fn find_java_executable(app: &tauri::App) -> String {
+    // In production: use bundled JRE
+    if !cfg!(debug_assertions) {
+        if let Ok(resource_dir) = app.path().resource_dir() {
+            let bundled_java = resource_dir.join("jre").join("bin").join("java.exe");
+            if bundled_java.exists() {
+                log::info!("Using bundled JRE: {}", bundled_java.display());
+                return bundled_java.to_string_lossy().into_owned();
+            }
+            log::warn!("Bundled JRE not found at {}, falling back to system java", bundled_java.display());
+        }
+    }
+    // In dev mode or fallback: use system java
+    "java".to_string()
+}
+
+fn spawn_backend(java_path: &str, jar_path: &std::path::Path) -> Result<Child, String> {
+    Command::new(java_path)
         .args(["-jar", &jar_path.to_string_lossy()])
         .spawn()
         .map_err(|e| format!("Failed to start backend: {e}"))
@@ -50,10 +66,11 @@ pub fn run() {
             }
 
             // Launch the Spring Boot backend sidecar
+            let java_path = find_java_executable(app);
             match find_backend_jar(app) {
                 Some(jar_path) => {
                     log::info!("Starting backend from: {}", jar_path.display());
-                    match spawn_backend(&jar_path) {
+                    match spawn_backend(&java_path, &jar_path) {
                         Ok(child) => {
                             let state = app.state::<BackendProcess>();
                             *state.0.lock().unwrap() = Some(child);
