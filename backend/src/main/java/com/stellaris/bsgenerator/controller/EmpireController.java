@@ -68,6 +68,12 @@ public class EmpireController {
             Map<String, Boolean> rerollsAvailable
     ) {
         static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc) {
+            // Mark origin enforced species traits
+            var enforcedIds = new java.util.HashSet<>(empire.origin().enforcedTraitIds());
+            var traitDtos = empire.speciesTraits().stream()
+                    .map(t -> enforcedIds.contains(t.id()) ? TraitDto.fromEnforced(t, loc) : TraitDto.from(t, loc))
+                    .toList();
+
             return new EmpireResponse(
                     empire.ethics().stream().map(e -> EthicDto.from(e, loc)).toList(),
                     AuthorityDto.from(empire.authority(), loc),
@@ -76,13 +82,13 @@ public class EmpireController {
                     ArchetypeDto.from(empire.speciesArchetype(), loc),
                     empire.speciesClass(),
                     loc.getDisplayName(empire.speciesClass()),
-                    empire.speciesTraits().stream().map(t -> TraitDto.from(t, loc)).toList(),
+                    traitDtos,
                     empire.traitPointsUsed(),
                     empire.traitPointsBudget(),
                     PlanetClassDto.from(empire.homeworld(), loc),
                     empire.shipset().id(),
                     loc.getDisplayName(empire.shipset().id()),
-                    LeaderDto.from(empire.leaderClass(), empire.leaderTrait(), loc),
+                    LeaderDto.from(empire.leaderClass(), empire.leaderTraits(), loc),
                     SecondarySpeciesDto.from(empire.secondarySpecies(), loc),
                     buildRerollMap(empire, session)
             );
@@ -137,9 +143,13 @@ public class EmpireController {
         }
     }
 
-    public record TraitDto(String id, String displayName, int cost, List<String> allowedArchetypes) {
+    public record TraitDto(String id, String displayName, int cost, List<String> allowedArchetypes, boolean enforced) {
         static TraitDto from(SpeciesTrait t, LocalizationService loc) {
-            return new TraitDto(t.id(), loc.getDisplayName(t.id()), t.cost(), t.allowedArchetypes());
+            return new TraitDto(t.id(), loc.getDisplayName(t.id()), t.cost(), t.allowedArchetypes(), false);
+        }
+
+        static TraitDto fromEnforced(SpeciesTrait t, LocalizationService loc) {
+            return new TraitDto(t.id(), loc.getDisplayName(t.id()), t.cost(), t.allowedArchetypes(), true);
         }
     }
 
@@ -149,13 +159,14 @@ public class EmpireController {
         }
     }
 
-    public record LeaderDto(String leaderClass, String traitId, String traitDisplayName) {
-        static LeaderDto from(String leaderClass, StartingRulerTrait trait, LocalizationService loc) {
-            return new LeaderDto(
-                    leaderClass,
-                    trait != null ? trait.id() : null,
-                    trait != null ? loc.getDisplayName(trait.id()) : null
-            );
+    public record LeaderTraitDto(String id, String displayName, int cost) {}
+
+    public record LeaderDto(String leaderClass, List<LeaderTraitDto> traits) {
+        static LeaderDto from(String leaderClass, List<StartingRulerTrait> leaderTraits, LocalizationService loc) {
+            var traitDtos = leaderTraits.stream()
+                    .map(t -> new LeaderTraitDto(t.id(), loc.getDisplayName(t.id()), t.cost()))
+                    .toList();
+            return new LeaderDto(leaderClass, traitDtos);
         }
     }
 

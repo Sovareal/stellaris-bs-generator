@@ -35,6 +35,7 @@ export interface TraitDto {
   displayName: string | null;
   cost: number;
   allowedArchetypes: string[];
+  enforced: boolean;
 }
 
 export interface PlanetClassDto {
@@ -43,10 +44,15 @@ export interface PlanetClassDto {
   climate: string;
 }
 
+export interface LeaderTraitDto {
+  id: string;
+  displayName: string | null;
+  cost: number;
+}
+
 export interface LeaderDto {
   leaderClass: string;
-  traitId: string | null;
-  traitDisplayName: string | null;
+  traits: LeaderTraitDto[];
 }
 
 export interface SecondarySpeciesDto {

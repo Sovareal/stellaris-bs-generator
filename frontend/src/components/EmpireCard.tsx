@@ -12,11 +12,11 @@ interface EmpireCardProps {
 
 export function EmpireCard({ empire }: EmpireCardProps) {
   const leaderClassName = humanizeId(empire.leader.leaderClass);
-  const leaderTraitName = empire.leader.traitId
-    ? (empire.leader.traitDisplayName ?? humanizeId(empire.leader.traitId))
-    : null;
-  const leaderValue = leaderTraitName
-    ? `${leaderClassName} — ${leaderTraitName}`
+  const leaderTraitNames = empire.leader.traits
+    .map((t) => t.displayName ?? humanizeId(t.id))
+    .join(", ");
+  const leaderValue = leaderTraitNames
+    ? `${leaderClassName} — ${leaderTraitNames}`
     : leaderClassName;
 
   return (

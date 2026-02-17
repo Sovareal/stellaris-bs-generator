@@ -22,7 +22,7 @@ public class GraphicalCultureExtractor {
 
     /** Cultures that are city-set-only visual variants, not actual shipsets. */
     private static final Set<String> NON_SHIPSET_CULTURES = Set.of(
-            "solarpunk_01", "wilderness_01"
+            "solarpunk_01", "wilderness_01", "nemesis_01"
     );
 
     public List<GraphicalCulture> extract(ClausewitzNode root) {

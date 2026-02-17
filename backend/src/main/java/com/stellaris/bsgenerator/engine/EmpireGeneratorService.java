@@ -29,6 +29,17 @@ public class EmpireGeneratorService {
             "trait_hive_mind", 0
     );
 
+    /** Enforced species traits from origins — these are free (cost 0) and don't consume the trait budget. */
+    private static final Map<String, Integer> ORIGIN_ENFORCED_TRAIT_COSTS = Map.of(
+            "trait_perfected_genes", 0,
+            "trait_necrophage", 0,
+            "trait_malleable_genes", 0
+    );
+
+    /** Luminary leader trait budget and max picks for origin_legendary_leader. */
+    private static final int LUMINARY_BUDGET = 1;
+    private static final int LUMINARY_MAX_PICKS = 3;
+
     /** Origins that fix the homeworld planet type (skip random selection). */
     private static final Map<String, String> ORIGIN_FIXED_PLANETS = Map.ofEntries(
             Map.entry("origin_life_seeded", "pc_gaia"),
@@ -85,19 +96,23 @@ public class EmpireGeneratorService {
         }
 
         // 6. Pick compatible traits within budget (filtered by species class)
-        List<SpeciesTrait> traits = pickTraits(archetype, state);
+        // Exclude origin enforced trait IDs from the random pool
+        List<SpeciesTrait> traits = pickTraits(archetype, state, origin.enforcedTraitIds());
+
+        // 6b. Prepend origin enforced species traits (free, not from normal pool)
+        traits = prependEnforcedTraits(origin, traits);
 
         int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
-        // 7. Pick homeworld planet (or use origin-fixed, constrained by traits)
-        PlanetClass homeworld = pickHomeworld(origin, traits);
+        // 7. Pick homeworld planet (or use origin-fixed, constrained by traits + species class)
+        PlanetClass homeworld = pickHomeworld(origin, traits, speciesClass);
 
         // 8. Pick random shipset
         GraphicalCulture shipset = pickShipset();
 
-        // 9. Pick leader class and starting trait
+        // 9. Pick leader class and starting trait(s)
         String leaderClass = pickLeaderClass();
-        StartingRulerTrait leaderTrait = pickLeaderTrait(leaderClass, state);
+        List<StartingRulerTrait> leaderTraits = pickLeaderTraits(leaderClass, state);
 
         // 10. Generate secondary species if origin/civic requires one
         SecondarySpecies secondarySpecies = generateSecondarySpecies(origin, civics, speciesClass);
@@ -111,12 +126,12 @@ public class EmpireGeneratorService {
                 traits.stream().map(SpeciesTrait::id).toList(),
                 pointsUsed, archetype.traitPoints(),
                 homeworld.id(), shipset.id(),
-                leaderClass, leaderTrait != null ? leaderTrait.id() : "none",
+                leaderClass, leaderTraits.stream().map(StartingRulerTrait::id).toList(),
                 secondarySpecies != null ? secondarySpecies.speciesClass() : "none");
 
         return new GeneratedEmpire(ethics, authority, civics, origin,
                 archetype, speciesClass, traits, pointsUsed, archetype.traitPoints(),
-                homeworld, shipset, leaderClass, leaderTrait, secondarySpecies);
+                homeworld, shipset, leaderClass, leaderTraits, secondarySpecies);
     }
 
     /**
@@ -306,9 +321,8 @@ public class EmpireGeneratorService {
         if (compatible.isEmpty()) {
             throw new GenerationException("No compatible origins for current state");
         }
-        // Cap origin_default weight to normal range (game file has weight=100, others ~5)
-        return WeightedRandom.select(compatible, o ->
-                "origin_default".equals(o.id()) ? 5 : o.randomWeight(), random);
+        // Uniform random: all compatible origins get equal chance
+        return compatible.get(random.nextInt(compatible.size()));
     }
 
     private SpeciesArchetype pickArchetype(EmpireState state) {
@@ -345,10 +359,13 @@ public class EmpireGeneratorService {
         return classes.get(random.nextInt(classes.size())).id();
     }
 
-    private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state) {
+    private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state, List<String> excludeIds) {
         var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
         int maxTraits = archetype.maxTraits();
+
+        // Exclude origin enforced trait IDs from the random pool
+        var excludeSet = new HashSet<>(excludeIds);
 
         List<SpeciesTrait> picked = new ArrayList<>();
         Set<String> pickedIds = new HashSet<>();
@@ -361,6 +378,9 @@ public class EmpireGeneratorService {
 
         for (var trait : shuffled) {
             if (picked.size() >= maxTraits) break;
+
+            // Skip origin enforced traits (they're added separately)
+            if (excludeSet.contains(trait.id())) continue;
 
             // Skip if already picked or excluded by opposites
             if (pickedIds.contains(trait.id())) continue;
@@ -382,20 +402,51 @@ public class EmpireGeneratorService {
         return picked;
     }
 
-    private PlanetClass pickHomeworld(Origin origin, List<SpeciesTrait> traits) {
+    /**
+     * Prepend origin enforced species traits to the picked traits list.
+     * Enforced traits are free (cost 0) and created as stubs since they have initial=no.
+     */
+    private List<SpeciesTrait> prependEnforcedTraits(Origin origin, List<SpeciesTrait> pickedTraits) {
+        if (origin.enforcedTraitIds().isEmpty()) return pickedTraits;
+
+        List<SpeciesTrait> result = new ArrayList<>();
+        for (var traitId : origin.enforcedTraitIds()) {
+            int cost = ORIGIN_ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0);
+            result.add(new SpeciesTrait(
+                    traitId, cost,
+                    List.of(), List.of(), List.of(), List.of(),
+                    true, false, null, List.of(),
+                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of()));
+        }
+        result.addAll(pickedTraits);
+        return result;
+    }
+
+    /** Cold planet types that Infernal species cannot inhabit. */
+    private static final Set<String> INF_REMOVED_PLANETS = Set.of("pc_arctic", "pc_alpine", "pc_tundra");
+
+    private PlanetClass pickHomeworld(Origin origin, List<SpeciesTrait> traits, String speciesClass) {
         String fixedPlanet = ORIGIN_FIXED_PLANETS.get(origin.id());
         if (fixedPlanet != null) {
             return new PlanetClass(fixedPlanet, "fixed");
         }
 
-        var planets = filterService.getHabitablePlanetClasses();
+        var planets = new ArrayList<>(filterService.getHabitablePlanetClasses());
+
+        // Infernal species: add volcanic, remove cold worlds
+        if ("INF".equals(speciesClass)) {
+            if (planets.stream().noneMatch(p -> "pc_volcanic".equals(p.id()))) {
+                planets.add(new PlanetClass("pc_volcanic", "volcanic"));
+            }
+            planets.removeIf(p -> INF_REMOVED_PLANETS.contains(p.id()));
+        }
 
         // Constrain by trait allowed_planet_classes (e.g., Aquatic → pc_ocean only)
         Set<String> traitPlanetRestriction = collectTraitPlanetClasses(traits);
         if (!traitPlanetRestriction.isEmpty()) {
-            planets = planets.stream()
+            planets = new ArrayList<>(planets.stream()
                     .filter(p -> traitPlanetRestriction.contains(p.id()))
-                    .toList();
+                    .toList());
         }
 
         if (planets.isEmpty()) {
@@ -434,12 +485,66 @@ public class EmpireGeneratorService {
         return LEADER_CLASSES.get(random.nextInt(LEADER_CLASSES.size()));
     }
 
-    private StartingRulerTrait pickLeaderTrait(String leaderClass, EmpireState state) {
+    /**
+     * Pick leader traits. For origin_legendary_leader (luminary mode), picks multiple traits
+     * within a point budget. For regular origins, picks 0 or 1 trait.
+     */
+    List<StartingRulerTrait> pickLeaderTraits(String leaderClass, EmpireState state) {
         var compatible = filterService.getCompatibleRulerTraits(leaderClass, state);
         if (compatible.isEmpty()) {
-            return null;
+            return List.of();
         }
-        return compatible.get(random.nextInt(compatible.size()));
+
+        boolean isLuminary = "origin_legendary_leader".equals(state.origin());
+        if (isLuminary) {
+            return pickLuminaryTraits(compatible);
+        }
+
+        // Regular: pick 0 or 1 trait
+        var trait = compatible.get(random.nextInt(compatible.size()));
+        return List.of(trait);
+    }
+
+    /**
+     * Pick luminary leader traits: budget=1, max 3 picks (up to 2 positive + 1 negative).
+     * Respects opposites and ethics-based filtering (already done by filterService).
+     */
+    private List<StartingRulerTrait> pickLuminaryTraits(List<StartingRulerTrait> compatible) {
+        var positive = compatible.stream().filter(t -> t.cost() > 0).toList();
+        var negative = compatible.stream().filter(t -> t.cost() < 0).toList();
+
+        List<StartingRulerTrait> picked = new ArrayList<>();
+        Set<String> pickedIds = new HashSet<>();
+        Set<String> excludedByOpposites = new HashSet<>();
+        int pointsSpent = 0;
+
+        // Shuffle both pools
+        var shuffledPositive = new ArrayList<>(positive);
+        var shuffledNegative = new ArrayList<>(negative);
+        Collections.shuffle(shuffledPositive, random);
+        Collections.shuffle(shuffledNegative, random);
+
+        // Try to pick positive traits first, then optionally a negative
+        var allShuffled = new ArrayList<StartingRulerTrait>();
+        allShuffled.addAll(shuffledPositive);
+        allShuffled.addAll(shuffledNegative);
+
+        for (var trait : allShuffled) {
+            if (picked.size() >= LUMINARY_MAX_PICKS) break;
+            if (pickedIds.contains(trait.id())) continue;
+            if (excludedByOpposites.contains(trait.id())) continue;
+
+            int newTotal = pointsSpent + trait.cost();
+            if (newTotal > LUMINARY_BUDGET) continue;
+            if (newTotal < 0) continue;
+
+            picked.add(trait);
+            pickedIds.add(trait.id());
+            pointsSpent = newTotal;
+            excludedByOpposites.addAll(trait.opposites());
+        }
+
+        return picked;
     }
 
     private boolean civicsStillValid(List<Civic> civics, EmpireState state) {

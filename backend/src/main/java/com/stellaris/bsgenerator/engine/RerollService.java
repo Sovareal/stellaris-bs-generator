@@ -184,10 +184,16 @@ public class RerollService {
         int budget = archetype.traitPoints();
         int maxTraits = archetype.maxTraits();
 
-        List<SpeciesTrait> picked = new ArrayList<>();
-        Set<String> pickedIds = new HashSet<>();
+        // Preserve origin enforced traits
+        var enforcedIds = new HashSet<>(empire.origin().enforcedTraitIds());
+        List<SpeciesTrait> enforced = empire.speciesTraits().stream()
+                .filter(t -> enforcedIds.contains(t.id()))
+                .toList();
+
+        List<SpeciesTrait> picked = new ArrayList<>(enforced);
+        Set<String> pickedIds = new HashSet<>(enforcedIds);
         Set<String> excludedByOpposites = new HashSet<>();
-        int pointsSpent = 0;
+        int pointsSpent = 0; // Enforced traits are free (cost 0)
 
         var shuffled = new ArrayList<>(available);
         Collections.shuffle(shuffled, random);
@@ -215,17 +221,28 @@ public class RerollService {
         });
     }
 
+    /** Cold planet types that Infernal species cannot inhabit. */
+    private static final Set<String> INF_REMOVED_PLANETS = Set.of("pc_arctic", "pc_alpine", "pc_tundra");
+
     private GeneratedEmpire rerollHomeworld(GeneratedEmpire empire) {
-        var planets = filterService.getHabitablePlanetClasses().stream()
+        var planets = new ArrayList<>(filterService.getHabitablePlanetClasses().stream()
                 .filter(p -> !p.id().equals(empire.homeworld().id()))
-                .toList();
+                .toList());
+
+        // Infernal species: add volcanic, remove cold worlds
+        if ("INF".equals(empire.speciesClass())) {
+            if (planets.stream().noneMatch(p -> "pc_volcanic".equals(p.id()))) {
+                planets.add(new PlanetClass("pc_volcanic", "volcanic"));
+            }
+            planets.removeIf(p -> INF_REMOVED_PLANETS.contains(p.id()));
+        }
 
         // Constrain by trait allowed_planet_classes (e.g., Aquatic → pc_ocean only)
         Set<String> traitPlanetRestriction = collectTraitPlanetClasses(empire.speciesTraits());
         if (!traitPlanetRestriction.isEmpty()) {
-            planets = planets.stream()
+            planets = new ArrayList<>(planets.stream()
                     .filter(p -> traitPlanetRestriction.contains(p.id()))
-                    .toList();
+                    .toList());
         }
 
         if (planets.isEmpty()) {
@@ -274,22 +291,10 @@ public class RerollService {
         var leaderClasses = List.of("official", "commander", "scientist");
         var newClass = leaderClasses.get(random.nextInt(leaderClasses.size()));
 
-        var compatible = filterService.getCompatibleRulerTraits(newClass, state);
-        // Try to exclude the current trait if same class
-        if (newClass.equals(empire.leaderClass()) && empire.leaderTrait() != null) {
-            var filtered = compatible.stream()
-                    .filter(t -> !t.id().equals(empire.leaderTrait().id()))
-                    .toList();
-            if (!filtered.isEmpty()) {
-                compatible = filtered;
-            }
-        }
-
-        StartingRulerTrait newTrait = compatible.isEmpty() ? null :
-                compatible.get(random.nextInt(compatible.size()));
+        List<StartingRulerTrait> newTraits = generatorService.pickLeaderTraits(newClass, state);
         return copyWith(empire, b -> {
             b.leaderClass = newClass;
-            b.leaderTrait = newTrait;
+            b.leaderTraits = newTraits;
         });
     }
 
@@ -308,7 +313,7 @@ public class RerollService {
         PlanetClass homeworld;
         GraphicalCulture shipset;
         String leaderClass;
-        StartingRulerTrait leaderTrait;
+        List<StartingRulerTrait> leaderTraits;
         SecondarySpecies secondarySpecies;
 
         EmpireBuilder(GeneratedEmpire e) {
@@ -324,14 +329,14 @@ public class RerollService {
             this.homeworld = e.homeworld();
             this.shipset = e.shipset();
             this.leaderClass = e.leaderClass();
-            this.leaderTrait = e.leaderTrait();
+            this.leaderTraits = e.leaderTraits();
             this.secondarySpecies = e.secondarySpecies();
         }
 
         GeneratedEmpire build() {
             return new GeneratedEmpire(ethics, authority, civics, origin,
                     speciesArchetype, speciesClass, speciesTraits, traitPointsUsed, traitPointsBudget,
-                    homeworld, shipset, leaderClass, leaderTrait, secondarySpecies);
+                    homeworld, shipset, leaderClass, leaderTraits, secondarySpecies);
         }
     }
 
@@ -365,8 +370,8 @@ public class RerollService {
             case TRAITS -> old.speciesTraits().stream().map(SpeciesTrait::id).toList() + " → " + updated.speciesTraits().stream().map(SpeciesTrait::id).toList();
             case HOMEWORLD -> old.homeworld().id() + " → " + updated.homeworld().id();
             case SHIPSET -> old.shipset().id() + " → " + updated.shipset().id();
-            case LEADER -> (old.leaderClass() + "/" + (old.leaderTrait() != null ? old.leaderTrait().id() : "none"))
-                    + " → " + (updated.leaderClass() + "/" + (updated.leaderTrait() != null ? updated.leaderTrait().id() : "none"));
+            case LEADER -> (old.leaderClass() + "/" + old.leaderTraits().stream().map(StartingRulerTrait::id).toList())
+                    + " → " + (updated.leaderClass() + "/" + updated.leaderTraits().stream().map(StartingRulerTrait::id).toList());
             case SECONDARY_SPECIES -> (old.secondarySpecies() != null ? old.secondarySpecies().speciesClass() : "none")
                     + " → " + (updated.secondarySpecies() != null ? updated.secondarySpecies().speciesClass() : "none");
         };

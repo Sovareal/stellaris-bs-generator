@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -52,7 +53,15 @@ public class OriginExtractor {
 
             SecondarySpeciesConfig secondarySpecies = parseSecondarySpecies(node);
 
-            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies));
+            // Parse origin-level enforced species traits: traits = { trait = X }
+            List<String> enforcedTraitIds = node.child("traits")
+                    .map(traitsNode -> traitsNode.children("trait").stream()
+                            .map(ClausewitzNode::value)
+                            .filter(Objects::nonNull)
+                            .toList())
+                    .orElse(List.of());
+
+            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds));
         }
 
         log.info("Extracted {} playable origins", origins.size());

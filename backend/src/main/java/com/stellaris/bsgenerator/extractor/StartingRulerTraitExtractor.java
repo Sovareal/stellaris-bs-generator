@@ -51,9 +51,13 @@ public class StartingRulerTraitExtractor {
             List<String> forbiddenEthics = node.child("forbidden_ethics")
                     .map(ClausewitzNode::bareValues)
                     .orElse(List.of());
+            int cost = node.childInt("cost", 0);
+            List<String> opposites = node.child("opposites")
+                    .map(ClausewitzNode::bareValues)
+                    .orElse(List.of());
 
             traits.add(new StartingRulerTrait(id, leaderClasses, forbiddenOrigins, allowedEthics,
-                    allowedOrigins, allowedCivics, forbiddenCivics, forbiddenEthics));
+                    allowedOrigins, allowedCivics, forbiddenCivics, forbiddenEthics, cost, opposites));
         }
 
         log.info("Extracted {} starting ruler traits", traits.size());

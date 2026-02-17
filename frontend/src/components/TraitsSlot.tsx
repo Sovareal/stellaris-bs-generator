@@ -41,6 +41,9 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
         <div className="flex flex-wrap gap-1.5">
           {traits.map((trait) => (
             <Badge key={trait.id} variant="secondary">
+              {trait.enforced && (
+                <span className="mr-1 text-xs text-yellow-500" title="Locked by origin">🔒</span>
+              )}
               <span className={traitColor(trait.cost)}>
                 {displayName(trait)}
               </span>

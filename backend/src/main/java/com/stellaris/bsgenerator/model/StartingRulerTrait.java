@@ -13,6 +13,8 @@ import java.util.List;
  * @param allowedCivics    if non-empty, empire must have at least one of these civics
  * @param forbiddenCivics  if non-empty, empire must NOT have any of these civics
  * @param forbiddenEthics  if non-empty, empire must NOT have any of these ethics
+ * @param cost             trait point cost (+1 for positive luminary, -1 for negative, 0 for regular)
+ * @param opposites        mutually exclusive trait IDs (negative luminary traits exclude each other)
  */
 public record StartingRulerTrait(
         String id,
@@ -22,5 +24,7 @@ public record StartingRulerTrait(
         List<String> allowedOrigins,
         List<String> allowedCivics,
         List<String> forbiddenCivics,
-        List<String> forbiddenEthics
+        List<String> forbiddenEthics,
+        int cost,
+        List<String> opposites
 ) {}

@@ -26,6 +26,10 @@ public class PlanetClassExtractor {
 
             if (!colonizable || !initial) continue;
 
+            // Skip planets explicitly marked as non-starting (e.g., pc_volcanic)
+            boolean startingPlanet = node.childBool("starting_planet", true);
+            if (!startingPlanet) continue;
+
             String id = node.key();
             String climate = node.childValue("climate").orElse("unknown");
 
