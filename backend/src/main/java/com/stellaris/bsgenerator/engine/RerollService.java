@@ -17,6 +17,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class RerollService {
 
+    private static final int MAX_REROLL_ATTEMPTS = 50;
+
     private final CompatibilityFilterService filterService;
     private final RequirementEvaluator evaluator;
     private final EmpireGeneratorService generatorService;
@@ -56,7 +58,7 @@ public class RerollService {
     }
 
     private GeneratedEmpire rerollEthics(GeneratedEmpire empire) {
-        for (int attempt = 0; attempt < 50; attempt++) {
+        for (int attempt = 0; attempt < MAX_REROLL_ATTEMPTS; attempt++) {
             var newEmpire = generatorService.generate();
             var candidateEthics = newEmpire.ethics();
 
@@ -261,7 +263,14 @@ public class RerollService {
         }
 
         var newPlanet = planets.get(random.nextInt(planets.size()));
-        return copyWith(empire, b -> b.homeworld = newPlanet);
+        // Hab pref follows homeworld unless origin fixes it
+        var newHabPref = empire.origin().habitabilityPreference() != null
+                ? empire.habitabilityPreference()
+                : newPlanet;
+        return copyWith(empire, b -> {
+            b.homeworld = newPlanet;
+            b.habitabilityPreference = newHabPref;
+        });
     }
 
     private Set<String> collectTraitPlanetClasses(java.util.List<com.stellaris.bsgenerator.model.SpeciesTrait> traits) {
@@ -322,6 +331,7 @@ public class RerollService {
         int traitPointsUsed;
         int traitPointsBudget;
         PlanetClass homeworld;
+        PlanetClass habitabilityPreference;
         GraphicalCulture shipset;
         String leaderClass;
         List<StartingRulerTrait> leaderTraits;
@@ -338,6 +348,7 @@ public class RerollService {
             this.traitPointsUsed = e.traitPointsUsed();
             this.traitPointsBudget = e.traitPointsBudget();
             this.homeworld = e.homeworld();
+            this.habitabilityPreference = e.habitabilityPreference();
             this.shipset = e.shipset();
             this.leaderClass = e.leaderClass();
             this.leaderTraits = e.leaderTraits();
@@ -347,7 +358,7 @@ public class RerollService {
         GeneratedEmpire build() {
             return new GeneratedEmpire(ethics, authority, civics, origin,
                     speciesArchetype, speciesClass, speciesTraits, traitPointsUsed, traitPointsBudget,
-                    homeworld, shipset, leaderClass, leaderTraits, secondarySpecies);
+                    homeworld, habitabilityPreference, shipset, leaderClass, leaderTraits, secondarySpecies);
         }
     }
 

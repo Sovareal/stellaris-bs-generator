@@ -116,6 +116,9 @@ public class EmpireGeneratorService {
         // 7. Pick homeworld planet (or use origin-fixed, constrained by traits + species class)
         PlanetClass homeworld = pickHomeworld(origin, traits, speciesClass);
 
+        // 7b. Determine habitability preference
+        PlanetClass habPref = pickHabitabilityPreference(origin, homeworld);
+
         // 8. Pick random shipset
         GraphicalCulture shipset = pickShipset();
 
@@ -126,7 +129,7 @@ public class EmpireGeneratorService {
         // 10. Generate secondary species if origin/civic requires one
         SecondarySpecies secondarySpecies = generateSecondarySpecies(origin, civics, speciesClass);
 
-        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, speciesClass={}, traits={} ({}/{}pts), homeworld={}, shipset={}, leader={}/{}, secondarySpecies={}",
+        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, speciesClass={}, traits={} ({}/{}pts), homeworld={}, habPref={}, shipset={}, leader={}/{}, secondarySpecies={}",
                 ethics.stream().map(Ethic::id).toList(),
                 authority.id(),
                 civics.stream().map(Civic::id).toList(),
@@ -134,13 +137,13 @@ public class EmpireGeneratorService {
                 archetype.id(), speciesClass,
                 traits.stream().map(SpeciesTrait::id).toList(),
                 pointsUsed, archetype.traitPoints(),
-                homeworld.id(), shipset.id(),
+                homeworld.id(), habPref.id(), shipset.id(),
                 leaderClass, leaderTraits.stream().map(StartingRulerTrait::id).toList(),
                 secondarySpecies != null ? secondarySpecies.speciesClass() : "none");
 
         return new GeneratedEmpire(ethics, authority, civics, origin,
                 archetype, speciesClass, traits, pointsUsed, archetype.traitPoints(),
-                homeworld, shipset, leaderClass, leaderTraits, secondarySpecies);
+                homeworld, habPref, shipset, leaderClass, leaderTraits, secondarySpecies);
     }
 
     /**
@@ -488,6 +491,34 @@ public class EmpireGeneratorService {
             throw new GenerationException("No habitable planet classes available");
         }
         return planets.get(random.nextInt(planets.size()));
+    }
+
+    /**
+     * Determine habitability preference for the species.
+     * - If origin explicitly sets habitability_preference → fixed to that
+     * - If origin has a fixed homeworld but no hab pref (Remnants, Post-Apocalyptic) → random standard type
+     * - Otherwise → same as homeworld
+     */
+    private PlanetClass pickHabitabilityPreference(Origin origin, PlanetClass homeworld) {
+        // Origin explicitly defines habitability preference
+        if (origin.habitabilityPreference() != null) {
+            String habPrefId = origin.habitabilityPreference();
+            return filterService.getHabitablePlanetClasses().stream()
+                    .filter(p -> p.id().equals(habPrefId))
+                    .findFirst()
+                    .orElse(new PlanetClass(habPrefId, "fixed"));
+        }
+
+        // Origin has fixed homeworld but no hab pref → random from standard types
+        if (ORIGIN_FIXED_PLANETS.containsKey(origin.id())) {
+            var standard = filterService.getHabitablePlanetClasses();
+            if (!standard.isEmpty()) {
+                return standard.get(random.nextInt(standard.size()));
+            }
+        }
+
+        // Default: same as homeworld
+        return homeworld;
     }
 
     /**

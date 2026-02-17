@@ -18,6 +18,7 @@ public record GeneratedEmpire(
         int traitPointsUsed,
         int traitPointsBudget,
         PlanetClass homeworld,
+        PlanetClass habitabilityPreference,
         GraphicalCulture shipset,
         String leaderClass,
         List<StartingRulerTrait> leaderTraits,

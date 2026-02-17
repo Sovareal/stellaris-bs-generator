@@ -64,7 +64,10 @@ public class OriginExtractor {
             // Parse icon path (e.g. "gfx/interface/icons/origins/origins_default.dds")
             String iconPath = node.childValue("icon").orElse(null);
 
-            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath));
+            // Parse habitability preference (e.g. pc_ocean, pc_habitat)
+            String habitabilityPreference = node.childValue("habitability_preference").orElse(null);
+
+            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath, habitabilityPreference));
         }
 
         log.info("Extracted {} playable origins", origins.size());

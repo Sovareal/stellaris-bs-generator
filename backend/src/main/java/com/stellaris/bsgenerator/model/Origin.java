@@ -12,5 +12,6 @@ public record Origin(
         int randomWeight,
         SecondarySpeciesConfig secondarySpecies,
         List<String> enforcedTraitIds,
-        String iconPath
+        String iconPath,
+        String habitabilityPreference
 ) {}

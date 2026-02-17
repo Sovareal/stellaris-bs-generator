@@ -85,6 +85,23 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           iconId={empire.homeworld.id}
         />
 
+        <div className="flex items-center justify-between gap-4 py-2 border-b border-border">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Habitability Preference
+            </span>
+            <span className="text-foreground font-medium truncate flex items-center gap-1.5">
+              <EntityIcon category="planets" id={empire.habitabilityPreference.id} size={36} />
+              {displayName(empire.habitabilityPreference)}
+            </span>
+            {empire.habitabilityPreference.id !== empire.homeworld.id && (
+              <span className="text-xs text-muted-foreground">
+                {empire.habitabilityPreference.climate === "fixed" ? "Fixed by origin" : `${empire.habitabilityPreference.climate} climate`}
+              </span>
+            )}
+          </div>
+        </div>
+
         <EmpireSlot
           label="Shipset"
           value={empire.shipsetName ?? humanizeId(empire.shipset)}

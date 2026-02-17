@@ -92,6 +92,7 @@ export interface EmpireResponse {
   traitPointsUsed: number;
   traitPointsBudget: number;
   homeworld: PlanetClassDto;
+  habitabilityPreference: PlanetClassDto;
   shipset: string;
   shipsetName: string | null;
   leader: LeaderDto;
