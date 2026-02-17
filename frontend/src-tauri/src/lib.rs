@@ -2,6 +2,9 @@ use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 struct BackendProcess(Mutex<Option<Child>>);
 
 fn find_backend_jar(app: &tauri::App) -> Option<std::path::PathBuf> {
@@ -45,9 +48,17 @@ fn find_java_executable(app: &tauri::App) -> String {
 }
 
 fn spawn_backend(java_path: &str, jar_path: &std::path::Path) -> Result<Child, String> {
-    Command::new(java_path)
-        .args(["-jar", &jar_path.to_string_lossy()])
-        .spawn()
+    let mut cmd = Command::new(java_path);
+    cmd.args(["-jar", &jar_path.to_string_lossy()]);
+
+    // Hide the console window on Windows in production
+    #[cfg(windows)]
+    if !cfg!(debug_assertions) {
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    cmd.spawn()
         .map_err(|e| format!("Failed to start backend: {e}"))
 }
 
@@ -90,10 +101,12 @@ pub fn run() {
 
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                // Kill the backend process when the window closes
-                if let Some(state) = window.try_state::<BackendProcess>() {
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::Exit = event {
+                // Kill the backend process on app exit (covers all close paths)
+                if let Some(state) = app_handle.try_state::<BackendProcess>() {
                     if let Ok(mut guard) = state.0.lock() {
                         if let Some(ref mut child) = *guard {
                             let _ = child.kill();
@@ -102,7 +115,5 @@ pub fn run() {
                     }
                 }
             }
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        });
 }

@@ -48,3 +48,13 @@
 
 ### Issue 3: Multi-species origins/civics missing secondary species
 **Fix:** Added `SecondarySpeciesConfig` (parsed from `has_secondary_species` blocks in game data) and `SecondarySpecies` (generated output) models. `OriginExtractor` and `CivicExtractor` now parse `has_secondary_species` with title and enforced traits. `EmpireGeneratorService.generateSecondarySpecies()` picks a BIOLOGICAL species class different from primary, applies enforced traits (hardcoded cost map for 3 special traits), and fills remaining budget with random compatible traits. Supported: Necrophage (prepatent, no enforced), Syncretic Evolution (trait_syncretic_proles, cost=1), Rogue Servitor (bio-trophy, no enforced), Driven Assimilator (trait_cybernetic, cost=0), Hive Bodysnatcher (trait_hive_mind, cost=0). Reroll support for secondary species slot + auto-regeneration when origin/civic rerolls change secondary species requirement. Frontend `SecondarySpeciesSlot` component with enforced trait "locked" badges.
+
+## Post-Build Issues (2026-02-17)
+
+### Issue: Production app shows "Backend not reachable after 30s" despite backend running
+**Root cause:** CORS. Backend only allowed `http://localhost:5173` (Vite dev). In production Tauri, frontend is served from `https://tauri.localhost` — all API requests blocked by CORS.
+**Fix:** Added `https://tauri.localhost` to `spring.web.cors.allowed-origins` in `application.yml`.
+
+### Issue: Backend opens visible console window in production
+**Root cause:** `Command::new("java")` on Windows spawns with a visible console by default.
+**Fix:** Added `CREATE_NO_WINDOW` (0x08000000) creation flag via `CommandExt::creation_flags()` in production mode only (dev keeps console for debugging). Switched from `on_window_event(Destroyed)` to `RunEvent::Exit` handler for more reliable backend process cleanup on all exit paths (Alt+F4, crash, etc.).
