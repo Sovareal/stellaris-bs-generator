@@ -108,10 +108,12 @@ public class EmpireGeneratorService {
         // Pick compatible traits within budget, excluding enforced trait IDs from the random pool
         List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds);
 
-        // 6b. Prepend enforced species traits (free, not from normal pool)
+        // 6b. Prepend enforced species traits (display their real cost; budget excludes them)
         traits = prependEnforcedTraits(allEnforcedTraitIds, traits);
 
-        int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
+        // Budget: only count non-enforced traits (enforced traits are free regardless of displayed cost)
+        var enforcedSet = new HashSet<>(allEnforcedTraitIds);
+        int pointsUsed = traits.stream().filter(t -> !enforcedSet.contains(t.id())).mapToInt(SpeciesTrait::cost).sum();
 
         // 7. Pick homeworld planet (or use origin-fixed, constrained by traits + species class)
         PlanetClass homeworld = pickHomeworld(origin, traits, speciesClass);
@@ -447,12 +449,11 @@ public class EmpireGeneratorService {
 
         List<SpeciesTrait> result = new ArrayList<>();
         for (var traitId : enforcedTraitIds) {
-            // Look up real trait data first; fall back to stub with 0 cost
             var realTrait = filterService.findTraitById(traitId);
             if (realTrait != null) {
-                // Use real trait but override cost to 0 (enforced traits are free)
+                // Use real trait data including real cost (for display) — budget calc excludes enforced traits separately
                 result.add(new SpeciesTrait(
-                        realTrait.id(), 0,
+                        realTrait.id(), realTrait.cost(),
                         realTrait.allowedArchetypes(), realTrait.allowedSpeciesClasses(),
                         realTrait.allowedPlanetClasses(), realTrait.opposites(),
                         true, false, realTrait.dlcRequirement(), realTrait.tags(),
@@ -461,11 +462,9 @@ public class EmpireGeneratorService {
                         realTrait.allowedEthics(), realTrait.forbiddenEthics(),
                         realTrait.iconPath()));
             } else {
-                int cost = ORIGIN_ENFORCED_TRAIT_COSTS.containsKey(traitId)
-                        ? ORIGIN_ENFORCED_TRAIT_COSTS.get(traitId)
-                        : CIVIC_ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0);
+                // Stub for initial=no traits (necrophage, perfected genes, etc.) — cost is 0 for display too
                 result.add(new SpeciesTrait(
-                        traitId, cost,
+                        traitId, 0,
                         List.of(), List.of(), List.of(), List.of(),
                         true, false, null, List.of(),
                         List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null));
@@ -564,7 +563,7 @@ public class EmpireGeneratorService {
         return prependEnforcedTraits(allEnforcedTraitIds, traits);
     }
 
-    private List<String> collectEnforcedTraitIds(Origin origin, List<Civic> civics) {
+    List<String> collectEnforcedTraitIds(Origin origin, List<Civic> civics) {
         var result = new ArrayList<>(origin.enforcedTraitIds());
         for (var civic : civics) {
             for (var traitId : civic.enforcedTraitIds()) {

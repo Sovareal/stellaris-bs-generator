@@ -98,6 +98,8 @@ class EmpireGeneratorServiceTest {
     void traitsAreCompatibleWithArchetype() {
         var empire = generator.generate();
         for (var trait : empire.speciesTraits()) {
+            // Enforced stubs (initial=no traits not in creation pool) have empty allowedArchetypes — skip them
+            if (trait.allowedArchetypes().isEmpty()) continue;
             assertTrue(trait.allowedArchetypes().contains(empire.speciesArchetype().id()),
                     "Trait " + trait.id() + " should be allowed for archetype " + empire.speciesArchetype().id());
         }

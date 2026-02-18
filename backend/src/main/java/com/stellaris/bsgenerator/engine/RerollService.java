@@ -170,7 +170,9 @@ public class RerollService {
 
         // Regenerate species traits: drop old origin's enforced traits, add new origin's enforced traits
         var newTraits = generatorService.buildSpeciesTraits(empire.speciesArchetype(), stateWithOrigin, newOrigin, empire.civics());
-        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
+        // Budget: only non-enforced traits count (enforced display real cost but are free)
+        var newEnforcedIds = new HashSet<>(generatorService.collectEnforcedTraitIds(newOrigin, empire.civics()));
+        int newPointsUsed = newTraits.stream().filter(t -> !newEnforcedIds.contains(t.id())).mapToInt(SpeciesTrait::cost).sum();
 
         // Regenerate leader traits: origin change may affect valid trait pool (e.g., Treasure Hunters → other)
         var newLeaderTraits = generatorService.pickLeaderTraits(empire.leaderClass(), stateWithOrigin);
