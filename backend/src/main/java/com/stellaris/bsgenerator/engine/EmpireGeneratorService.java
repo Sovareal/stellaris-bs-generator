@@ -170,14 +170,29 @@ public class EmpireGeneratorService {
         if (candidates.isEmpty()) candidates = bioClasses;
         String secondaryClass = candidates.get(random.nextInt(candidates.size())).id();
 
-        // Resolve enforced traits
+        // Resolve enforced traits — use real trait data when available to get correct opposites and iconPath
         List<SpeciesTrait> enforcedTraits = config.enforcedTraitIds().stream()
-                .map(traitId -> new SpeciesTrait(
-                        traitId,
-                        ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0),
-                        List.of("BIOLOGICAL"), List.of(), List.of(), List.of(),
-                        true, false, null, List.of(),
-                        List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null))
+                .map(traitId -> {
+                    int costOverride = ENFORCED_TRAIT_COSTS.getOrDefault(traitId, 0);
+                    var real = filterService.findTraitById(traitId);
+                    if (real != null) {
+                        return new SpeciesTrait(
+                                real.id(), costOverride,
+                                real.allowedArchetypes(), real.allowedSpeciesClasses(),
+                                real.allowedPlanetClasses(), real.opposites(),
+                                true, false, real.dlcRequirement(), real.tags(),
+                                real.allowedOrigins(), real.forbiddenOrigins(),
+                                real.allowedCivics(), real.forbiddenCivics(),
+                                real.allowedEthics(), real.forbiddenEthics(),
+                                real.iconPath());
+                    }
+                    // Fallback stub (trait not in creation pool)
+                    return new SpeciesTrait(
+                            traitId, costOverride,
+                            List.of("BIOLOGICAL"), List.of(), List.of(), List.of(),
+                            true, false, null, List.of(),
+                            List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null);
+                })
                 .toList();
 
         int enforcedCost = enforcedTraits.stream().mapToInt(SpeciesTrait::cost).sum();
