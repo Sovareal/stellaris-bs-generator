@@ -1,6 +1,8 @@
 package com.stellaris.bsgenerator.engine;
 
 import com.stellaris.bsgenerator.model.*;
+import com.stellaris.bsgenerator.model.requirement.RequirementBlock;
+import com.stellaris.bsgenerator.model.requirement.RequirementCategory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +20,7 @@ public class EmpireGeneratorService {
 
     private static final int ETHICS_BUDGET = 3;
     private static final int CIVIC_COUNT = 2;
-    private static final double GESTALT_CHANCE = 0.20;
+    private static final double GESTALT_CHANCE = 0.30;
     private static final List<String> LEADER_CLASSES = List.of("official", "commander", "scientist");
 
     private static final int SECONDARY_SPECIES_BUDGET = 2;
@@ -350,8 +352,39 @@ public class EmpireGeneratorService {
         if (compatible.isEmpty()) {
             throw new GenerationException("No compatible origins for current state");
         }
-        // Uniform random: all compatible origins get equal chance
-        return compatible.get(random.nextInt(compatible.size()));
+        // Rarity-weighted: origins restricted by archetype/authority/species class get a boost
+        // to compensate for the narrower set of empire configurations that can generate them.
+        return WeightedRandom.select(compatible, this::originRarityWeight, random);
+    }
+
+    /**
+     * Computes a rarity weight for an origin inversely proportional to how restrictive
+     * its possible block is. Origins restricted to specific archetypes, authorities, or
+     * species classes appear in fewer empire configurations and need a boost to compete
+     * fairly against unrestricted origins within the same compatible pool.
+     */
+    private int originRarityWeight(Origin origin) {
+        var cats = collectPossibleCategories(origin.possible());
+        boolean archetypeRestricted = cats.contains(RequirementCategory.SPECIES_ARCHETYPE);
+        boolean authorityRestricted = cats.contains(RequirementCategory.AUTHORITY);
+        boolean classRestricted     = cats.contains(RequirementCategory.SPECIES_CLASS);
+        // Species-class restrictions are rarest (1–2 of 15 classes) → highest boost
+        if (classRestricted)                             return 6;
+        // Doubly restricted (e.g., machine archetype + machine authority)
+        if (archetypeRestricted && authorityRestricted)  return 4;
+        // Singly restricted: archetype-only (LITHOID, MACHINE) or authority-only (dictatorial, imperial)
+        if (archetypeRestricted || authorityRestricted)  return 2;
+        return 1;
+    }
+
+    /** Collects all RequirementCategory keys present in a possible/potential block (including cross-category OR branches). */
+    private Set<RequirementCategory> collectPossibleCategories(RequirementBlock block) {
+        if (block == null) return Set.of();
+        var cats = new HashSet<>(block.categories().keySet());
+        for (var orBranch : block.crossCategoryOrs()) {
+            cats.addAll(orBranch.keySet());
+        }
+        return cats;
     }
 
     private SpeciesArchetype pickArchetype(EmpireState state) {
@@ -379,13 +412,21 @@ public class EmpireGeneratorService {
         return archetypes.get(random.nextInt(archetypes.size()));
     }
 
+    // Species classes that unlock exclusively restricted origins (e.g., origin_fruitful)
+    // and are underrepresented at uniform weight (2 of ~15 BIOLOGICAL classes).
+    private static final Set<String> BOOSTED_SPECIES_CLASSES = Set.of("FUN", "PLANT");
+    private static final int BOOSTED_CLASS_WEIGHT = 3;
+
     private String pickSpeciesClass(SpeciesArchetype archetype) {
         var classes = filterService.getSpeciesClassesForArchetype(archetype.id());
         if (classes.isEmpty()) {
             // Fallback: use archetype id as species class (e.g., MACHINE archetype → MACHINE class)
             return archetype.id();
         }
-        return classes.get(random.nextInt(classes.size())).id();
+        // Give FUN and PLANT classes a boost so species-class-restricted origins appear more often
+        return WeightedRandom.select(classes,
+                sc -> BOOSTED_SPECIES_CLASSES.contains(sc.id()) ? BOOSTED_CLASS_WEIGHT : 1,
+                random).id();
     }
 
     private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state, List<String> excludeIds) {

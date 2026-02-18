@@ -245,13 +245,13 @@ class EmpireGeneratorServiceTest {
 
     /**
      * Diagnostic: generates 1000 empires and logs origin distribution.
-     * Run manually to investigate Issue 9 (some origins appear very rarely).
+     * Run manually to test chance of empire generation.
      * Enable by removing @Disabled.
      */
     @Disabled("Diagnostic report — run manually to investigate origin distribution")
     @Test
     void originDistributionReport() {
-        int total = 1000;
+        int total = 10000;
         Map<String, Integer> counts = new LinkedHashMap<>();
 
         for (int i = 0; i < total; i++) {
