@@ -7,7 +7,7 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "call ..\\gradlew.bat -p .. :backend:bootJar && copy /Y ..\\backend\\build\\libs\\backend-0.1.0.jar src-tauri\\backend.jar && call ..\\scripts\\bundle-jre.bat && npm run build"
+    "beforeBuildCommand": "node ../../scripts/before-build.js"
   },
   "app": {
     "windows": [
@@ -27,7 +27,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": "all",
     "resources": [
       "backend.jar",
       "jre/**/*"

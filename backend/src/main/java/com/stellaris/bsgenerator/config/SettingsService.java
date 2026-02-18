@@ -8,6 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -27,14 +28,63 @@ public class SettingsService {
 
     public Settings load() {
         if (!Files.exists(settingsFile)) {
-            return new Settings(defaultGamePath);
+            return new Settings(resolveGamePath(defaultGamePath));
         }
         try {
-            return mapper.readValue(settingsFile.toFile(), Settings.class);
+            var settings = mapper.readValue(settingsFile.toFile(), Settings.class);
+            // If the saved path is blank (e.g. user cleared it), fall back to auto-detect
+            if (settings.gamePath() == null || settings.gamePath().isBlank()) {
+                return new Settings(resolveGamePath(""));
+            }
+            return settings;
         } catch (Exception e) {
             log.warn("Failed to read settings file, using defaults: {}", e.getMessage());
-            return new Settings(defaultGamePath);
+            return new Settings(resolveGamePath(defaultGamePath));
         }
+    }
+
+    /** Returns {@code configured} if non-blank, otherwise auto-detects the Stellaris install path. */
+    private String resolveGamePath(String configured) {
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+        String detected = detectDefaultGamePath();
+        if (!detected.isBlank()) {
+            log.info("Auto-detected Stellaris game path: {}", detected);
+        }
+        return detected;
+    }
+
+    private static String detectDefaultGamePath() {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        List<Path> candidates;
+        if (os.contains("win")) {
+            candidates = List.of(
+                Path.of("C:/Program Files (x86)/Steam/steamapps/common/Stellaris"),
+                Path.of("C:/SteamLibrary/steamapps/common/Stellaris"),
+                Path.of("D:/SteamLibrary/steamapps/common/Stellaris"),
+                Path.of("E:/SteamLibrary/steamapps/common/Stellaris"),
+                Path.of("F:/SteamLibrary/steamapps/common/Stellaris")
+            );
+        } else if (os.contains("mac")) {
+            candidates = List.of(
+                Path.of(System.getProperty("user.home"),
+                    "Library/Application Support/Steam/steamapps/common/Stellaris")
+            );
+        } else {
+            // Linux (including Steam Deck)
+            String home = System.getProperty("user.home", "");
+            candidates = List.of(
+                Path.of(home, ".steam/steam/steamapps/common/Stellaris"),
+                Path.of(home, ".local/share/Steam/steamapps/common/Stellaris"),
+                Path.of(home, "snap/steam/common/.steam/steam/steamapps/common/Stellaris")
+            );
+        }
+        return candidates.stream()
+                .filter(Files::isDirectory)
+                .map(Path::toString)
+                .findFirst()
+                .orElse("");
     }
 
     public void save(Settings settings) throws IOException {

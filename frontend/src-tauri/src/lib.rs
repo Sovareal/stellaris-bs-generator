@@ -36,7 +36,9 @@ fn find_java_executable(app: &tauri::App) -> String {
     // In production: use bundled JRE
     if !cfg!(debug_assertions) {
         if let Ok(resource_dir) = app.path().resource_dir() {
-            let bundled_java = resource_dir.join("jre").join("bin").join("java.exe");
+            // Windows uses java.exe; Linux and macOS use plain java
+            let java_bin = if cfg!(windows) { "java.exe" } else { "java" };
+            let bundled_java = resource_dir.join("jre").join("bin").join(java_bin);
             if bundled_java.exists() {
                 log::info!("Using bundled JRE: {}", bundled_java.display());
                 return bundled_java.to_string_lossy().into_owned();
