@@ -2,7 +2,7 @@
 
 A desktop application that generates random, rule-valid Stellaris empires by parsing the game's own data files.
 
-![App Icon](app_icon.jpg)
+<img src="frontend/public/app_icon.jpg" alt="" height="120" align="right">
 
 ## How It Works
 
