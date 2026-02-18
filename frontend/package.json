@@ -1,7 +1,8 @@
 {
-  "name": "frontend",
+  "name": "stellaris-bs-generator",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Random empire generator for Stellaris, powered by live game data",
   "type": "module",
   "scripts": {
     "dev": "vite",
