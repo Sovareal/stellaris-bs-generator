@@ -122,12 +122,20 @@ public class IconService {
     }
 
     private Path resolveTraitIcon(Path gamePath, String traitId) {
-        // Check if the trait has a custom icon path
+        // Check creation-pool traits for a custom icon path
         if (gameDataManager.getSpeciesTraits() != null) {
             for (var trait : gameDataManager.getSpeciesTraits()) {
                 if (trait.id().equals(traitId) && trait.iconPath() != null) {
                     return gamePath.resolve(trait.iconPath());
                 }
+            }
+        }
+        // Check all-traits icon map (covers initial=no traits: void dweller, clone soldier, unplugged, etc.)
+        Map<String, String> allIconPaths = gameDataManager.getAllTraitIconPaths();
+        if (allIconPaths != null) {
+            String iconPath = allIconPaths.get(traitId);
+            if (iconPath != null) {
+                return gamePath.resolve(iconPath);
             }
         }
         // Fallback: direct ID match

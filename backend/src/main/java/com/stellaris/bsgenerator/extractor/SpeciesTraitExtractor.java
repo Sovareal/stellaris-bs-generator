@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -87,6 +89,26 @@ public class SpeciesTraitExtractor {
 
         log.info("Extracted {} creation-eligible species traits", traits.size());
         return traits;
+    }
+
+    /**
+     * Extract icon paths for ALL species traits, including initial=no traits (void dweller,
+     * clone soldier, unplugged, etc.) that are excluded from the creation pool.
+     * Maps traitId → explicit icon path (only traits with a custom icon= field).
+     */
+    public Map<String, String> extractIconPaths(ClausewitzNode root) {
+        Map<String, String> map = new HashMap<>();
+        for (var node : root.children()) {
+            if (node.key() == null || !node.isBlock()) continue;
+            if (node.child("allowed_archetypes").isEmpty()) continue;
+            if (node.child("cost").isEmpty()) continue;
+
+            String iconPath = node.childValue("icon").orElse(null);
+            if (iconPath != null) {
+                map.put(node.key(), iconPath);
+            }
+        }
+        return map;
     }
 
     private int parseCost(ClausewitzNode costNode) {
