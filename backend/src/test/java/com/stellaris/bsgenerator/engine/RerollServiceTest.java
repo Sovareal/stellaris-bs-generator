@@ -65,11 +65,22 @@ class RerollServiceTest {
 
     @Test
     void rerollAuthority() {
-        var updated = rerollService.reroll(session, RerollCategory.AUTHORITY);
-
-        assertNotNull(updated);
-        assertFalse(session.canReroll(), "Reroll should be used up");
-        assertEquals(2, updated.civics().size(), "Civics should still be 2");
+        // Some empire configurations lock authority (e.g. civics requiring a specific authority).
+        // Retry up to 20 times to find a rerollable empire.
+        for (int attempt = 0; attempt < 20; attempt++) {
+            var empire = generator.generate();
+            session.reset(empire);
+            try {
+                var updated = rerollService.reroll(session, RerollCategory.AUTHORITY);
+                assertNotNull(updated);
+                assertFalse(session.canReroll(), "Reroll should be used up");
+                assertEquals(2, updated.civics().size(), "Civics should still be 2");
+                return;
+            } catch (GenerationException e) {
+                // This empire had no alternative authority (locked by civics/origin); try next
+            }
+        }
+        fail("Could not find a rerollable-authority empire in 20 attempts");
     }
 
     @Test

@@ -13,13 +13,14 @@ export function EntityIcon({ category, id, size = 16, className = "" }: EntityIc
 
   if (errored) {
     return (
-      <span
-        className={`inline-flex items-center justify-center flex-shrink-0 rounded bg-muted text-muted-foreground text-[10px] ${className}`}
-        style={{ width: size, height: size }}
+      <img
+        src="/billy.png"
+        alt=""
+        width={size}
+        height={size}
+        className={`inline-block flex-shrink-0 ${className}`}
         title={id}
-      >
-        ?
-      </span>
+      />
     );
   }
 

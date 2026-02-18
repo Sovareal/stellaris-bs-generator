@@ -89,7 +89,26 @@ public class RerollService {
 
             return copyWith(empire, b -> b.ethics = candidateEthics);
         }
+        // GC empires: no non-GC ethics can coexist with gestalt authorities.
+        // Perform a full political regime change: keep species/traits/homeworld, replace political layer.
+        if (empire.ethics().stream().anyMatch(Ethic::isGestalt)) {
+            return performRegimeChange(empire);
+        }
         throw new GenerationException("Could not find compatible ethics for reroll");
+    }
+
+    /**
+     * Full political regime change for GC empires rerolling ethics.
+     * Generates a fresh non-GC empire and returns it (uses reroll slot).
+     */
+    private GeneratedEmpire performRegimeChange(GeneratedEmpire empire) {
+        for (int attempt = 0; attempt < MAX_REROLL_ATTEMPTS; attempt++) {
+            var candidate = generatorService.generate();
+            if (candidate.ethics().stream().noneMatch(Ethic::isGestalt)) {
+                return candidate;
+            }
+        }
+        throw new GenerationException("Could not perform regime change from Gestalt Consciousness");
     }
 
     private GeneratedEmpire rerollAuthority(GeneratedEmpire empire) {
@@ -109,11 +128,33 @@ public class RerollService {
                 }).toList();
 
         if (compatible.isEmpty()) {
+            // Gestalt empires: switching hive↔machine requires archetype change.
+            // Generate a fresh empire with the other gestalt authority type.
+            if (empire.authority().isGestalt()) {
+                return performGestaltSwitch(empire);
+            }
             throw new GenerationException("No alternative authorities compatible with current empire");
         }
 
         var newAuth = WeightedRandom.select(compatible, Authority::randomWeight, random);
         return copyWith(empire, b -> b.authority = newAuth);
+    }
+
+    /**
+     * Switches gestalt type (hive mind ↔ machine intelligence).
+     * Since this requires a different species archetype, generates a full fresh empire of the target type.
+     */
+    private GeneratedEmpire performGestaltSwitch(GeneratedEmpire empire) {
+        String targetAuthId = "auth_hive_mind".equals(empire.authority().id())
+                ? "auth_machine_intelligence"
+                : "auth_hive_mind";
+        for (int attempt = 0; attempt < MAX_REROLL_ATTEMPTS; attempt++) {
+            var candidate = generatorService.generate();
+            if (targetAuthId.equals(candidate.authority().id())) {
+                return candidate;
+            }
+        }
+        throw new GenerationException("Could not switch gestalt type to " + targetAuthId);
     }
 
     private GeneratedEmpire rerollCivic(GeneratedEmpire empire, int index) {
@@ -177,6 +218,10 @@ public class RerollService {
         // Regenerate leader traits: origin change may affect valid trait pool (e.g., Treasure Hunters → other)
         var newLeaderTraits = generatorService.pickLeaderTraits(empire.leaderClass(), stateWithOrigin);
 
+        // Regenerate homeworld and hab pref: origin change affects fixed planets (e.g., Void Dwellers → Habitat)
+        var newHomeworld = generatorService.pickHomeworld(newOrigin, newTraits, empire.speciesClass());
+        var newHabPref = generatorService.pickHabitabilityPreference(newOrigin, newHomeworld);
+
         return copyWith(empire, b -> {
             b.origin = newOrigin;
             b.secondarySpecies = newSecondary;
@@ -184,6 +229,8 @@ public class RerollService {
             b.traitPointsUsed = newPointsUsed;
             b.traitPointsBudget = empire.speciesArchetype().traitPoints();
             b.leaderTraits = newLeaderTraits;
+            b.homeworld = newHomeworld;
+            b.habitabilityPreference = newHabPref;
         });
     }
 
@@ -244,10 +291,26 @@ public class RerollService {
         }
 
         int finalPointsSpent = pointsSpent;
+        var newTraitList = List.copyOf(picked);
+
+        // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
+        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);
+        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
+        PlanetClass newHomeworld = empire.homeworld();
+        PlanetClass newHabPref = empire.habitabilityPreference();
+        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
+            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraitList, empire.speciesClass());
+            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
+        }
+        final var finalHomeworld = newHomeworld;
+        final var finalHabPref = newHabPref;
+
         return copyWith(empire, b -> {
-            b.speciesTraits = List.copyOf(picked);
+            b.speciesTraits = newTraitList;
             b.traitPointsUsed = finalPointsSpent;
             b.traitPointsBudget = budget;
+            b.homeworld = finalHomeworld;
+            b.habitabilityPreference = finalHabPref;
         });
     }
 
@@ -268,7 +331,7 @@ public class RerollService {
         }
 
         // Constrain by trait allowed_planet_classes (e.g., Aquatic → pc_ocean only)
-        Set<String> traitPlanetRestriction = collectTraitPlanetClasses(empire.speciesTraits());
+        Set<String> traitPlanetRestriction = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
         if (!traitPlanetRestriction.isEmpty()) {
             planets = new ArrayList<>(planets.stream()
                     .filter(p -> traitPlanetRestriction.contains(p.id()))
@@ -288,20 +351,6 @@ public class RerollService {
             b.homeworld = newPlanet;
             b.habitabilityPreference = newHabPref;
         });
-    }
-
-    private Set<String> collectTraitPlanetClasses(java.util.List<com.stellaris.bsgenerator.model.SpeciesTrait> traits) {
-        Set<String> result = null;
-        for (var trait : traits) {
-            if (!trait.allowedPlanetClasses().isEmpty()) {
-                if (result == null) {
-                    result = new java.util.HashSet<>(trait.allowedPlanetClasses());
-                } else {
-                    result.retainAll(trait.allowedPlanetClasses());
-                }
-            }
-        }
-        return result != null ? result : Set.of();
     }
 
     private GeneratedEmpire rerollShipset(GeneratedEmpire empire) {

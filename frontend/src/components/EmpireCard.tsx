@@ -118,7 +118,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
             {empire.leader.traits.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {empire.leader.traits.map((trait) => (
-                  <Badge key={trait.id} variant="secondary" className="flex items-center gap-1">
+                  <Badge key={trait.id} className="flex items-center gap-1 bg-emerald-900/50 text-emerald-100 border border-emerald-700/40 hover:bg-emerald-900/60">
                     <EntityIcon category="leadertraits" id={trait.id} size={24} />
                     <span>{trait.displayName ?? humanizeId(trait.id)}</span>
                   </Badge>

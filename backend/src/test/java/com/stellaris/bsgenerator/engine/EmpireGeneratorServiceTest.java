@@ -9,6 +9,7 @@ import com.stellaris.bsgenerator.parser.config.ParserProperties;
 import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.loader.GameFileService;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -17,8 +18,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -240,6 +241,49 @@ class EmpireGeneratorServiceTest {
         // Issue 6: UOR requires auth_dictatorial, which forbids Gestalt Consciousness
         assertFalse(empire.ethics().stream().anyMatch(Ethic::isGestalt),
                 "UOR empire must not have Gestalt Consciousness ethics");
+    }
+
+    /**
+     * Diagnostic: generates 1000 empires and logs origin distribution.
+     * Run manually to investigate Issue 9 (some origins appear very rarely).
+     * Enable by removing @Disabled.
+     */
+    @Disabled("Diagnostic report — run manually to investigate origin distribution")
+    @Test
+    void originDistributionReport() {
+        int total = 1000;
+        Map<String, Integer> counts = new LinkedHashMap<>();
+
+        for (int i = 0; i < total; i++) {
+            var empire = generator.generate();
+            counts.merge(empire.origin().id(), 1, Integer::sum);
+        }
+
+        // Get all playable origin IDs from game data to catch zeros
+        var allOrigins = gameDataManager.getOrigins().stream()
+                .map(o -> o.id())
+                .sorted()
+                .toList();
+        for (var id : allOrigins) {
+            counts.putIfAbsent(id, 0);
+        }
+
+        // Sort by count descending
+        var sorted = counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .toList();
+
+        System.out.println("\n===== ORIGIN DISTRIBUTION REPORT (n=" + total + ") =====");
+        System.out.printf("%-50s %6s %7s%n", "Origin ID", "Count", "   %");
+        System.out.println("-".repeat(66));
+        for (var entry : sorted) {
+            double pct = 100.0 * entry.getValue() / total;
+            System.out.printf("%-50s %6d %6.2f%%%n", entry.getKey(), entry.getValue(), pct);
+        }
+        long neverRolled = sorted.stream().filter(e -> e.getValue() == 0).count();
+        System.out.println("-".repeat(66));
+        System.out.printf("Never rolled: %d / %d origins%n", neverRolled, allOrigins.size());
+        System.out.println("=".repeat(66));
     }
 
     private Set<String> toIdSet(java.util.List<Ethic> ethics) {

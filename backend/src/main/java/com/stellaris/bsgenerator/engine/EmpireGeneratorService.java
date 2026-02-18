@@ -477,7 +477,7 @@ public class EmpireGeneratorService {
     /** Cold planet types that Infernal species cannot inhabit. */
     private static final Set<String> INF_REMOVED_PLANETS = Set.of("pc_arctic", "pc_alpine", "pc_tundra");
 
-    private PlanetClass pickHomeworld(Origin origin, List<SpeciesTrait> traits, String speciesClass) {
+    PlanetClass pickHomeworld(Origin origin, List<SpeciesTrait> traits, String speciesClass) {
         String fixedPlanet = ORIGIN_FIXED_PLANETS.get(origin.id());
         if (fixedPlanet != null) {
             return new PlanetClass(fixedPlanet, "fixed");
@@ -513,7 +513,7 @@ public class EmpireGeneratorService {
      * - If origin has a fixed homeworld but no hab pref (Remnants, Post-Apocalyptic) → random standard type
      * - Otherwise → same as homeworld
      */
-    private PlanetClass pickHabitabilityPreference(Origin origin, PlanetClass homeworld) {
+    PlanetClass pickHabitabilityPreference(Origin origin, PlanetClass homeworld) {
         // Origin explicitly defines habitability preference
         if (origin.habitabilityPreference() != null) {
             String habPrefId = origin.habitabilityPreference();
@@ -539,7 +539,7 @@ public class EmpireGeneratorService {
      * Collect the intersection of allowed_planet_classes from all traits that have restrictions.
      * If multiple traits restrict planet classes, the homeworld must satisfy ALL of them.
      */
-    private Set<String> collectTraitPlanetClasses(List<SpeciesTrait> traits) {
+    Set<String> collectTraitPlanetClasses(List<SpeciesTrait> traits) {
         Set<String> result = null;
         for (var trait : traits) {
             if (!trait.allowedPlanetClasses().isEmpty()) {
