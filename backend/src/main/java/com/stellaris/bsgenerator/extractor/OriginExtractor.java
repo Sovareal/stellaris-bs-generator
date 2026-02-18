@@ -33,6 +33,22 @@ public class OriginExtractor {
                 continue;
             }
 
+            // Filter AI/event-only origins: potential = { always = no }
+            var potentialCheckNode = node.child("potential").orElse(null);
+            if (potentialCheckNode != null && potentialCheckNode.childBool("always", true) == false) {
+                log.debug("Skipping potential=always-no origin: {}", id);
+                continue;
+            }
+
+            // Filter zero-weight origins (event-spawned variants, not in random pool)
+            int randomWeight = node.child("random_weight")
+                    .map(rw -> rw.childInt("base", 1))
+                    .orElse(1);
+            if (randomWeight == 0) {
+                log.debug("Skipping zero-weight origin: {}", id);
+                continue;
+            }
+
             RequirementBlock potential = node.child("potential")
                     .map(RequirementBlockParser::parse)
                     .orElse(null);
@@ -46,10 +62,6 @@ public class OriginExtractor {
             if (playableNode != null) {
                 dlcRequirement = playableNode.childValue("host_has_dlc").orElse(null);
             }
-
-            int randomWeight = node.child("random_weight")
-                    .map(rw -> rw.childInt("base", 1))
-                    .orElse(1);
 
             SecondarySpeciesConfig secondarySpecies = parseSecondarySpecies(node);
 
