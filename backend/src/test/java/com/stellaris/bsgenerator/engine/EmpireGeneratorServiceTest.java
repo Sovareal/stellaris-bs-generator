@@ -224,6 +224,24 @@ class EmpireGeneratorServiceTest {
         }
     }
 
+    @RepeatedTest(200)
+    void underOneRuleTraitsAndEthicsValid() {
+        var empire = generator.generate();
+
+        boolean isUOR = "origin_legendary_leader".equals(empire.origin().id());
+        if (!isUOR) return;
+
+        // Issue 2: UOR leaders must only have Luminary traits (allowedOrigins = [origin_legendary_leader])
+        for (var trait : empire.leaderTraits()) {
+            assertTrue(trait.allowedOrigins().contains("origin_legendary_leader"),
+                    "UOR leader trait " + trait.id() + " must be Luminary");
+        }
+
+        // Issue 6: UOR requires auth_dictatorial, which forbids Gestalt Consciousness
+        assertFalse(empire.ethics().stream().anyMatch(Ethic::isGestalt),
+                "UOR empire must not have Gestalt Consciousness ethics");
+    }
+
     private Set<String> toIdSet(java.util.List<Ethic> ethics) {
         var set = new HashSet<String>();
         for (var e : ethics) set.add(e.id());
