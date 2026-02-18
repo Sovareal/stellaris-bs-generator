@@ -18,8 +18,6 @@ function traitColor(cost: number): string {
 export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: SecondarySpeciesSlotProps) {
   const title = secondarySpecies.titleDisplayName ?? humanizeId(secondarySpecies.title);
   const className = secondarySpecies.speciesClassName ?? humanizeId(secondarySpecies.speciesClass);
-  const allTraits = [...secondarySpecies.enforcedTraits, ...secondarySpecies.additionalTraits];
-  const totalPicks = allTraits.length;
   const ptsRemaining = secondarySpecies.traitPointsBudget - secondarySpecies.traitPointsUsed;
 
   return (
