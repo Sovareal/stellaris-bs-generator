@@ -161,12 +161,27 @@ public class RerollService {
             throw new GenerationException("No alternative origins compatible with current empire");
         }
 
-        var newOrigin = WeightedRandom.select(compatible, Origin::randomWeight, random);
-        // Re-generate secondary species when origin changes (may gain or lose secondary species)
+        // Use uniform random — matches pickOrigin() (Phase 11.3 fix, now applied to reroll too)
+        var newOrigin = compatible.get(random.nextInt(compatible.size()));
+        var stateWithOrigin = state.withOrigin(newOrigin.id());
+
+        // Re-generate secondary species when origin changes
         var newSecondary = generatorService.generateSecondarySpecies(newOrigin, empire.civics(), empire.speciesClass());
+
+        // Regenerate species traits: drop old origin's enforced traits, add new origin's enforced traits
+        var newTraits = generatorService.buildSpeciesTraits(empire.speciesArchetype(), stateWithOrigin, newOrigin, empire.civics());
+        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
+
+        // Regenerate leader traits: origin change may affect valid trait pool (e.g., Treasure Hunters → other)
+        var newLeaderTraits = generatorService.pickLeaderTraits(empire.leaderClass(), stateWithOrigin);
+
         return copyWith(empire, b -> {
             b.origin = newOrigin;
             b.secondarySpecies = newSecondary;
+            b.speciesTraits = newTraits;
+            b.traitPointsUsed = newPointsUsed;
+            b.traitPointsBudget = empire.speciesArchetype().traitPoints();
+            b.leaderTraits = newLeaderTraits;
         });
     }
 

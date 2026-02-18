@@ -539,6 +539,26 @@ public class EmpireGeneratorService {
         return result != null ? result : Set.of();
     }
 
+    /**
+     * Build the full species trait list (enforced + random) for the given state.
+     * Package-private so RerollService can call it when regenerating traits after an origin reroll.
+     */
+    List<SpeciesTrait> buildSpeciesTraits(SpeciesArchetype archetype, EmpireState state, Origin origin, List<Civic> civics) {
+        var allEnforcedTraitIds = collectEnforcedTraitIds(origin, civics);
+        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds);
+        return prependEnforcedTraits(allEnforcedTraitIds, traits);
+    }
+
+    private List<String> collectEnforcedTraitIds(Origin origin, List<Civic> civics) {
+        var result = new ArrayList<>(origin.enforcedTraitIds());
+        for (var civic : civics) {
+            for (var traitId : civic.enforcedTraitIds()) {
+                if (!result.contains(traitId)) result.add(traitId);
+            }
+        }
+        return result;
+    }
+
     private GraphicalCulture pickShipset() {
         var shipsets = filterService.getSelectableShipsets();
         if (shipsets.isEmpty()) {
