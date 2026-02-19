@@ -75,6 +75,7 @@ export type RerollCategory =
   | "civic2"
   | "origin"
   | "traits"
+  | "trait_single"
   | "homeworld"
   | "shipset"
   | "leader"

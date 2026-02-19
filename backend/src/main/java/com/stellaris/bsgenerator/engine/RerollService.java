@@ -44,6 +44,7 @@ public class RerollService {
             case CIVIC2 -> rerollCivic(empire, 1);
             case ORIGIN -> rerollOrigin(empire);
             case TRAITS -> rerollTraits(empire);
+            case TRAIT_SINGLE -> throw new IllegalArgumentException("Use rerollSingleTrait() for TRAIT_SINGLE");
             case HOMEWORLD -> rerollHomeworld(empire);
             case SHIPSET -> rerollShipset(empire);
             case LEADER -> rerollLeader(empire);
@@ -243,6 +244,110 @@ public class RerollService {
             throw new GenerationException("Failed to generate secondary species");
         }
         return copyWith(empire, b -> b.secondarySpecies = newSecondary);
+    }
+
+    /**
+     * Reroll a single non-enforced species trait, replacing it with a compatible alternative.
+     * Respects the remaining trait budget and the opposites of kept traits.
+     */
+    public GeneratedEmpire rerollSingleTrait(GenerationSession session, String targetTraitId) {
+        if (!session.canReroll()) {
+            throw new IllegalStateException("Reroll already used for this generation");
+        }
+        var empire = session.getEmpire();
+
+        // Enforced traits (from origin + civics) cannot be individually rerolled
+        var enforcedIds = new HashSet<>(generatorService.collectEnforcedTraitIds(empire.origin(), empire.civics()));
+        if (enforcedIds.contains(targetTraitId)) {
+            throw new GenerationException("Cannot reroll an enforced trait: " + targetTraitId);
+        }
+
+        var currentTraits = empire.speciesTraits();
+        if (currentTraits.stream().noneMatch(t -> t.id().equals(targetTraitId))) {
+            throw new GenerationException("Trait not found in empire: " + targetTraitId);
+        }
+
+        // Traits that will be kept (everything except the target)
+        var remainingTraits = currentTraits.stream()
+                .filter(t -> !t.id().equals(targetTraitId))
+                .toList();
+
+        // Exclusion set: kept trait IDs + their opposites + the target itself (prevent no-op)
+        var excludedIds = new HashSet<String>();
+        excludedIds.add(targetTraitId);
+        for (var t : remainingTraits) {
+            excludedIds.add(t.id());
+            excludedIds.addAll(t.opposites());
+        }
+
+        // Remaining budget = total budget minus the cost of kept non-enforced traits
+        int budget = empire.traitPointsBudget();
+        int spentByKept = remainingTraits.stream()
+                .filter(t -> !enforcedIds.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost)
+                .sum();
+        int availableBudget = budget - spentByKept;
+
+        var state = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withCivics(toCivicIds(empire.civics()))
+                .withOrigin(empire.origin().id())
+                .withSpeciesArchetype(empire.speciesArchetype().id())
+                .withSpeciesClass(empire.speciesClass());
+
+        var candidates = filterService.getCompatibleTraits(empire.speciesArchetype().id(), state).stream()
+                .filter(t -> !excludedIds.contains(t.id()))
+                .filter(t -> t.cost() <= availableBudget)
+                .toList();
+
+        if (candidates.isEmpty()) {
+            throw new GenerationException("No compatible replacement trait found for: " + targetTraitId);
+        }
+
+        var replacement = candidates.get(random.nextInt(candidates.size()));
+
+        // Replace the target in-place to preserve trait order
+        var newTraits = new ArrayList<>(currentTraits);
+        for (int i = 0; i < newTraits.size(); i++) {
+            if (newTraits.get(i).id().equals(targetTraitId)) {
+                newTraits.set(i, replacement);
+                break;
+            }
+        }
+        var newTraitList = List.copyOf(newTraits);
+
+        // Points used = sum of non-enforced trait costs
+        int newPointsUsed = newTraitList.stream()
+                .filter(t -> !enforcedIds.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost)
+                .sum();
+
+        // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
+        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);
+        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(currentTraits);
+        PlanetClass newHomeworld = empire.homeworld();
+        PlanetClass newHabPref = empire.habitabilityPreference();
+        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
+            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraitList, empire.speciesClass());
+            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
+        }
+        final var finalHomeworld = newHomeworld;
+        final var finalHabPref = newHabPref;
+        final int finalPointsUsed = newPointsUsed;
+
+        var updated = copyWith(empire, b -> {
+            b.speciesTraits = newTraitList;
+            b.traitPointsUsed = finalPointsUsed;
+            b.homeworld = finalHomeworld;
+            b.habitabilityPreference = finalHabPref;
+        });
+
+        session.markRerolled();
+        session.setEmpire(updated);
+
+        log.info("Single-trait reroll: {} → {}", targetTraitId, replacement.id());
+        return updated;
     }
 
     private GeneratedEmpire rerollTraits(GeneratedEmpire empire) {
@@ -462,6 +567,8 @@ public class RerollService {
                     + " → " + (updated.leaderClass() + "/" + updated.leaderTraits().stream().map(StartingRulerTrait::id).toList());
             case SECONDARY_SPECIES -> (old.secondarySpecies() != null ? old.secondarySpecies().speciesClass() : "none")
                     + " → " + (updated.secondarySpecies() != null ? updated.secondarySpecies().speciesClass() : "none");
+            case TRAIT_SINGLE -> old.speciesTraits().stream().map(SpeciesTrait::id).toList()
+                    + " → " + updated.speciesTraits().stream().map(SpeciesTrait::id).toList();
         };
     }
 }

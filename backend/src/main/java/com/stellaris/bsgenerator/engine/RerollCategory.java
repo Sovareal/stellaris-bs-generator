@@ -7,6 +7,7 @@ public enum RerollCategory {
     CIVIC2,
     ORIGIN,
     TRAITS,
+    TRAIT_SINGLE,
     HOMEWORLD,
     SHIPSET,
     LEADER,

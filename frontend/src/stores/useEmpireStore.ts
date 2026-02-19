@@ -6,10 +6,12 @@ interface EmpireStore {
   empire: EmpireResponse | null;
   isLoading: boolean;
   isRerolling: RerollCategory | null;
+  isRerollingTrait: string | null;
   error: string | null;
   generationId: number;
   generate: () => Promise<void>;
   reroll: (category: RerollCategory) => Promise<void>;
+  rerollTrait: (traitId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -17,6 +19,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
   empire: null,
   isLoading: false,
   isRerolling: null,
+  isRerollingTrait: null,
   error: null,
   generationId: 0,
 
@@ -48,6 +51,22 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     } catch (e) {
       const message = e instanceof ApiError ? e.body.message : "Failed to reroll";
       set({ error: message, isRerolling: null });
+    }
+  },
+
+  rerollTrait: async (traitId: string) => {
+    if (get().isRerolling || get().isRerollingTrait) return;
+    set({ isRerollingTrait: traitId, error: null });
+    try {
+      const empire = await api.rerollTrait(traitId);
+      set((s) => ({
+        empire,
+        isRerollingTrait: null,
+        generationId: s.generationId + 1,
+      }));
+    } catch (e) {
+      const message = e instanceof ApiError ? e.body.message : "Failed to reroll trait";
+      set({ error: message, isRerollingTrait: null });
     }
   },
 

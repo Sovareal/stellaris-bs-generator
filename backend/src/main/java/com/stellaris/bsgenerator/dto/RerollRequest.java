@@ -1,3 +1,3 @@
 package com.stellaris.bsgenerator.dto;
 
-public record RerollRequest(String category) {}
+public record RerollRequest(String category, String traitId) {}

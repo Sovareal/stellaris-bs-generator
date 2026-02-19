@@ -32,6 +32,15 @@ public class EmpireController {
             throw new IllegalStateException("No active session — generate an empire first");
         }
 
+        // Single-trait reroll is handled separately since it requires an additional traitId parameter
+        if ("trait_single".equalsIgnoreCase(request.category())) {
+            if (request.traitId() == null || request.traitId().isBlank()) {
+                throw new IllegalArgumentException("traitId is required for trait_single reroll");
+            }
+            var updated = rerollService.rerollSingleTrait(session, request.traitId());
+            return EmpireResponse.from(updated, session, localizationService);
+        }
+
         RerollCategory category = switch (request.category().toLowerCase()) {
             case "ethics" -> RerollCategory.ETHICS;
             case "authority" -> RerollCategory.AUTHORITY;
