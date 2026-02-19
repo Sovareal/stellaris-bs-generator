@@ -24,6 +24,17 @@ public class CivicExtractor {
             if (node.childBool("is_origin", false)) continue;
 
             String id = node.key();
+
+            // Skip civics that require NOT having a DLC (we always assume all DLCs are active).
+            // e.g. civic_corporate_dominion: playable = { NOT = { host_has_dlc = "Megacorp" } }
+            var playableNode = node.child("playable").orElse(null);
+            if (playableNode != null) {
+                var notNode = playableNode.child("NOT").orElse(null);
+                if (notNode != null && notNode.child("host_has_dlc").isPresent()) {
+                    log.debug("Skipping no-DLC-required civic: {}", id);
+                    continue;
+                }
+            }
             boolean pickableAtStart = node.childBool("pickable_at_start", true);
 
             RequirementBlock potential = node.child("potential")

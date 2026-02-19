@@ -113,4 +113,12 @@ class CivicExtractorTest {
         var corvee = civics.stream().filter(c -> c.id().equals("civic_corvee_system")).findFirst().orElseThrow();
         assertTrue(corvee.pickableAtStart());
     }
+
+    @Test
+    void corporateDominionExcluded() {
+        // civic_corporate_dominion has playable = { NOT = { host_has_dlc = "Megacorp" } }
+        // We always assume all DLCs active, so this civic must be filtered out.
+        assertTrue(civics.stream().noneMatch(c -> c.id().equals("civic_corporate_dominion")),
+                "civic_corporate_dominion should be excluded (requires absence of Megacorp DLC)");
+    }
 }
