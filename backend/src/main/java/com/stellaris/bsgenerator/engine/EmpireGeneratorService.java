@@ -351,12 +351,44 @@ public class EmpireGeneratorService {
     /**
      * Stratified promotion chances used in {@link #pickOrigin}.
      *
-     * <p>Two promotion tiers, checked sequentially. Once a tier fires the selection is complete.
-     * Tier 2 only fires for origins requiring BOTH authority AND graphical_culture — in practice
-     * that means hive+biogenesis origins (wilderness etc.) which only appear in hive empire pools.
+     * <p>Three promotion tiers, checked sequentially. Once a tier fires the selection is complete.
+     * <ul>
+     *   <li>Tier 1 — class-restricted: origins requiring a specific species class (cosmic_dawn, mindwardens, fruitful).</li>
+     *   <li>Tier 2 — authority + graphical-culture: hive + biogenesis origins (wilderness). Only fires in hive empire pools.</li>
+     *   <li>Tier 3 — gestalt-exclusive: machine/hive-pool-only origins. Only fires when such origins are in the compatible pool,
+     *       which only happens in machine (~15%) or hive (~15%) empire configs.</li>
+     * </ul>
      */
-    private static final double CLASS_RESTRICTED_PROMO = 0.25; // cosmic_dawn / mindwardens / fruitful
-    private static final double AUTH_GRAPHIC_PROMO     = 0.45; // wilderness (hive + biogenesis)
+    private static final double CLASS_RESTRICTED_PROMO    = 0.25; // cosmic_dawn / fruitful / mindwardens
+    private static final double AUTH_GRAPHIC_PROMO        = 0.45; // wilderness (hive + biogenesis)
+    private static final double GESTALT_EXCLUSIVE_PROMO   = 0.35; // machine/hive-pool-only origins
+
+    /**
+     * Per-origin weight overrides for origins that are chronically under-threshold but resist
+     * automated detection (no single detectable positive requirement, or too many civic exclusions).
+     * Checked first in {@link #originRarityWeight} before any category-based logic.
+     */
+    private static final Map<String, Integer> ORIGIN_WEIGHT_OVERRIDES = Map.of(
+            "origin_cybernetic_creed",    6, // spiritualist-only + heavy civic exclusions (3x not enough)
+            "origin_legendary_leader",    6, // auth_dictatorial-only in small pool (4x not enough)
+            "origin_hegemon",             2, // no positive requirements, excluded from xenophobe+egalitarian
+            "origin_synthetic_fertility", 2  // no positive requirements, excluded from spiritualist+many civics
+    );
+
+    /**
+     * Origins that are exclusively available in machine intelligence (~15%) or hive mind (~15%) empire pools.
+     * These need a dedicated promotion tier because they compete with many unrestricted origins in a small pool.
+     */
+    private static final Set<String> GESTALT_EXCLUSIVE_ORIGINS = Set.of(
+            "origin_machine",
+            "origin_void_machines",
+            "origin_ocean_machines",
+            "origin_subterranean_machines",
+            "origin_post_apocalyptic_machines",
+            "origin_arc_welders",
+            "origin_progenitor_hive",
+            "origin_tree_of_life"
+    );
 
     private Origin pickOrigin(EmpireState state) {
         var compatible = filterService.getCompatibleOrigins(state);
@@ -376,18 +408,24 @@ public class EmpireGeneratorService {
         }
 
         // Tier 2 — authority + graphical-culture restricted (e.g., wilderness = hive + biogenesis).
-        // This tier only fires for origins that need BOTH a rare authority AND a rare graphical culture
-        // simultaneously. In practice this is always empty for machine and regular empire configs,
-        // so it does NOT dilute syncretic_evolution, hegemon, or machine-pool origins.
+        // Uses POSITIVE requirement detection: only fires when both authority AND graphical_culture
+        // are hard requirements (must-have), not just negative exclusions.
         var authGraphicRestricted = compatible.stream()
-                .filter(o -> {
-                    var cats = collectPossibleCategories(o.possible());
-                    return cats.contains(RequirementCategory.AUTHORITY)
-                            && cats.contains(RequirementCategory.GRAPHICAL_CULTURE);
-                })
+                .filter(o -> hasPositiveRequirement(o.possible(), RequirementCategory.AUTHORITY)
+                        && hasPositiveRequirement(o.possible(), RequirementCategory.GRAPHICAL_CULTURE))
                 .toList();
         if (!authGraphicRestricted.isEmpty() && random.nextDouble() < AUTH_GRAPHIC_PROMO) {
             return authGraphicRestricted.get(random.nextInt(authGraphicRestricted.size()));
+        }
+
+        // Tier 3 — gestalt-exclusive: origins that only exist in machine or hive empire pools.
+        // Only fires when such origins are in the compatible pool (i.e., only in machine/hive empires).
+        // This ensures machine variants and hive-specific origins aren't buried by the large unrestricted pool.
+        var gestaltExclusive = compatible.stream()
+                .filter(o -> GESTALT_EXCLUSIVE_ORIGINS.contains(o.id()))
+                .toList();
+        if (!gestaltExclusive.isEmpty() && random.nextDouble() < GESTALT_EXCLUSIVE_PROMO) {
+            return gestaltExclusive.get(random.nextInt(gestaltExclusive.size()));
         }
 
         // General pool: rarity-weighted by restriction breadth.
@@ -396,49 +434,52 @@ public class EmpireGeneratorService {
 
     /**
      * Computes a rarity weight for the general-pool path in {@link #pickOrigin}.
-     * Promotion-path origins also get a backup weight here for the 50-85% of cases when the
-     * promotion doesn't fire.
+     * Only POSITIVE requirements (must-have restrictions) are used for boosting —
+     * negative boilerplate exclusions (NOT hive_mind, NOT MACHINE, etc.) are ignored to
+     * prevent pool inflation from common boilerplate.
      *
      * <p>Weight table (highest precedence first):
      * <ul>
-     *   <li>4x — class-restricted (backed up from tier-1 promotion)</li>
-     *   <li>4x — country-type restricted (backed up from tier-2 promotion)</li>
-     *   <li>4x — authority + graphical-culture (backed up from tier-3 promotion)</li>
-     *   <li>3x — positive-ethics restricted: contained within their ethics-compatible subset,
-     *            so does NOT dilute origins in non-matching ethics configs</li>
-     *   <li>2x — authority alone (dictatorial / hive-general)</li>
-     *   <li>2x — archetype alone</li>
-     *   <li>1x — unrestricted</li>
+     *   <li>5x — gestalt-exclusive set: machine/hive-pool-only origins (tier 3 promotion also covers these)</li>
+     *   <li>4x — species-class required (positive): cosmic_dawn→INF, fruitful→FUN/PLANT</li>
+     *   <li>4x — authority + graphical-culture required (positive): wilderness (hive+biogenesis); tier 2 also covers</li>
+     *   <li>4x — authority required (positive): legendary_leader→dictatorial</li>
+     *   <li>3x — ethics required (positive): cybernetic_creed→spiritualist, mechanists→materialist, shroudwalker/unplugged→spiritualist/militarist</li>
+     *   <li>2x — archetype required (positive, non-machine): origin_lithoid (LITHOID archetype) — in ~50% regular pools</li>
+     *   <li>1x — no positive requirement (unrestricted or only negative exclusions)</li>
      * </ul>
      */
     private int originRarityWeight(Origin origin) {
-        var cats = collectPossibleCategories(origin.possible());
-        boolean archetypeRestricted = cats.contains(RequirementCategory.SPECIES_ARCHETYPE);
-        boolean authorityRestricted = cats.contains(RequirementCategory.AUTHORITY);
-        boolean classRestricted     = cats.contains(RequirementCategory.SPECIES_CLASS);
-        boolean graphicRestricted   = cats.contains(RequirementCategory.GRAPHICAL_CULTURE);
+        boolean classRestricted   = collectPossibleCategories(origin.possible()).contains(RequirementCategory.SPECIES_CLASS);
+        boolean positiveArchetype = hasPositiveRequirement(origin.possible(), RequirementCategory.SPECIES_ARCHETYPE);
+        boolean positiveAuthority = hasPositiveRequirement(origin.possible(), RequirementCategory.AUTHORITY);
+        boolean positiveGraphic   = hasPositiveRequirement(origin.possible(), RequirementCategory.GRAPHICAL_CULTURE);
+        boolean ethicsRestricted  = hasPositiveRequirement(origin.possible(), RequirementCategory.ETHICS);
 
-        boolean ethicsRestricted = hasPositiveEthicsRequirement(origin.possible());
+        // Per-origin overrides for chronically under-threshold origins.
+        var override = ORIGIN_WEIGHT_OVERRIDES.get(origin.id());
+        if (override != null) return override;
 
-        if (classRestricted)                              return 4;
-        if (authorityRestricted && graphicRestricted)     return 4;
-        if (authorityRestricted)                          return 4; // machine / hive / dictatorial
-        if (ethicsRestricted)                             return 2; // cybernetic_creed / mechanists — contained within their ethics subset
-        if (archetypeRestricted)                          return 2;
+        // Gestalt-exclusive origins appear only in machine (~15%) or hive (~15%) pools.
+        // Tier 3 also boosts these; the 5x fallback covers the 65% of cases tier 3 doesn't fire.
+        if (GESTALT_EXCLUSIVE_ORIGINS.contains(origin.id()))  return 5;
+        if (classRestricted)                                   return 4;
+        if (positiveAuthority && positiveGraphic)              return 4;
+        if (positiveAuthority)                                 return 4; // dictatorial/machine/hive required
+        if (ethicsRestricted)                                  return 3; // spiritualist/materialist/militarist required
+        if (positiveArchetype)                                 return 2; // LITHOID required — in 50% of regular pools
         return 1;
     }
 
     /**
-     * Returns true if the possible block has a POSITIVE ethics requirement —
-     * at least one {@link Requirement.Value} or {@link Requirement.Or} in the ETHICS category.
-     * Pure NOT/NOR-only entries (universal boilerplate) are ignored.
+     * Returns true if the given category in the block has at least one POSITIVE requirement —
+     * a {@link Requirement.Value} (exact match) or {@link Requirement.Or} (any-of match).
+     * Pure NOT/NOR exclusions (boilerplate like "NOT hive_mind", "NOT MACHINE") return false.
      */
-    private boolean hasPositiveEthicsRequirement(RequirementBlock block) {
+    private boolean hasPositiveRequirement(RequirementBlock block, RequirementCategory category) {
         if (block == null) return false;
-        var ethicsReqs = block.categories()
-                .getOrDefault(RequirementCategory.ETHICS, List.of());
-        return ethicsReqs.stream()
-                .anyMatch(r -> r instanceof Requirement.Value || r instanceof Requirement.Or);
+        var reqs = block.categories().getOrDefault(category, List.of());
+        return reqs.stream().anyMatch(r -> r instanceof Requirement.Value || r instanceof Requirement.Or);
     }
 
     /** Collects all RequirementCategory keys present in a possible/potential block (including cross-category OR branches). */
