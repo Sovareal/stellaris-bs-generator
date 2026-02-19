@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.engine;
 
 import com.stellaris.bsgenerator.model.*;
+import com.stellaris.bsgenerator.model.requirement.Requirement;
 import com.stellaris.bsgenerator.model.requirement.RequirementBlock;
 import com.stellaris.bsgenerator.model.requirement.RequirementCategory;
 import lombok.RequiredArgsConstructor;
@@ -347,34 +348,97 @@ public class EmpireGeneratorService {
         return picked;
     }
 
+    /**
+     * Stratified promotion chances used in {@link #pickOrigin}.
+     *
+     * <p>Two promotion tiers, checked sequentially. Once a tier fires the selection is complete.
+     * Tier 2 only fires for origins requiring BOTH authority AND graphical_culture — in practice
+     * that means hive+biogenesis origins (wilderness etc.) which only appear in hive empire pools.
+     */
+    private static final double CLASS_RESTRICTED_PROMO = 0.25; // cosmic_dawn / mindwardens / fruitful
+    private static final double AUTH_GRAPHIC_PROMO     = 0.45; // wilderness (hive + biogenesis)
+
     private Origin pickOrigin(EmpireState state) {
         var compatible = filterService.getCompatibleOrigins(state);
         if (compatible.isEmpty()) {
             throw new GenerationException("No compatible origins for current state");
         }
-        // Rarity-weighted: origins restricted by archetype/authority/species class get a boost
-        // to compensate for the narrower set of empire configurations that can generate them.
+
+        // Tier 1 — class-restricted: origins requiring a specific species class (cosmic_dawn → INF,
+        // mindwardens → MINDWARDEN, fruitful → FUN/PLANT). Species class is chosen before origin,
+        // so the compatible pool is already filtered to only origins matching the current class.
+        // Only fires in biological empire configs where such class-restricted origins exist.
+        var classRestricted = compatible.stream()
+                .filter(o -> collectPossibleCategories(o.possible()).contains(RequirementCategory.SPECIES_CLASS))
+                .toList();
+        if (!classRestricted.isEmpty() && random.nextDouble() < CLASS_RESTRICTED_PROMO) {
+            return classRestricted.get(random.nextInt(classRestricted.size()));
+        }
+
+        // Tier 2 — authority + graphical-culture restricted (e.g., wilderness = hive + biogenesis).
+        // This tier only fires for origins that need BOTH a rare authority AND a rare graphical culture
+        // simultaneously. In practice this is always empty for machine and regular empire configs,
+        // so it does NOT dilute syncretic_evolution, hegemon, or machine-pool origins.
+        var authGraphicRestricted = compatible.stream()
+                .filter(o -> {
+                    var cats = collectPossibleCategories(o.possible());
+                    return cats.contains(RequirementCategory.AUTHORITY)
+                            && cats.contains(RequirementCategory.GRAPHICAL_CULTURE);
+                })
+                .toList();
+        if (!authGraphicRestricted.isEmpty() && random.nextDouble() < AUTH_GRAPHIC_PROMO) {
+            return authGraphicRestricted.get(random.nextInt(authGraphicRestricted.size()));
+        }
+
+        // General pool: rarity-weighted by restriction breadth.
         return WeightedRandom.select(compatible, this::originRarityWeight, random);
     }
 
     /**
-     * Computes a rarity weight for an origin inversely proportional to how restrictive
-     * its possible block is. Origins restricted to specific archetypes, authorities, or
-     * species classes appear in fewer empire configurations and need a boost to compete
-     * fairly against unrestricted origins within the same compatible pool.
+     * Computes a rarity weight for the general-pool path in {@link #pickOrigin}.
+     * Promotion-path origins also get a backup weight here for the 50-85% of cases when the
+     * promotion doesn't fire.
+     *
+     * <p>Weight table (highest precedence first):
+     * <ul>
+     *   <li>4x — class-restricted (backed up from tier-1 promotion)</li>
+     *   <li>4x — country-type restricted (backed up from tier-2 promotion)</li>
+     *   <li>4x — authority + graphical-culture (backed up from tier-3 promotion)</li>
+     *   <li>3x — positive-ethics restricted: contained within their ethics-compatible subset,
+     *            so does NOT dilute origins in non-matching ethics configs</li>
+     *   <li>2x — authority alone (dictatorial / hive-general)</li>
+     *   <li>2x — archetype alone</li>
+     *   <li>1x — unrestricted</li>
+     * </ul>
      */
     private int originRarityWeight(Origin origin) {
         var cats = collectPossibleCategories(origin.possible());
         boolean archetypeRestricted = cats.contains(RequirementCategory.SPECIES_ARCHETYPE);
         boolean authorityRestricted = cats.contains(RequirementCategory.AUTHORITY);
         boolean classRestricted     = cats.contains(RequirementCategory.SPECIES_CLASS);
-        // Species-class restrictions are rarest (1–2 of 15 classes) → highest boost
-        if (classRestricted)                             return 6;
-        // Doubly restricted (e.g., machine archetype + machine authority)
-        if (archetypeRestricted && authorityRestricted)  return 4;
-        // Singly restricted: archetype-only (LITHOID, MACHINE) or authority-only (dictatorial, imperial)
-        if (archetypeRestricted || authorityRestricted)  return 2;
+        boolean graphicRestricted   = cats.contains(RequirementCategory.GRAPHICAL_CULTURE);
+
+        boolean ethicsRestricted = hasPositiveEthicsRequirement(origin.possible());
+
+        if (classRestricted)                              return 4;
+        if (authorityRestricted && graphicRestricted)     return 4;
+        if (authorityRestricted)                          return 4; // machine / hive / dictatorial
+        if (ethicsRestricted)                             return 2; // cybernetic_creed / mechanists — contained within their ethics subset
+        if (archetypeRestricted)                          return 2;
         return 1;
+    }
+
+    /**
+     * Returns true if the possible block has a POSITIVE ethics requirement —
+     * at least one {@link Requirement.Value} or {@link Requirement.Or} in the ETHICS category.
+     * Pure NOT/NOR-only entries (universal boilerplate) are ignored.
+     */
+    private boolean hasPositiveEthicsRequirement(RequirementBlock block) {
+        if (block == null) return false;
+        var ethicsReqs = block.categories()
+                .getOrDefault(RequirementCategory.ETHICS, List.of());
+        return ethicsReqs.stream()
+                .anyMatch(r -> r instanceof Requirement.Value || r instanceof Requirement.Or);
     }
 
     /** Collects all RequirementCategory keys present in a possible/potential block (including cross-category OR branches). */
@@ -412,10 +476,15 @@ public class EmpireGeneratorService {
         return archetypes.get(random.nextInt(archetypes.size()));
     }
 
-    // Species classes that unlock exclusively restricted origins (e.g., origin_fruitful)
-    // and are underrepresented at uniform weight (2 of ~15 BIOLOGICAL classes).
-    private static final Set<String> BOOSTED_SPECIES_CLASSES = Set.of("FUN", "PLANT");
-    private static final int BOOSTED_CLASS_WEIGHT = 3;
+    // Per-class weights for species classes that gate exclusively restricted origins.
+    // Classes not listed default to 1x weight.
+    private static final Map<String, Integer> SPECIES_CLASS_WEIGHTS = Map.of(
+            "INF",           8,  // Infernals  — sole class for origin_cosmic_dawn
+            "MINDWARDEN",    8,  // The Shroud — sole class for origin_mindwardens / progenitor_hive
+            "FUN",           7,  // Fungoid    — gates origin_fruitful
+            "PLANT",         7,  // Plantoid   — gates origin_fruitful, origin_tree_of_life
+            "BIOGENESIS_01", 4   // BioGenesis — gates biogenesis-restricted origins
+    );
 
     private String pickSpeciesClass(SpeciesArchetype archetype) {
         var classes = filterService.getSpeciesClassesForArchetype(archetype.id());
@@ -423,9 +492,8 @@ public class EmpireGeneratorService {
             // Fallback: use archetype id as species class (e.g., MACHINE archetype → MACHINE class)
             return archetype.id();
         }
-        // Give FUN and PLANT classes a boost so species-class-restricted origins appear more often
         return WeightedRandom.select(classes,
-                sc -> BOOSTED_SPECIES_CLASSES.contains(sc.id()) ? BOOSTED_CLASS_WEIGHT : 1,
+                sc -> SPECIES_CLASS_WEIGHTS.getOrDefault(sc.id(), 1),
                 random).id();
     }
 
