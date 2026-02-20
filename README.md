@@ -2,8 +2,6 @@
 
 A desktop application that generates random, rule-valid Stellaris empires by parsing the game's own data files.
 
-<img src="frontend/public/app_icon.jpg" alt="" height="120" align="right">
-
 ## How It Works
 
 The app reads your local Stellaris installation files (Clausewitz `.txt` format) and extracts all ethics, authorities, civics, origins, species archetypes, traits, homeworlds, shipsets, and starting leader traits — along with their full compatibility rules. It then generates randomized empires that respect every constraint the game enforces.
@@ -20,7 +18,7 @@ Each generated empire includes:
 - **Starting Leader** with class and traits
 - **Secondary Species** (for multi-species origins/civics like Necrophage, Syncretic Evolution)
 
-You get one reroll per generated empire. Rerolling any category uses it up.
+You get one reroll per generated empire. You can spend it on an entire category (ethics, authority, civics, origin, traits, leader) or on a single species trait. Once used, all reroll options are disabled.
 
 ## Tech Stack
 
