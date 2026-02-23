@@ -36,6 +36,8 @@ export interface TraitDto {
   cost: number;
   allowedArchetypes: string[];
   enforced: boolean;
+  /** True for origin-enforced traits: shown with lock icon but don't count toward picks or budget. */
+  free: boolean;
 }
 
 export interface PlanetClassDto {

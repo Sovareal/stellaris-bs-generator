@@ -78,6 +78,7 @@ public class GameDataManager {
     @Getter private List<SpeciesClass> speciesClasses;
     @Getter private Map<String, String> leaderTraitGfxMap;
     @Getter private Map<String, String> allTraitIconPaths;
+    @Getter private Map<String, Integer> allTraitCosts;
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
@@ -181,6 +182,7 @@ public class GameDataManager {
         speciesArchetypes = speciesArchetypeExtractor.extract(gameFileService.getSpeciesArchetypes());
         speciesTraits = speciesTraitExtractor.extract(gameFileService.getTraits());
         allTraitIconPaths = speciesTraitExtractor.extractIconPaths(gameFileService.getTraits());
+        allTraitCosts = speciesTraitExtractor.extractCosts(gameFileService.getTraits());
         planetClasses = planetClassExtractor.extract(gameFileService.getPlanetClasses());
         graphicalCultures = graphicalCultureExtractor.extract(gameFileService.getGraphicalCultures());
         startingRulerTraits = startingRulerTraitExtractor.extract(gameFileService.getTraits());

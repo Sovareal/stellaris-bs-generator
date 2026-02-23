@@ -192,4 +192,12 @@ public class CompatibilityFilterService {
                 .findFirst()
                 .orElse(null);
     }
+
+    /**
+     * Look up a trait's cost from the all-traits cost map (includes initial=no traits).
+     * Returns 0 if the trait has no cost entry.
+     */
+    public int getTraitCost(String traitId) {
+        return gameDataManager.getAllTraitCosts().getOrDefault(traitId, 0);
+    }
 }

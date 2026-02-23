@@ -212,8 +212,11 @@ public class RerollService {
 
         // Regenerate species traits: drop old origin's enforced traits, add new origin's enforced traits
         var newTraits = generatorService.buildSpeciesTraits(empire.speciesArchetype(), stateWithOrigin, newOrigin, empire.civics());
-        // Count all traits (including enforced) — enforced traits consume budget
-        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
+        // Origin-enforced traits don't count toward budget — exclude them from pointsUsed
+        var newOriginEnforcedIdSet = new HashSet<>(newOrigin.enforcedTraitIds());
+        int newPointsUsed = newTraits.stream()
+                .filter(t -> !newOriginEnforcedIdSet.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost).sum();
 
         // Regenerate leader traits: origin change may affect valid trait pool (e.g., Treasure Hunters → other)
         var newLeaderTraits = generatorService.pickLeaderTraits(empire.leaderClass(), stateWithOrigin);
@@ -279,9 +282,11 @@ public class RerollService {
             excludedIds.addAll(t.opposites());
         }
 
-        // Remaining budget = total budget minus all kept trait costs (enforced + non-enforced)
+        // Remaining budget = total budget minus kept trait costs, excluding origin-enforced (free) traits
+        var originEnforcedIdSet = new HashSet<>(empire.origin().enforcedTraitIds());
         int budget = empire.traitPointsBudget();
         int spentByKept = remainingTraits.stream()
+                .filter(t -> !originEnforcedIdSet.contains(t.id()))
                 .mapToInt(SpeciesTrait::cost)
                 .sum();
         int availableBudget = budget - spentByKept;
@@ -315,8 +320,9 @@ public class RerollService {
         }
         var newTraitList = List.copyOf(newTraits);
 
-        // Points used = sum of all trait costs (enforced + new replacement)
+        // Points used = sum of non-origin-enforced trait costs (origin-enforced are free)
         int newPointsUsed = newTraitList.stream()
+                .filter(t -> !originEnforcedIdSet.contains(t.id()))
                 .mapToInt(SpeciesTrait::cost)
                 .sum();
 
@@ -358,29 +364,42 @@ public class RerollService {
                 .withSpeciesClass(empire.speciesClass());
         var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
-        int maxTraits = archetype.maxTraits();
 
-        // Preserve origin + civic enforced traits
-        var enforcedIds = new HashSet<>(empire.origin().enforcedTraitIds());
+        // Separate origin-free from civic-counted enforced traits
+        var originEnforcedIds = new HashSet<>(empire.origin().enforcedTraitIds());
+        var civicEnforcedIds = new HashSet<String>();
         for (var civic : empire.civics()) {
-            enforcedIds.addAll(civic.enforcedTraitIds());
+            civicEnforcedIds.addAll(civic.enforcedTraitIds());
         }
+        var allEnforcedIds = new HashSet<String>();
+        allEnforcedIds.addAll(originEnforcedIds);
+        allEnforcedIds.addAll(civicEnforcedIds);
+
         List<SpeciesTrait> enforced = empire.speciesTraits().stream()
-                .filter(t -> enforcedIds.contains(t.id()))
+                .filter(t -> allEnforcedIds.contains(t.id()))
                 .toList();
 
-        List<SpeciesTrait> picked = new ArrayList<>(enforced);
-        Set<String> pickedIds = new HashSet<>(enforcedIds);
-        Set<String> excludedByOpposites = new HashSet<>();
-        // Start at enforced cost so random picks can't push total over budget
-        int enforcedCostSum = enforced.stream().mapToInt(SpeciesTrait::cost).sum();
-        int pointsSpent = enforcedCostSum;
+        // Only civic-enforced traits reduce available random slots
+        int maxRandomPicks = archetype.maxTraits() - civicEnforcedIds.size();
+        // Only civic-enforced costs count against budget
+        int civicEnforcedCostSum = enforced.stream()
+                .filter(t -> civicEnforcedIds.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost).sum();
 
+        Set<String> pickedIds = new HashSet<>(allEnforcedIds);
+        Set<String> excludedByOpposites = new HashSet<>();
+        for (var t : enforced) {
+            excludedByOpposites.addAll(t.opposites());
+        }
+        int pointsSpent = civicEnforcedCostSum;
+        int randomPicksCount = 0;
+
+        List<SpeciesTrait> randomPicked = new ArrayList<>();
         var shuffled = new ArrayList<>(available);
         Collections.shuffle(shuffled, random);
 
         for (var trait : shuffled) {
-            if (picked.size() >= maxTraits) break;
+            if (randomPicksCount >= maxRandomPicks) break;
             if (pickedIds.contains(trait.id())) continue;
             if (excludedByOpposites.contains(trait.id())) continue;
 
@@ -388,14 +407,19 @@ public class RerollService {
             if (newTotal > budget) continue;
             if (newTotal < 0) continue;
 
-            picked.add(trait);
+            randomPicked.add(trait);
             pickedIds.add(trait.id());
             pointsSpent = newTotal;
+            randomPicksCount++;
             excludedByOpposites.addAll(trait.opposites());
         }
 
+        // Enforced first, then random
+        var combined = new ArrayList<>(enforced);
+        combined.addAll(randomPicked);
+        // traitPointsUsed = civic-enforced + random (not origin-enforced)
         int finalPointsSpent = pointsSpent;
-        var newTraitList = List.copyOf(picked);
+        var newTraitList = List.copyOf(combined);
 
         // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
         var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);

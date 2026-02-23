@@ -111,6 +111,23 @@ public class SpeciesTraitExtractor {
         return map;
     }
 
+    /**
+     * Extract costs for ALL species traits, including initial=no traits (malleable_genes,
+     * necrophage, perfected_genes, etc.) that are excluded from the creation pool.
+     * Maps traitId → cost value (only traits that have a cost field).
+     */
+    public Map<String, Integer> extractCosts(ClausewitzNode root) {
+        Map<String, Integer> map = new HashMap<>();
+        for (var node : root.children()) {
+            if (node.key() == null || !node.isBlock()) continue;
+            if (node.child("allowed_archetypes").isEmpty()) continue;
+            var costNode = node.child("cost").orElse(null);
+            if (costNode == null) continue;
+            map.put(node.key(), parseCost(costNode));
+        }
+        return map;
+    }
+
     private int parseCost(ClausewitzNode costNode) {
         if (costNode.isLeaf()) {
             // cost = 2

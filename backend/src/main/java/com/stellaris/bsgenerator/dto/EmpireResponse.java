@@ -28,12 +28,15 @@ public record EmpireResponse(
         Map<String, Boolean> rerollsAvailable
 ) {
     public static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc) {
-        var enforcedIds = new java.util.HashSet<>(empire.origin().enforcedTraitIds());
+        var originEnforcedIds = new java.util.HashSet<>(empire.origin().enforcedTraitIds());
+        var civicEnforcedIds = new java.util.HashSet<String>();
         for (var civic : empire.civics()) {
-            enforcedIds.addAll(civic.enforcedTraitIds());
+            civicEnforcedIds.addAll(civic.enforcedTraitIds());
         }
         var traitDtos = empire.speciesTraits().stream()
-                .map(t -> enforcedIds.contains(t.id()) ? TraitDto.fromEnforced(t, loc) : TraitDto.from(t, loc))
+                .map(t -> originEnforcedIds.contains(t.id()) ? TraitDto.fromFreeEnforced(t, loc)
+                        : civicEnforcedIds.contains(t.id()) ? TraitDto.fromEnforced(t, loc)
+                        : TraitDto.from(t, loc))
                 .toList();
 
         return new EmpireResponse(

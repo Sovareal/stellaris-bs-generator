@@ -32,13 +32,6 @@ public class EmpireGeneratorService {
             "trait_hive_mind", 0
     );
 
-    /** Enforced species traits from origins — these are free (cost 0) and don't consume the trait budget. */
-    private static final Map<String, Integer> ORIGIN_ENFORCED_TRAIT_COSTS = Map.of(
-            "trait_perfected_genes", 0,
-            "trait_necrophage", 0,
-            "trait_malleable_genes", 0
-    );
-
     /** Luminary leader trait budget and max picks for origin_legendary_leader. */
     private static final int LUMINARY_BUDGET = 1;
     private static final int LUMINARY_MAX_PICKS = 3;
@@ -98,24 +91,23 @@ public class EmpireGeneratorService {
             state = state.withCivics(toIdSet(civics));
         }
 
-        // 6. Collect all enforced trait IDs (origin + civics)
-        var allEnforcedTraitIds = new ArrayList<>(origin.enforcedTraitIds());
-        for (var civic : civics) {
-            for (var traitId : civic.enforcedTraitIds()) {
-                if (!allEnforcedTraitIds.contains(traitId)) {
-                    allEnforcedTraitIds.add(traitId);
-                }
-            }
-        }
+        // 6. Collect enforced trait IDs
+        var allEnforcedTraitIds = collectEnforcedTraitIds(origin, civics);
+        // Only civic-enforced traits count against trait slots and budget
+        var civicEnforcedIds = collectCivicEnforcedTraitIds(civics);
 
-        // Pick compatible traits within budget, excluding enforced trait IDs from the random pool
-        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds);
+        // Pick compatible traits within budget, excluding all enforced IDs from the random pool.
+        // Only civic-enforced traits reduce maxTraits and starting pointsSpent.
+        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds, civicEnforcedIds);
 
-        // 6b. Prepend enforced species traits (display their real cost; budget excludes them)
+        // 6b. Prepend enforced species traits (origin-enforced show real cost but don't count toward budget)
         traits = prependEnforcedTraits(allEnforcedTraitIds, traits);
 
-        // Count all traits (including enforced) — enforced traits have their real cost and consume the budget
-        int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
+        // Count only non-origin-enforced trait costs for traitPointsUsed display
+        var originEnforcedIdSet = new HashSet<>(origin.enforcedTraitIds());
+        int pointsUsed = traits.stream()
+                .filter(t -> !originEnforcedIdSet.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost).sum();
 
         // 7. Pick homeworld planet (or use origin-fixed, constrained by traits + species class)
         PlanetClass homeworld = pickHomeworld(origin, traits, speciesClass);
@@ -537,27 +529,28 @@ public class EmpireGeneratorService {
                 random).id();
     }
 
-    private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state, List<String> excludeIds) {
+    private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state,
+                                          List<String> allExcludeIds, List<String> civicEnforcedIds) {
         var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
-        // Reduce max picks by enforced count so total (enforced + random) stays within the limit
-        int maxTraits = archetype.maxTraits() - excludeIds.size();
+        // Only civic-enforced traits consume trait slots (origin-enforced are free slots)
+        int maxTraits = archetype.maxTraits() - civicEnforcedIds.size();
 
-        // Deduct enforced trait costs from the starting budget so random picks can't overspend
-        int enforcedCostSum = excludeIds.stream()
+        // Deduct only civic-enforced costs from starting budget (origin-enforced are free)
+        int civicEnforcedCostSum = civicEnforcedIds.stream()
                 .mapToInt(id -> {
                     var t = filterService.findTraitById(id);
                     return t != null ? t.cost() : 0;
                 })
                 .sum();
 
-        // Exclude origin enforced trait IDs from the random pool
-        var excludeSet = new HashSet<>(excludeIds);
+        // Exclude ALL enforced trait IDs from the random pool
+        var excludeSet = new HashSet<>(allExcludeIds);
 
         List<SpeciesTrait> picked = new ArrayList<>();
         Set<String> pickedIds = new HashSet<>();
         Set<String> excludedByOpposites = new HashSet<>();
-        int pointsSpent = enforcedCostSum; // start at enforced cost so total never exceeds budget
+        int pointsSpent = civicEnforcedCostSum; // start at civic enforced cost so random picks can't overspend
 
         // Shuffle to add randomness (traits don't have random_weight)
         var shuffled = new ArrayList<>(available);
@@ -589,19 +582,6 @@ public class EmpireGeneratorService {
         return picked;
     }
 
-    /**
-     * Prepend origin enforced species traits to the picked traits list.
-     * Enforced traits are free (cost 0) and created as stubs since they have initial=no.
-     */
-    /** Costs for civic-enforced traits (e.g., trait_aquatic from civic_anglers is free). */
-    private static final Map<String, Integer> CIVIC_ENFORCED_TRAIT_COSTS = Map.of(
-            "trait_aquatic", 0,
-            "trait_robot_aquatic", 0,
-            "trait_storm_touched", 0,
-            "trait_tankbound", 0,
-            "trait_stargazer", 0
-    );
-
     private List<SpeciesTrait> prependEnforcedTraits(List<String> enforcedTraitIds, List<SpeciesTrait> pickedTraits) {
         if (enforcedTraitIds.isEmpty()) return pickedTraits;
 
@@ -620,9 +600,11 @@ public class EmpireGeneratorService {
                         realTrait.allowedEthics(), realTrait.forbiddenEthics(),
                         realTrait.iconPath()));
             } else {
-                // Stub for initial=no traits (necrophage, perfected genes, etc.) — cost is 0 for display too
+                // Stub for initial=no traits (malleable_genes, necrophage, etc.)
+                // Look up the real cost from the all-traits map so it displays correctly
+                int traitCost = filterService.getTraitCost(traitId);
                 result.add(new SpeciesTrait(
-                        traitId, 0,
+                        traitId, traitCost,
                         List.of(), List.of(), List.of(), List.of(),
                         true, false, null, List.of(),
                         List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null));
@@ -717,12 +699,24 @@ public class EmpireGeneratorService {
      */
     List<SpeciesTrait> buildSpeciesTraits(SpeciesArchetype archetype, EmpireState state, Origin origin, List<Civic> civics) {
         var allEnforcedTraitIds = collectEnforcedTraitIds(origin, civics);
-        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds);
+        var civicEnforcedIds = collectCivicEnforcedTraitIds(civics);
+        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds, civicEnforcedIds);
         return prependEnforcedTraits(allEnforcedTraitIds, traits);
     }
 
     List<String> collectEnforcedTraitIds(Origin origin, List<Civic> civics) {
         var result = new ArrayList<>(origin.enforcedTraitIds());
+        for (var civic : civics) {
+            for (var traitId : civic.enforcedTraitIds()) {
+                if (!result.contains(traitId)) result.add(traitId);
+            }
+        }
+        return result;
+    }
+
+    /** Collect only civic-enforced trait IDs (count against picks and budget). */
+    List<String> collectCivicEnforcedTraitIds(List<Civic> civics) {
+        var result = new ArrayList<String>();
         for (var civic : civics) {
             for (var traitId : civic.enforcedTraitIds()) {
                 if (!result.contains(traitId)) result.add(traitId);

@@ -18,9 +18,9 @@ import java.util.Map;
 @Slf4j
 public class EmpireExporterService {
 
-    // speciesClass → one valid portrait ID (first/safest entry for each class)
+    // speciesClass → one valid portrait ID (verified against game portrait files)
     private static final Map<String, String> SPECIES_PORTRAITS = Map.ofEntries(
-        Map.entry("HUM", "humanoid_01"),
+        Map.entry("HUM", "human_male_01"),
         Map.entry("MAM", "mam1"),
         Map.entry("REP", "rep1"),
         Map.entry("AVI", "avi1"),
@@ -29,14 +29,14 @@ public class EmpireExporterService {
         Map.entry("FUN", "fun1"),
         Map.entry("PLANT", "pla1"),
         Map.entry("NECROID", "nec1"),
-        Map.entry("AQUATIC", "aqu1"),
+        Map.entry("AQUATIC", "aqu1_m"),
         Map.entry("TOX", "tox1"),
         Map.entry("INF", "inf1"),
-        Map.entry("LITHOID", "lit1"),
+        Map.entry("LITHOID", "lith1"),
         Map.entry("ROBOT", "robot1"),
-        Map.entry("MACHINE", "machine_1"),
-        Map.entry("BIOGENESIS_01", "pla1"),
-        Map.entry("MINDWARDEN", "humanoid_01")
+        Map.entry("MACHINE", "synth_machine_01"),
+        Map.entry("BIOGENESIS_01", "pro1_m"),
+        Map.entry("MINDWARDEN", "mindwarden_01")
     );
 
     /**

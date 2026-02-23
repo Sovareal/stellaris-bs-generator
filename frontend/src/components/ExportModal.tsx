@@ -14,6 +14,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
   const isSaving = useEmpireStore((s) => s.isSaving);
   const saveToGame = useEmpireStore((s) => s.saveToGame);
   const saveSuccess = useEmpireStore((s) => s.saveSuccess);
+  const clearSaveState = useEmpireStore((s) => s.clearSaveState);
 
   const [empireName, setEmpireName] = useState("");
   const [speciesName, setSpeciesName] = useState("");
@@ -28,16 +29,17 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     }
   }, [saveSuccess, open, onClose]);
 
-  // Reset form when modal opens
+  // Reset form when modal opens and clear any stale save success state
   useEffect(() => {
     if (open) {
+      clearSaveState();
       setEmpireName("");
       setSpeciesName("");
       setSpeciesPlural("");
       setSpeciesAdjective("");
       setRulerName("");
     }
-  }, [open]);
+  }, [open, clearSaveState]);
 
   if (!open) return null;
 
