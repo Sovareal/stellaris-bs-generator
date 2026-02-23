@@ -18,9 +18,14 @@ Each generated empire includes:
 - **Starting Leader** with class and traits
 - **Secondary Species** (for multi-species origins/civics like Necrophage, Syncretic Evolution)
 
-You get one reroll per generated empire. You can spend it on an entire category (ethics, authority, civics, origin, traits, leader) or on a single species trait. Once used, all reroll options are disabled.
+Reroll:
+You get one reroll per generated empire. You can spend it on an entire category (ethics, authority, civics, origin, traits, leader) or on a single species trait.
+Once used, all reroll options are disabled.
 
-Once you are happy with a generated empire, click **Save to Game** to export it directly into Stellaris. Fill in the empire name, species name, and ruler name in the dialog, then confirm — the empire is appended to your `user_empire_designs_v3.*.txt` file and will appear under Custom Empires the next time you start the game. After loading, you may want to adjust cosmetics such as the flag icon, flag background, and species portrait in the empire editor, as these are set to generic defaults during export.
+Save to Game:
+Once you are happy with a generated empire (or not), click **Save to Game** to export it directly into Stellaris.
+Fill in the empire name, species name, and ruler name in the dialog, then confirm - the empire is appended to your `user_empire_designs_v3.*.txt` file and will appear under Custom Empires the next time you start the game.
+After loading, you may want to adjust cosmetics such as the flag icon, flag background, and species portrait in the empire editor, as these are set to generic defaults during export.
 
 ## Tech Stack
 
