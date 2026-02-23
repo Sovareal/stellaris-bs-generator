@@ -114,9 +114,8 @@ public class EmpireGeneratorService {
         // 6b. Prepend enforced species traits (display their real cost; budget excludes them)
         traits = prependEnforcedTraits(allEnforcedTraitIds, traits);
 
-        // Budget: only count non-enforced traits (enforced traits are free regardless of displayed cost)
-        var enforcedSet = new HashSet<>(allEnforcedTraitIds);
-        int pointsUsed = traits.stream().filter(t -> !enforcedSet.contains(t.id())).mapToInt(SpeciesTrait::cost).sum();
+        // Count all traits (including enforced) — enforced traits have their real cost and consume the budget
+        int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
         // 7. Pick homeworld planet (or use origin-fixed, constrained by traits + species class)
         PlanetClass homeworld = pickHomeworld(origin, traits, speciesClass);
@@ -541,7 +540,16 @@ public class EmpireGeneratorService {
     private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state, List<String> excludeIds) {
         var available = filterService.getCompatibleTraits(archetype.id(), state);
         int budget = archetype.traitPoints();
-        int maxTraits = archetype.maxTraits();
+        // Reduce max picks by enforced count so total (enforced + random) stays within the limit
+        int maxTraits = archetype.maxTraits() - excludeIds.size();
+
+        // Deduct enforced trait costs from the starting budget so random picks can't overspend
+        int enforcedCostSum = excludeIds.stream()
+                .mapToInt(id -> {
+                    var t = filterService.findTraitById(id);
+                    return t != null ? t.cost() : 0;
+                })
+                .sum();
 
         // Exclude origin enforced trait IDs from the random pool
         var excludeSet = new HashSet<>(excludeIds);
@@ -549,7 +557,7 @@ public class EmpireGeneratorService {
         List<SpeciesTrait> picked = new ArrayList<>();
         Set<String> pickedIds = new HashSet<>();
         Set<String> excludedByOpposites = new HashSet<>();
-        int pointsSpent = 0;
+        int pointsSpent = enforcedCostSum; // start at enforced cost so total never exceeds budget
 
         // Shuffle to add randomness (traits don't have random_weight)
         var shuffled = new ArrayList<>(available);

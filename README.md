@@ -4,7 +4,7 @@ A desktop application that generates random, rule-valid Stellaris empires by par
 
 ## How It Works
 
-The app reads your local Stellaris installation files (Clausewitz `.txt` format) and extracts all ethics, authorities, civics, origins, species archetypes, traits, homeworlds, shipsets, and starting leader traits — along with their full compatibility rules. It then generates randomized empires that respect every constraint the game enforces.
+The app reads your local Stellaris installation files (Clausewitz `.txt` format) and extracts all ethics, authorities, civics, origins, species archetypes, traits, homeworlds, shipsets, and starting leader traits - along with their full compatibility rules. It then generates randomized empires that respect every constraint the game enforces.
 
 Each generated empire includes:
 - **Ethics** (cost-balanced to 3 points; ~30% chance of Gestalt Consciousness)
@@ -20,6 +20,8 @@ Each generated empire includes:
 
 You get one reroll per generated empire. You can spend it on an entire category (ethics, authority, civics, origin, traits, leader) or on a single species trait. Once used, all reroll options are disabled.
 
+Once you are happy with a generated empire, click **Save to Game** to export it directly into Stellaris. Fill in the empire name, species name, and ruler name in the dialog, then confirm — the empire is appended to your `user_empire_designs_v3.*.txt` file and will appear under Custom Empires the next time you start the game. After loading, you may want to adjust cosmetics such as the flag icon, flag background, and species portrait in the empire editor, as these are set to generic defaults during export.
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -30,18 +32,18 @@ You get one reroll per generated empire. You can spend it on an entire category 
 
 ## Platform Support
 
-The app builds and runs on **Windows**, **Linux**, and **macOS** — matching the platforms Stellaris officially supports.
+The app builds and runs on **Windows**, **Linux**, and **macOS** - matching the platforms Stellaris officially supports.
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Java (JDK) | 25 | Needed for building. End-user installs bundle a minimal JRE — no system Java required. |
-| Node.js | 22+ | |
-| Rust + Cargo | stable | Via [rustup](https://rustup.rs) |
-| Stellaris | any recent | Must be installed locally |
+| Tool | Version | Notes                                                                                  |
+|------|---------|----------------------------------------------------------------------------------------|
+| Java (JDK) | 25 | Needed for building. End-user installs bundle a minimal JRE - no system Java required. |
+| Node.js | 22+ |                                                                                        |
+| Rust + Cargo | stable | Via [rustup](https://rustup.rs)                                                        |
+| Stellaris | any recent | Must be installed locally                                                              |
 
-> **Windows only:** Visual Studio Build Tools or the MSVC toolchain (for Tauri's Rust compilation). Install via [Visual Studio Installer](https://visualstudio.microsoft.com/downloads/) — select "Desktop development with C++".
+> **Windows only:** Visual Studio Build Tools or the MSVC toolchain (for Tauri's Rust compilation). Install via [Visual Studio Installer](https://visualstudio.microsoft.com/downloads/) - select "Desktop development with C++".
 
 ## Building & Running
 
@@ -87,11 +89,11 @@ npm run tauri build
 
 This runs the following steps automatically:
 
-1. **`gradlew :backend:bootJar`** — compiles the Spring Boot backend into a fat JAR
+1. **`gradlew :backend:bootJar`** - compiles the Spring Boot backend into a fat JAR
 2. **Copy** `backend/build/libs/backend-0.1.0.jar` → `frontend/src-tauri/backend.jar`
-3. **`scripts/bundle-jre.bat`** (Windows) or **`scripts/bundle-jre.sh`** (Linux/macOS) — uses `jlink` to produce a minimal JRE (~50 MB) containing only the modules Spring Boot needs
-4. **`npm run build`** — compiles the React + TypeScript frontend via Vite
-5. **Tauri** — compiles the Rust shell in release mode and packages everything into a platform installer
+3. **`scripts/bundle-jre.bat`** (Windows) or **`scripts/bundle-jre.sh`** (Linux/macOS) - uses `jlink` to produce a minimal JRE (~50 MB) containing only the modules Spring Boot needs
+4. **`npm run build`** - compiles the React + TypeScript frontend via Vite
+5. **Tauri** - compiles the Rust shell in release mode and packages everything into a platform installer
 
 #### Output locations
 
@@ -103,7 +105,7 @@ This runs the following steps automatically:
 
 ### First Run
 
-The installer bundles a minimal JRE — **no system Java required** on the end user's machine. On launch, the Tauri shell starts the Spring Boot backend using the bundled JRE and opens the UI in a native window.
+The installer bundles a minimal JRE - **no system Java required** on the end user's machine. On launch, the Tauri shell starts the Spring Boot backend using the bundled JRE and opens the UI in a native window.
 
 The app auto-detects your Stellaris installation from common Steam paths:
 
@@ -130,7 +132,7 @@ Stellaris BS Generator/
 │       └── parser/             # Clausewitz tokenizer, AST parser, localization
 ├── frontend/                   # Vite + React 19 app (port 5173)
 │   ├── src/
-│   │   ├── components/         # UI components (EmpireCard, EntityIcon, …)
+│   │   ├── components/         # UI components (EmpireCard, EntityIcon, etc)
 │   │   ├── store/              # Zustand state
 │   │   └── lib/                # API client, formatting helpers
 │   └── src-tauri/              # Tauri Rust shell + config

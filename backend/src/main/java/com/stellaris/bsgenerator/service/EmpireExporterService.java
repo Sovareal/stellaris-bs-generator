@@ -39,16 +39,53 @@ public class EmpireExporterService {
         Map.entry("MINDWARDEN", "humanoid_01")
     );
 
-    // authority ID → government ID (most generic valid choice per authority)
-    private static final Map<String, String> AUTHORITY_GOVERNMENTS = Map.of(
-        "auth_democratic", "gov_democratic_republic",
-        "auth_oligarchic", "gov_oligarchic_republic",
-        "auth_dictatorial", "gov_military_dictatorship",
-        "auth_imperial", "gov_imperial",
-        "auth_corporate", "gov_trade_league",
-        "auth_hive_mind", "gov_hive_mind",
-        "auth_machine_intelligence", "gov_machine_empire"
-    );
+    /**
+     * Derives a government ID from authority + ethics, matching the game's priority logic:
+     * ethic-specific governments (spiritualist > materialist > militarist > pacifist)
+     * take precedence over authority-only fallbacks.
+     */
+    private static String computeGovernment(String authorityId, List<com.stellaris.bsgenerator.model.Ethic> ethics) {
+        var ids = ethics.stream().map(com.stellaris.bsgenerator.model.Ethic::id).collect(java.util.stream.Collectors.toSet());
+        boolean spiritualist = ids.contains("ethic_spiritualist") || ids.contains("ethic_fanatic_spiritualist");
+        boolean materialist  = ids.contains("ethic_materialist")  || ids.contains("ethic_fanatic_materialist");
+        boolean militarist   = ids.contains("ethic_militarist")   || ids.contains("ethic_fanatic_militarist");
+        boolean pacifist     = ids.contains("ethic_pacifist")     || ids.contains("ethic_fanatic_pacifist");
+
+        return switch (authorityId) {
+            case "auth_democratic" -> {
+                if (spiritualist) yield "gov_theocratic_republic";
+                if (materialist)  yield "gov_direct_democracy";
+                if (militarist)   yield "gov_military_commissariat";
+                if (pacifist)     yield "gov_moral_democracy";
+                yield "gov_representative_democracy";
+            }
+            case "auth_oligarchic" -> {
+                if (spiritualist) yield "gov_theocratic_oligarchy";
+                if (materialist)  yield "gov_executive_committee";
+                if (militarist)   yield "gov_military_junta";
+                if (pacifist)     yield "gov_irenic_bureaucracy";
+                yield "gov_plutocratic_oligarchy";
+            }
+            case "auth_dictatorial" -> {
+                if (spiritualist) yield "gov_theocratic_dictatorship";
+                if (materialist)  yield "gov_totalitarian_regime";
+                if (militarist)   yield "gov_military_dictatorship";
+                if (pacifist)     yield "gov_irenic_dictatorship";
+                yield "gov_constitutional_dictatorship";
+            }
+            case "auth_imperial" -> {
+                if (spiritualist) yield "gov_theocratic_monarchy";
+                if (materialist)  yield "gov_despotic_hegemony";
+                if (militarist)   yield "gov_star_empire";
+                if (pacifist)     yield "gov_irenic_monarchy";
+                yield "gov_despotic_empire";
+            }
+            case "auth_corporate"            -> "gov_megacorporation";
+            case "auth_hive_mind"            -> "gov_hive_mind";
+            case "auth_machine_intelligence" -> "gov_machine_empire";
+            default -> "gov_representative_democracy";
+        };
+    }
 
     // speciesClass → flag icon category (Stellaris gfx/flags/<category>/ directory)
     private static final Map<String, String> SPECIES_FLAG_CATEGORIES = Map.ofEntries(
@@ -93,7 +130,7 @@ public class EmpireExporterService {
     public String buildEmpireBlock(GeneratedEmpire empire, ExportOptions opts) {
         String speciesClass = empire.speciesClass();
         String portrait = SPECIES_PORTRAITS.getOrDefault(speciesClass, "humanoid_01");
-        String government = AUTHORITY_GOVERNMENTS.getOrDefault(empire.authority().id(), "gov_democratic_republic");
+        String government = computeGovernment(empire.authority().id(), empire.ethics());
         String nameList = SPECIES_NAME_LISTS.getOrDefault(speciesClass, "HUM1");
         String shipset = empire.shipset().id();
         String flagCategory = SPECIES_FLAG_CATEGORIES.getOrDefault(speciesClass, "ornate");
@@ -185,6 +222,9 @@ public class EmpireExporterService {
         sb.append("\t\tclothes=0\n");
         sb.append("\t\truler_title=\n\t\t{\n\t\t\tkey=\"\"\n\t\t}\n");
         sb.append("\t\truler_title_female=\n\t\t{\n\t\t\tkey=\"\"\n\t\t}\n");
+        for (var lt : empire.leaderTraits()) {
+            sb.append("\t\ttrait=").append(q(lt.id())).append("\n");
+        }
         sb.append("\t\tleader_class=").append(q(empire.leaderClass())).append("\n");
         sb.append("\t}\n");
 

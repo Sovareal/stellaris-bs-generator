@@ -81,7 +81,7 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
           })}
         </div>
         <span className="text-xs text-muted-foreground">
-          {traits.filter(t => !t.enforced).length}/{archetype.maxTraits} picks · {pointsBudget - pointsUsed} pts remaining
+          {traits.length}/{archetype.maxTraits} picks · {pointsBudget - pointsUsed} pts remaining
         </span>
       </div>
       <RerollButton category="traits" available={rerollAvailable} />

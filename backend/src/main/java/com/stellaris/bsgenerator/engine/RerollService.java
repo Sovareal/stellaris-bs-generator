@@ -212,9 +212,8 @@ public class RerollService {
 
         // Regenerate species traits: drop old origin's enforced traits, add new origin's enforced traits
         var newTraits = generatorService.buildSpeciesTraits(empire.speciesArchetype(), stateWithOrigin, newOrigin, empire.civics());
-        // Budget: only non-enforced traits count (enforced display real cost but are free)
-        var newEnforcedIds = new HashSet<>(generatorService.collectEnforcedTraitIds(newOrigin, empire.civics()));
-        int newPointsUsed = newTraits.stream().filter(t -> !newEnforcedIds.contains(t.id())).mapToInt(SpeciesTrait::cost).sum();
+        // Count all traits (including enforced) — enforced traits consume budget
+        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
 
         // Regenerate leader traits: origin change may affect valid trait pool (e.g., Treasure Hunters → other)
         var newLeaderTraits = generatorService.pickLeaderTraits(empire.leaderClass(), stateWithOrigin);
@@ -280,10 +279,9 @@ public class RerollService {
             excludedIds.addAll(t.opposites());
         }
 
-        // Remaining budget = total budget minus the cost of kept non-enforced traits
+        // Remaining budget = total budget minus all kept trait costs (enforced + non-enforced)
         int budget = empire.traitPointsBudget();
         int spentByKept = remainingTraits.stream()
-                .filter(t -> !enforcedIds.contains(t.id()))
                 .mapToInt(SpeciesTrait::cost)
                 .sum();
         int availableBudget = budget - spentByKept;
@@ -317,9 +315,8 @@ public class RerollService {
         }
         var newTraitList = List.copyOf(newTraits);
 
-        // Points used = sum of non-enforced trait costs
+        // Points used = sum of all trait costs (enforced + new replacement)
         int newPointsUsed = newTraitList.stream()
-                .filter(t -> !enforcedIds.contains(t.id()))
                 .mapToInt(SpeciesTrait::cost)
                 .sum();
 
@@ -375,7 +372,9 @@ public class RerollService {
         List<SpeciesTrait> picked = new ArrayList<>(enforced);
         Set<String> pickedIds = new HashSet<>(enforcedIds);
         Set<String> excludedByOpposites = new HashSet<>();
-        int pointsSpent = 0; // Enforced traits are free (cost 0)
+        // Start at enforced cost so random picks can't push total over budget
+        int enforcedCostSum = enforced.stream().mapToInt(SpeciesTrait::cost).sum();
+        int pointsSpent = enforcedCostSum;
 
         var shuffled = new ArrayList<>(available);
         Collections.shuffle(shuffled, random);
