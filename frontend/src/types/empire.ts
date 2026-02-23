@@ -117,3 +117,17 @@ export interface SettingsResponse {
   valid: boolean;
   validationMessage: string;
 }
+
+export interface ExportRequest {
+  empireName: string;
+  speciesName: string;
+  speciesPlural?: string;
+  speciesAdjective?: string;
+  rulerName: string;
+}
+
+export interface ExportResponse {
+  success: boolean;
+  filePath: string;
+  empireName: string;
+}

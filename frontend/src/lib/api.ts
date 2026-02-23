@@ -1,4 +1,4 @@
-import type { EmpireResponse, RerollCategory, SettingsResponse, VersionResponse } from "@/types/empire";
+import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, VersionResponse } from "@/types/empire";
 
 const BASE_URL = "http://localhost:8080";
 
@@ -59,5 +59,11 @@ export const api = {
     request<SettingsResponse>("/api/settings", {
       method: "PUT",
       body: JSON.stringify({ gamePath }),
+    }),
+
+  exportEmpire: (req: ExportRequest) =>
+    request<ExportResponse>("/api/empire/export", {
+      method: "POST",
+      body: JSON.stringify(req),
     }),
 };

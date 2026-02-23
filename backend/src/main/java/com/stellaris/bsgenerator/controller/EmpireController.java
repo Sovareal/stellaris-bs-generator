@@ -1,11 +1,20 @@
 package com.stellaris.bsgenerator.controller;
 
 import com.stellaris.bsgenerator.dto.EmpireResponse;
+import com.stellaris.bsgenerator.dto.ExportRequest;
+import com.stellaris.bsgenerator.dto.ExportResponse;
 import com.stellaris.bsgenerator.dto.RerollRequest;
 import com.stellaris.bsgenerator.engine.*;
 import com.stellaris.bsgenerator.parser.LocalizationService;
+import com.stellaris.bsgenerator.service.EmpireExporterService;
+import com.stellaris.bsgenerator.service.ExportOptions;
+import com.stellaris.bsgenerator.service.UserEmpireFileService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.nio.file.Path;
 
 @RestController
 @RequestMapping("/api/empire")
@@ -15,6 +24,8 @@ public class EmpireController {
     private final EmpireGeneratorService generatorService;
     private final RerollService rerollService;
     private final LocalizationService localizationService;
+    private final EmpireExporterService exporterService;
+    private final UserEmpireFileService userEmpireFileService;
 
     // In-memory session (single user desktop app)
     private GenerationSession session;
@@ -57,5 +68,32 @@ public class EmpireController {
 
         var updated = rerollService.reroll(session, category);
         return EmpireResponse.from(updated, session, localizationService);
+    }
+
+    @PostMapping("/export")
+    public ResponseEntity<ExportResponse> exportEmpire(@RequestBody ExportRequest req) throws IOException {
+        if (session == null || session.getEmpire() == null) {
+            throw new IllegalStateException("No empire generated yet — generate an empire first");
+        }
+
+        String plural = (req.speciesPlural() != null && !req.speciesPlural().isBlank())
+                ? req.speciesPlural()
+                : req.speciesName() + "s";
+        String adjective = (req.speciesAdjective() != null && !req.speciesAdjective().isBlank())
+                ? req.speciesAdjective()
+                : req.speciesName();
+
+        var opts = new ExportOptions(
+                req.empireName(),
+                req.speciesName(),
+                plural,
+                adjective,
+                req.rulerName()
+        );
+
+        String block = exporterService.buildEmpireBlock(session.getEmpire(), opts);
+        Path file = userEmpireFileService.appendEmpire(block);
+
+        return ResponseEntity.ok(new ExportResponse(true, file.toString(), req.empireName()));
     }
 }

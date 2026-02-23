@@ -1,18 +1,22 @@
 import { create } from "zustand";
 import { api, ApiError } from "@/lib/api";
-import type { EmpireResponse, RerollCategory } from "@/types/empire";
+import type { EmpireResponse, ExportRequest, RerollCategory } from "@/types/empire";
 
 interface EmpireStore {
   empire: EmpireResponse | null;
   isLoading: boolean;
   isRerolling: RerollCategory | null;
   isRerollingTrait: string | null;
+  isSaving: boolean;
+  saveSuccess: string | null; // file path on success, null otherwise
   error: string | null;
   generationId: number;
   generate: () => Promise<void>;
   reroll: (category: RerollCategory) => Promise<void>;
   rerollTrait: (traitId: string) => Promise<void>;
+  saveToGame: (req: ExportRequest) => Promise<void>;
   clearError: () => void;
+  clearSaveState: () => void;
 }
 
 export const useEmpireStore = create<EmpireStore>((set, get) => ({
@@ -20,6 +24,8 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
   isLoading: false,
   isRerolling: null,
   isRerollingTrait: null,
+  isSaving: false,
+  saveSuccess: null,
   error: null,
   generationId: 0,
 
@@ -70,5 +76,17 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     }
   },
 
+  saveToGame: async (req: ExportRequest) => {
+    set({ isSaving: true, error: null, saveSuccess: null });
+    try {
+      const result = await api.exportEmpire(req);
+      set({ isSaving: false, saveSuccess: result.filePath });
+    } catch (e) {
+      const message = e instanceof ApiError ? e.body.message : "Failed to save empire";
+      set({ isSaving: false, error: message });
+    }
+  },
+
   clearError: () => set({ error: null }),
+  clearSaveState: () => set({ saveSuccess: null }),
 }));

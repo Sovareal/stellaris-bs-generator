@@ -1,7 +1,8 @@
 import { useEmpireStore } from "@/stores/useEmpireStore";
 import { GenerateButton } from "@/components/GenerateButton";
-import { ErrorToast } from "@/components/ErrorToast";
+import { StatusToast } from "@/components/StatusToast";
 import { EmpireCard } from "@/components/EmpireCard";
+import { SaveToGameButton } from "@/components/SaveToGameButton";
 
 export function EmpireView() {
   const empire = useEmpireStore((s) => s.empire);
@@ -9,7 +10,7 @@ export function EmpireView() {
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
-      <ErrorToast />
+      <StatusToast />
       {empire ? (
         <EmpireCard key={generationId} empire={empire} />
       ) : (
@@ -17,7 +18,10 @@ export function EmpireView() {
           Generate a random valid Stellaris empire
         </p>
       )}
-      <GenerateButton />
+      <div className="flex gap-4">
+        <GenerateButton />
+        <SaveToGameButton />
+      </div>
     </main>
   );
 }
