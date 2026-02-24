@@ -81,6 +81,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           traits={empire.speciesTraits}
           pointsUsed={empire.traitPointsUsed}
           pointsBudget={empire.traitPointsBudget}
+          rerollAvailable={empire.rerollsAvailable["ethics"] ?? false}
         />
 
         {empire.secondarySpecies && (

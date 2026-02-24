@@ -250,12 +250,16 @@ public class RerollService {
 
     /**
      * Reroll a single non-enforced species trait, replacing it with a compatible alternative.
-     * Respects the remaining trait budget and the opposites of kept traits.
-     */
-    /**
-     * Reroll a single non-enforced species trait. Unlimited — does not consume the session reroll token.
+     * Consumes the session reroll token — only one reroll is allowed per generation.
+     *
+     * @throws IllegalStateException if the reroll token has already been used
+     * @throws GenerationException   if the target trait is enforced or no replacement exists
      */
     public GeneratedEmpire rerollSingleTrait(GenerationSession session, String targetTraitId) {
+        if (!session.canReroll()) {
+            throw new IllegalStateException("Reroll already used for this generation");
+        }
+
         var empire = session.getEmpire();
 
         // Enforced traits (from origin + civics) cannot be individually rerolled
@@ -346,6 +350,7 @@ public class RerollService {
             b.habitabilityPreference = finalHabPref;
         });
 
+        session.markRerolled();
         session.setEmpire(updated);
 
         log.info("Single-trait reroll: {} → {}", targetTraitId, replacement.id());
@@ -401,11 +406,23 @@ public class RerollService {
 
         int budget = archetype.traitPoints();
         int pointsSpent = empire.traitPointsUsed();
+        int balance = budget - pointsSpent; // remaining budget; negative = in debt
 
         var candidates = available.stream()
                 .filter(t -> !excludedIds.contains(t.id()))
                 .filter(t -> !excludedByOpposites.contains(t.id()))
-                .filter(t -> pointsSpent + t.cost() >= 0 && pointsSpent + t.cost() <= budget)
+                .filter(t -> {
+                    if (picksRemaining == 1) {
+                        // Last pick: must leave balance >= 0 (finish within budget)
+                        return t.cost() <= balance;
+                    } else if (balance < 0) {
+                        // In debt with picks to spare: only negatives can recover balance
+                        return t.cost() < 0;
+                    } else {
+                        // balance >= 0, picks > 1: any trait allowed; temporary debt is fine
+                        return true;
+                    }
+                })
                 .toList();
 
         if (candidates.isEmpty()) {

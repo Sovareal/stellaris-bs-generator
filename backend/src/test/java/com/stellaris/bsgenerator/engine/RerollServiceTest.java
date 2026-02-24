@@ -146,7 +146,7 @@ class RerollServiceTest {
     }
 
     @Test
-    void rerollSingleTraitIsUnlimited() {
+    void rerollSingleTraitConsumesToken() {
         // Add one trait first since initial empire has no random traits
         rerollService.addOneTrait(session);
         var emp = session.getEmpire();
@@ -159,7 +159,7 @@ class RerollServiceTest {
         if (nonEnforced.isEmpty()) return; // No non-enforced traits — skip
 
         rerollService.rerollSingleTrait(session, nonEnforced.get().id());
-        assertTrue(session.canReroll(), "Reroll token should still be available after rerollSingleTrait");
+        assertFalse(session.canReroll(), "Reroll token should be consumed after rerollSingleTrait");
     }
 
     @Test

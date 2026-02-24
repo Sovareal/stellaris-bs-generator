@@ -13,6 +13,7 @@ interface TraitsSlotProps {
   traits: TraitDto[];
   pointsUsed: number;
   pointsBudget: number;
+  rerollAvailable: boolean;
 }
 
 function traitColor(cost: number): string {
@@ -21,7 +22,7 @@ function traitColor(cost: number): string {
   return "text-muted-foreground";             // zero cost = neutral
 }
 
-export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, pointsUsed, pointsBudget }: TraitsSlotProps) {
+export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, pointsUsed, pointsBudget, rerollAvailable }: TraitsSlotProps) {
   const archetypeName = displayName(archetype);
   const classDisplayName = speciesClassName ?? humanizeId(speciesClass);
   const speciesLabel = speciesClass !== archetype.id
@@ -44,8 +45,8 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
   const ptsRemaining = pointsBudget - pointsUsed;
 
   const anyBusy = isRerolling !== null || isLoading || isRerollingTrait !== null || isAddingTrait || isAddingLeaderTrait;
-  const canAddTrait = picksRemaining > 0 && ptsRemaining > 0 && !anyBusy;
-  const canFinalize = !traitsFinalized && !anyBusy;
+  const canAddTrait = picksRemaining > 0 && !anyBusy;
+  const canFinalize = !traitsFinalized && ptsRemaining >= 0 && !anyBusy;
 
   return (
     <div className="flex flex-col gap-2 py-2 border-b border-border">
@@ -81,9 +82,9 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
                   {!trait.enforced && (
                     <button
                       onClick={() => rerollTrait(trait.id)}
-                      disabled={anyBusy}
+                      disabled={!rerollAvailable || anyBusy}
                       className="ml-0.5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-                      title={`Reroll ${displayName(trait)}`}
+                      title={rerollAvailable ? `Reroll ${displayName(trait)}` : "Reroll used"}
                     >
                       {isThisRerolling ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
