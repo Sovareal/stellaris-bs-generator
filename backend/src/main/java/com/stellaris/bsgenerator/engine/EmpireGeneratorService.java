@@ -24,8 +24,8 @@ public class EmpireGeneratorService {
     private static final double GESTALT_CHANCE = 0.30;
     private static final List<String> LEADER_CLASSES = List.of("official", "commander", "scientist");
 
-    private static final int SECONDARY_SPECIES_BUDGET = 2;
-    private static final int SECONDARY_SPECIES_MAX_PICKS = 5;
+    static final int SECONDARY_SPECIES_BUDGET = 2;
+    static final int SECONDARY_SPECIES_MAX_PICKS = 5;
     private static final Map<String, Integer> ENFORCED_TRAIT_COSTS = Map.of(
             "trait_syncretic_proles", 1,
             "trait_cybernetic", 0,
@@ -181,55 +181,14 @@ public class EmpireGeneratorService {
                 .toList();
 
         int enforcedCost = enforcedTraits.stream().mapToInt(SpeciesTrait::cost).sum();
-        int remainingBudget = SECONDARY_SPECIES_BUDGET - enforcedCost;
-        int remainingPicks = SECONDARY_SPECIES_MAX_PICKS - enforcedTraits.size();
 
-        // Build a minimal state for trait filtering (secondary species is always biological)
-        var secondaryState = EmpireState.empty()
-                .withSpeciesArchetype("BIOLOGICAL")
-                .withSpeciesClass(secondaryClass);
-
-        // Pick additional traits from compatible pool
-        var available = filterService.getCompatibleTraits("BIOLOGICAL", secondaryState);
-        // Remove enforced traits from available pool
-        var enforcedIds = new HashSet<>(config.enforcedTraitIds());
-        available = available.stream()
-                .filter(t -> !enforcedIds.contains(t.id()))
-                .toList();
-
-        List<SpeciesTrait> additionalTraits = new ArrayList<>();
-        Set<String> pickedIds = new HashSet<>(enforcedIds);
-        Set<String> excludedByOpposites = new HashSet<>();
-        // Collect opposites from enforced traits
-        for (var enforced : enforcedTraits) {
-            excludedByOpposites.addAll(enforced.opposites());
-        }
-        int pointsSpent = enforcedCost;
-
-        var shuffled = new ArrayList<>(available);
-        Collections.shuffle(shuffled, random);
-
-        for (var trait : shuffled) {
-            if (additionalTraits.size() >= remainingPicks) break;
-            if (pickedIds.contains(trait.id())) continue;
-            if (excludedByOpposites.contains(trait.id())) continue;
-
-            int newTotal = pointsSpent + trait.cost();
-            if (newTotal > SECONDARY_SPECIES_BUDGET) continue;
-            if (newTotal < 0) continue;
-
-            additionalTraits.add(trait);
-            pickedIds.add(trait.id());
-            pointsSpent = newTotal;
-            excludedByOpposites.addAll(trait.opposites());
-        }
-
+        // Return enforced-only — additional traits are rolled interactively by the user
         return new SecondarySpecies(
                 config.title(),
                 secondaryClass,
                 enforcedTraits,
-                additionalTraits,
-                pointsSpent,
+                List.of(),
+                enforcedCost,
                 SECONDARY_SPECIES_BUDGET,
                 SECONDARY_SPECIES_MAX_PICKS
         );

@@ -10,7 +10,9 @@ interface EmpireStore {
   isAddingTrait: boolean;
   isAddingLeaderTrait: boolean;
   isRemovingTrait: boolean;
+  isAddingSecondaryTrait: boolean;
   traitsFinalized: boolean;
+  secondaryTraitsFinalized: boolean;
   isSaving: boolean;
   saveSuccess: string | null; // file path on success, null otherwise
   error: string | null;
@@ -21,7 +23,9 @@ interface EmpireStore {
   addTrait: () => Promise<void>;
   addLeaderTrait: () => Promise<void>;
   removeTrait: () => Promise<void>;
+  addSecondaryTrait: () => Promise<void>;
   finalizeTraits: () => void;
+  finalizeSecondaryTraits: () => void;
   saveToGame: (req: ExportRequest) => Promise<void>;
   clearError: () => void;
   clearSaveState: () => void;
@@ -35,14 +39,16 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
   isAddingTrait: false,
   isAddingLeaderTrait: false,
   isRemovingTrait: false,
+  isAddingSecondaryTrait: false,
   traitsFinalized: false,
+  secondaryTraitsFinalized: false,
   isSaving: false,
   saveSuccess: null,
   error: null,
   generationId: 0,
 
   generate: async () => {
-    set({ isLoading: true, error: null, traitsFinalized: false });
+    set({ isLoading: true, error: null, traitsFinalized: false, secondaryTraitsFinalized: false });
     try {
       const empire = await api.generateEmpire();
       set((s) => ({
@@ -58,7 +64,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
 
   reroll: async (category: RerollCategory) => {
     if (get().isRerolling) return;
-    set({ isRerolling: category, error: null, traitsFinalized: false });
+    set({ isRerolling: category, error: null, traitsFinalized: false, secondaryTraitsFinalized: false });
     try {
       const empire = await api.rerollCategory(category);
       set((s) => ({
@@ -120,7 +126,21 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     }
   },
 
+  addSecondaryTrait: async () => {
+    if (get().isRerolling || get().isAddingTrait || get().isAddingSecondaryTrait) return;
+    set({ isAddingSecondaryTrait: true, error: null, secondaryTraitsFinalized: false });
+    try {
+      const empire = await api.addSecondaryTrait();
+      set({ empire, isAddingSecondaryTrait: false });
+    } catch (e) {
+      const message = e instanceof ApiError ? e.body.message : "Failed to add secondary species trait";
+      set({ isAddingSecondaryTrait: false, error: message });
+    }
+  },
+
   finalizeTraits: () => set({ traitsFinalized: true }),
+
+  finalizeSecondaryTraits: () => set({ secondaryTraitsFinalized: true }),
 
   saveToGame: async (req: ExportRequest) => {
     set({ isSaving: true, error: null, saveSuccess: null });

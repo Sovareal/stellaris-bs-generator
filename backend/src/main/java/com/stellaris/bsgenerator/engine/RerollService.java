@@ -542,6 +542,89 @@ public class RerollService {
     }
 
     /**
+     * Add one random trait to the secondary species. Unlimited — does not consume the session reroll token.
+     * Respects the secondary species trait budget and opposites of already-picked traits.
+     *
+     * @throws GenerationException if no secondary species exists, no picks remain, or no compatible trait found
+     */
+    public GeneratedEmpire addOneSecondaryTrait(GenerationSession session) {
+        var empire = session.getEmpire();
+        var secondary = empire.secondarySpecies();
+
+        if (secondary == null) {
+            throw new GenerationException("No secondary species to add traits to");
+        }
+
+        int picksRemaining = EmpireGeneratorService.SECONDARY_SPECIES_MAX_PICKS
+                - secondary.enforcedTraits().size()
+                - secondary.additionalTraits().size();
+        if (picksRemaining <= 0) {
+            throw new GenerationException("No secondary species trait picks remaining");
+        }
+
+        // Secondary species is always biological
+        var state = EmpireState.empty()
+                .withSpeciesArchetype("BIOLOGICAL")
+                .withSpeciesClass(secondary.speciesClass());
+
+        var available = filterService.getCompatibleTraits("BIOLOGICAL", state);
+
+        // Exclude all current traits (enforced + additional) and their opposites
+        var excludedIds = new HashSet<String>();
+        var excludedByOpposites = new HashSet<String>();
+        for (var t : secondary.enforcedTraits()) {
+            excludedIds.add(t.id());
+            excludedByOpposites.addAll(t.opposites());
+        }
+        for (var t : secondary.additionalTraits()) {
+            excludedIds.add(t.id());
+            excludedByOpposites.addAll(t.opposites());
+        }
+
+        int pointsSpent = secondary.traitPointsUsed();
+        int balance = EmpireGeneratorService.SECONDARY_SPECIES_BUDGET - pointsSpent;
+
+        var candidates = available.stream()
+                .filter(t -> !excludedIds.contains(t.id()))
+                .filter(t -> !excludedByOpposites.contains(t.id()))
+                .filter(t -> {
+                    if (picksRemaining == 1) {
+                        return t.cost() <= balance;
+                    } else if (balance < 0) {
+                        return t.cost() < 0;
+                    } else {
+                        return true;
+                    }
+                })
+                .toList();
+
+        if (candidates.isEmpty()) {
+            throw new GenerationException("No compatible secondary species traits available to add");
+        }
+
+        var newTrait = candidates.get(random.nextInt(candidates.size()));
+        var newAdditional = new ArrayList<>(secondary.additionalTraits());
+        newAdditional.add(newTrait);
+
+        int newPointsUsed = pointsSpent + newTrait.cost();
+
+        var newSecondary = new SecondarySpecies(
+                secondary.title(),
+                secondary.speciesClass(),
+                secondary.enforcedTraits(),
+                List.copyOf(newAdditional),
+                newPointsUsed,
+                secondary.traitPointsBudget(),
+                secondary.maxTraitPicks()
+        );
+
+        var updated = copyWith(empire, b -> b.secondarySpecies = newSecondary);
+        session.setEmpire(updated);
+        log.info("Added secondary species trait: {}", newTrait.id());
+        return updated;
+    }
+
+    /**
      * Preserve existing random traits through an origin or civic change.
      * Gets the new enforced traits for the updated origin/civics, then filters the existing
      * random traits to remove any that conflict with the new enforced trait opposites or are

@@ -64,6 +64,10 @@ public class EmpireController {
             var updated = rerollService.removeRandomTrait(session);
             return EmpireResponse.from(updated, session, localizationService);
         }
+        if ("trait_secondary_add".equals(cat)) {
+            var updated = rerollService.addOneSecondaryTrait(session);
+            return EmpireResponse.from(updated, session, localizationService);
+        }
 
         RerollCategory category = switch (cat) {
             case "ethics" -> RerollCategory.ETHICS;
