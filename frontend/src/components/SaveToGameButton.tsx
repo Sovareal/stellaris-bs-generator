@@ -8,10 +8,13 @@ export function SaveToGameButton() {
   const empire = useEmpireStore((s) => s.empire);
   const traitsFinalized = useEmpireStore((s) => s.traitsFinalized);
   const secondaryTraitsFinalized = useEmpireStore((s) => s.secondaryTraitsFinalized);
+  const leaderTraitsFinalized = useEmpireStore((s) => s.leaderTraitsFinalized);
   const [open, setOpen] = useState(false);
 
   const secondaryReady = !empire?.secondarySpecies || secondaryTraitsFinalized;
-  if (!empire || !traitsFinalized || !secondaryReady) return null;
+  const isLuminary = empire?.origin?.id === "origin_legendary_leader";
+  const leaderReady = !isLuminary || leaderTraitsFinalized;
+  if (!empire || !traitsFinalized || !secondaryReady || !leaderReady) return null;
 
   return (
     <>

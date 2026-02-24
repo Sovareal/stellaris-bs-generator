@@ -13,6 +13,7 @@ interface EmpireStore {
   isAddingSecondaryTrait: boolean;
   traitsFinalized: boolean;
   secondaryTraitsFinalized: boolean;
+  leaderTraitsFinalized: boolean;
   isSaving: boolean;
   saveSuccess: string | null; // file path on success, null otherwise
   error: string | null;
@@ -26,6 +27,7 @@ interface EmpireStore {
   addSecondaryTrait: () => Promise<void>;
   finalizeTraits: () => void;
   finalizeSecondaryTraits: () => void;
+  finalizeLeaderTraits: () => void;
   saveToGame: (req: ExportRequest) => Promise<void>;
   clearError: () => void;
   clearSaveState: () => void;
@@ -42,13 +44,14 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
   isAddingSecondaryTrait: false,
   traitsFinalized: false,
   secondaryTraitsFinalized: false,
+  leaderTraitsFinalized: false,
   isSaving: false,
   saveSuccess: null,
   error: null,
   generationId: 0,
 
   generate: async () => {
-    set({ isLoading: true, error: null, traitsFinalized: false, secondaryTraitsFinalized: false });
+    set({ isLoading: true, error: null, traitsFinalized: false, secondaryTraitsFinalized: false, leaderTraitsFinalized: false });
     try {
       const empire = await api.generateEmpire();
       set((s) => ({
@@ -64,7 +67,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
 
   reroll: async (category: RerollCategory) => {
     if (get().isRerolling) return;
-    set({ isRerolling: category, error: null, traitsFinalized: false, secondaryTraitsFinalized: false });
+    set({ isRerolling: category, error: null, traitsFinalized: false, secondaryTraitsFinalized: false, leaderTraitsFinalized: false });
     try {
       const empire = await api.rerollCategory(category);
       set((s) => ({
@@ -141,6 +144,8 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
   finalizeTraits: () => set({ traitsFinalized: true }),
 
   finalizeSecondaryTraits: () => set({ secondaryTraitsFinalized: true }),
+
+  finalizeLeaderTraits: () => set({ leaderTraitsFinalized: true }),
 
   saveToGame: async (req: ExportRequest) => {
     set({ isSaving: true, error: null, saveSuccess: null });

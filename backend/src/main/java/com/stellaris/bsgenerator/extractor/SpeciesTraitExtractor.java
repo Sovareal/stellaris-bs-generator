@@ -36,6 +36,11 @@ public class SpeciesTraitExtractor {
             // Skip auto-mod traits (some don't have initial = no but have auto_mod = yes)
             if (node.childBool("auto_mod", false)) continue;
 
+            // Skip background traits that are not addable in the species editor (species_potential_add = { always = no })
+            if (node.child("species_potential_add")
+                    .map(p -> !p.childBool("always", true))
+                    .orElse(false)) continue;
+
             // Parse cost: either leaf (cost = 2) or block (cost = { base = 3 })
             int cost = parseCost(costNode);
 

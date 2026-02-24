@@ -298,12 +298,13 @@ public class RerollService {
                 .filter(t -> !t.id().equals(targetTraitId))
                 .toList();
 
-        // Exclusion set: kept trait IDs + their opposites + the target itself (prevent no-op)
+        // Exclusion set: kept trait IDs + their opposites (symmetric + inverse) + the target itself (prevent no-op)
         var excludedIds = new HashSet<String>();
         excludedIds.add(targetTraitId);
         for (var t : remainingTraits) {
             excludedIds.add(t.id());
             excludedIds.addAll(t.opposites());
+            excludedIds.addAll(filterService.getInverseOpposites(t.id()));
         }
 
         // Remaining budget = total budget minus ALL kept trait costs (origin-enforced count toward budget)
@@ -389,11 +390,13 @@ public class RerollService {
         allEnforcedIds.addAll(originEnforcedIds);
         allEnforcedIds.addAll(civicEnforcedIds);
 
-        int civicEnforcedCount = civicEnforcedIds.size();
+        long nonFreeEnforcedCount = empire.speciesTraits().stream()
+                .filter(t -> allEnforcedIds.contains(t.id()) && t.cost() != 0)
+                .count();
         long randomCount = empire.speciesTraits().stream()
                 .filter(t -> !allEnforcedIds.contains(t.id()))
                 .count();
-        int picksRemaining = archetype.maxTraits() - civicEnforcedCount - (int) randomCount;
+        int picksRemaining = archetype.maxTraits() - (int) nonFreeEnforcedCount - (int) randomCount;
         if (picksRemaining <= 0) {
             throw new GenerationException("No trait picks remaining");
         }
@@ -408,12 +411,13 @@ public class RerollService {
 
         var available = filterService.getCompatibleTraits(archetype.id(), state);
 
-        // Exclude all current traits (including enforced) and their opposites
+        // Exclude all current traits (including enforced) and their opposites (symmetric + inverse)
         var excludedIds = new HashSet<String>();
         var excludedByOpposites = new HashSet<String>();
         for (var t : empire.speciesTraits()) {
             excludedIds.add(t.id());
             excludedByOpposites.addAll(t.opposites());
+            excludedByOpposites.addAll(filterService.getInverseOpposites(t.id()));
         }
 
         int budget = archetype.traitPoints();
@@ -569,16 +573,18 @@ public class RerollService {
 
         var available = filterService.getCompatibleTraits("BIOLOGICAL", state);
 
-        // Exclude all current traits (enforced + additional) and their opposites
+        // Exclude all current traits (enforced + additional) and their opposites (symmetric + inverse)
         var excludedIds = new HashSet<String>();
         var excludedByOpposites = new HashSet<String>();
         for (var t : secondary.enforcedTraits()) {
             excludedIds.add(t.id());
             excludedByOpposites.addAll(t.opposites());
+            excludedByOpposites.addAll(filterService.getInverseOpposites(t.id()));
         }
         for (var t : secondary.additionalTraits()) {
             excludedIds.add(t.id());
             excludedByOpposites.addAll(t.opposites());
+            excludedByOpposites.addAll(filterService.getInverseOpposites(t.id()));
         }
 
         int pointsSpent = secondary.traitPointsUsed();

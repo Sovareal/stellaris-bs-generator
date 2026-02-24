@@ -6,7 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Filters game entities by compatibility with the current empire state.
@@ -181,6 +186,29 @@ public class CompatibilityFilterService {
                 .filter(t -> matchesForbidSet(t.forbiddenCivics(), state.civics()))
                 .filter(t -> matchesForbidSet(t.forbiddenEthics(), state.ethics()))
                 .toList();
+    }
+
+    private volatile Map<String, Set<String>> inverseOppositesCache;
+
+    /**
+     * Returns the set of trait IDs whose own opposites list contains the given traitId.
+     * This covers asymmetric entries in the game data where only one side declares the opposition.
+     */
+    public Set<String> getInverseOpposites(String traitId) {
+        if (inverseOppositesCache == null) {
+            synchronized (this) {
+                if (inverseOppositesCache == null) {
+                    var map = new HashMap<String, Set<String>>();
+                    for (var trait : gameDataManager.getSpeciesTraits()) {
+                        for (var opposite : trait.opposites()) {
+                            map.computeIfAbsent(opposite, k -> new HashSet<>()).add(trait.id());
+                        }
+                    }
+                    inverseOppositesCache = Collections.unmodifiableMap(map);
+                }
+            }
+        }
+        return inverseOppositesCache.getOrDefault(traitId, Set.of());
     }
 
     /**

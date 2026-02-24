@@ -79,8 +79,11 @@ export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: Seco
               </Badge>
             ))}
           </div>
-          <span className={`text-xs ${ptsRemaining >= 0 && picksRemaining >= 0 ? "text-green-500" : "text-destructive"}`}>
-            {additionalPicksUsed}/{maxAdditionalPicks} picks · {ptsRemaining} pts remaining
+          <span className={`text-xs ${picksRemaining >= 0 ? "text-green-500" : "text-destructive"}`}>
+            {additionalPicksUsed}/{maxAdditionalPicks} picks
+          </span>
+          <span className={`text-xs font-medium ${ptsRemaining >= 0 ? "text-green-500" : "text-destructive"}`}>
+            {ptsRemaining >= 0 ? `+${ptsRemaining}` : ptsRemaining} pts remaining
           </span>
         </div>
         <RerollButton category="secondaryspecies" available={rerollAvailable} />

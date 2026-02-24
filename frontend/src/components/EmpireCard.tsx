@@ -1,4 +1,4 @@
-import { Loader2, Plus } from "lucide-react";
+import { CheckCircle, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,17 +20,20 @@ export function EmpireCard({ empire }: EmpireCardProps) {
   const leaderClassName = humanizeId(empire.leader.leaderClass);
 
   const addLeaderTrait = useEmpireStore((s) => s.addLeaderTrait);
+  const finalizeLeaderTraits = useEmpireStore((s) => s.finalizeLeaderTraits);
   const isAddingLeaderTrait = useEmpireStore((s) => s.isAddingLeaderTrait);
   const isRerolling = useEmpireStore((s) => s.isRerolling);
   const isLoading = useEmpireStore((s) => s.isLoading);
   const isAddingTrait = useEmpireStore((s) => s.isAddingTrait);
+  const leaderTraitsFinalized = useEmpireStore((s) => s.leaderTraitsFinalized);
 
   const isLuminary = empire.origin.id === "origin_legendary_leader";
   const leaderBudgetUsed = empire.leader.traits.reduce((sum, t) => sum + t.cost, 0);
   const leaderBudgetRemaining = empire.leader.leaderBudget - leaderBudgetUsed;
   const leaderPicksRemaining = empire.leader.leaderPicksMax - empire.leader.traits.length;
   const anyBusy = isRerolling !== null || isLoading || isAddingTrait || isAddingLeaderTrait;
-  const canAddLeaderTrait = isLuminary && leaderPicksRemaining > 0 && leaderBudgetRemaining > 0 && !anyBusy;
+  const canAddLeaderTrait = isLuminary && leaderPicksRemaining > 0 && !anyBusy;
+  const canFinalizeLeader = isLuminary && !leaderTraitsFinalized && leaderBudgetRemaining >= 0 && leaderPicksRemaining >= 0 && !anyBusy;
 
   return (
     <Card className="w-full max-w-2xl animate-empire-enter">
@@ -151,20 +154,40 @@ export function EmpireCard({ empire }: EmpireCardProps) {
             <RerollButton category="leader" available={empire.rerollsAvailable["leader"] ?? false} />
           </div>
           {isLuminary && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={addLeaderTrait}
-              disabled={!canAddLeaderTrait}
-              className="gap-1.5 text-xs self-start"
-            >
-              {isAddingLeaderTrait ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Plus className="h-3 w-3" />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addLeaderTrait}
+                disabled={!canAddLeaderTrait}
+                className="gap-1.5 text-xs"
+              >
+                {isAddingLeaderTrait ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Plus className="h-3 w-3" />
+                )}
+                Roll Leader Trait
+              </Button>
+              {!leaderTraitsFinalized && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={finalizeLeaderTraits}
+                  disabled={!canFinalizeLeader}
+                  className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <CheckCircle className="h-3 w-3" />
+                  Done Rolling
+                </Button>
               )}
-              Roll Leader Trait
-            </Button>
+              {leaderTraitsFinalized && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  Traits finalized
+                </span>
+              )}
+            </div>
           )}
         </div>
       </CardContent>
