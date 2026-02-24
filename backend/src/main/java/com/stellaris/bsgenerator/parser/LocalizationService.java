@@ -95,9 +95,7 @@ public class LocalizationService {
                     String key = m.group(1);
                     String value = cleanDisplayText(m.group(2));
 
-                    // Only store non-desc, non-tooltip keys (skip _desc, _tt, _effect, etc.)
-                    if (!key.contains("_desc") && !key.contains("_tt") && !key.contains("_EFFECT")
-                            && !value.isEmpty()) {
+                    if (!value.isEmpty()) {
                         target.putIfAbsent(key, value);
                     }
                 }

@@ -52,9 +52,16 @@ export function EmpireSlot({ label, value, sublabel, category, rerollAvailable, 
               <TooltipTrigger asChild>
                 <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
               </TooltipTrigger>
-              <TooltipContent className="max-w-64 text-xs" side="left">
+              <TooltipContent className="max-w-xs text-xs leading-relaxed" side="left">
                 {effects!.description && (
-                  <p className="mb-1.5">{effects!.description}</p>
+                  <div className={effects!.modifiers.length > 0 ? "mb-2 space-y-0.5" : "space-y-0.5"}>
+                    {effects!.description
+                      .split("\\n")
+                      .filter(line => line.trim().length > 1)
+                      .map((line, i) => (
+                        <p key={i}>{line.trim()}</p>
+                      ))}
+                  </div>
                 )}
                 {effects!.modifiers.length > 0 && (
                   <ul className="space-y-0.5">
