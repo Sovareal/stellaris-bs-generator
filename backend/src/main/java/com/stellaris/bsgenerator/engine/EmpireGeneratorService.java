@@ -550,6 +550,13 @@ public class EmpireGeneratorService {
         List<SpeciesTrait> picked = new ArrayList<>();
         Set<String> pickedIds = new HashSet<>();
         Set<String> excludedByOpposites = new HashSet<>();
+        // Seed opposites from enforced traits so we never pick a trait that conflicts with them
+        for (var enforcedId : allExcludeIds) {
+            var enforcedTrait = filterService.findTraitById(enforcedId);
+            if (enforcedTrait != null) {
+                excludedByOpposites.addAll(enforcedTrait.opposites());
+            }
+        }
         int pointsSpent = civicEnforcedCostSum; // start at civic enforced cost so random picks can't overspend
 
         // Shuffle to add randomness (traits don't have random_weight)

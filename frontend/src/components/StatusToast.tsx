@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { X, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEmpireStore } from "@/stores/useEmpireStore";
@@ -7,6 +8,20 @@ export function StatusToast() {
   const saveSuccess = useEmpireStore((s) => s.saveSuccess);
   const clearError = useEmpireStore((s) => s.clearError);
   const clearSaveState = useEmpireStore((s) => s.clearSaveState);
+
+  // Dismiss the success toast on the next click anywhere in the document
+  useEffect(() => {
+    if (!saveSuccess) return;
+    const handler = () => clearSaveState();
+    // Small delay so the click that triggered the save action doesn't immediately dismiss
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("click", handler, { once: true });
+    }, 100);
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("click", handler);
+    };
+  }, [saveSuccess, clearSaveState]);
 
   if (error) {
     return (
