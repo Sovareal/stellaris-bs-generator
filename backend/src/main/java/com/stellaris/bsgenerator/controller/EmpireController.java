@@ -60,6 +60,10 @@ public class EmpireController {
             var updated = rerollService.addLeaderTrait(session);
             return EmpireResponse.from(updated, session, localizationService);
         }
+        if ("trait_remove".equals(cat)) {
+            var updated = rerollService.removeRandomTrait(session);
+            return EmpireResponse.from(updated, session, localizationService);
+        }
 
         RerollCategory category = switch (cat) {
             case "ethics" -> RerollCategory.ETHICS;

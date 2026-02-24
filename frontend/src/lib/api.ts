@@ -61,6 +61,12 @@ export const api = {
       body: JSON.stringify({ category: "leader_trait_add" }),
     }),
 
+  removeTrait: () =>
+    request<EmpireResponse>("/api/empire/reroll", {
+      method: "POST",
+      body: JSON.stringify({ category: "trait_remove" }),
+    }),
+
   getVersion: () =>
     request<VersionResponse>("/api/data/version"),
 

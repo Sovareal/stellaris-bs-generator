@@ -184,6 +184,17 @@ class RerollServiceTest {
         assertEquals(original.civics().get(1).id(), updated.civics().get(1).id(), "Civic 2 should be unchanged");
         assertEquals(original.origin().id(), updated.origin().id(), "Origin should be unchanged");
         assertEquals(original.speciesArchetype().id(), updated.speciesArchetype().id(), "Archetype should be unchanged");
-        assertEquals(original.speciesTraits(), updated.speciesTraits(), "Traits should be unchanged");
+        // Random (non-enforced) traits should be preserved; enforced may differ if new civic enforces different traits
+        var originalEnforcedIds = new java.util.HashSet<String>();
+        originalEnforcedIds.addAll(original.origin().enforcedTraitIds());
+        original.civics().forEach(c -> originalEnforcedIds.addAll(c.enforcedTraitIds()));
+        var originalRandoms = original.speciesTraits().stream()
+                .filter(t -> !originalEnforcedIds.contains(t.id())).toList();
+        var updatedEnforcedIds = new java.util.HashSet<String>();
+        updatedEnforcedIds.addAll(updated.origin().enforcedTraitIds());
+        updated.civics().forEach(c -> updatedEnforcedIds.addAll(c.enforcedTraitIds()));
+        var updatedRandoms = updated.speciesTraits().stream()
+                .filter(t -> !updatedEnforcedIds.contains(t.id())).toList();
+        assertEquals(originalRandoms, updatedRandoms, "Random traits should be preserved on civic reroll");
     }
 }

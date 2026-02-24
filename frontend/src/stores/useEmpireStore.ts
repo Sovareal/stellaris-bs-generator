@@ -9,6 +9,7 @@ interface EmpireStore {
   isRerollingTrait: string | null;
   isAddingTrait: boolean;
   isAddingLeaderTrait: boolean;
+  isRemovingTrait: boolean;
   traitsFinalized: boolean;
   isSaving: boolean;
   saveSuccess: string | null; // file path on success, null otherwise
@@ -19,6 +20,7 @@ interface EmpireStore {
   rerollTrait: (traitId: string) => Promise<void>;
   addTrait: () => Promise<void>;
   addLeaderTrait: () => Promise<void>;
+  removeTrait: () => Promise<void>;
   finalizeTraits: () => void;
   saveToGame: (req: ExportRequest) => Promise<void>;
   clearError: () => void;
@@ -32,6 +34,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
   isRerollingTrait: null,
   isAddingTrait: false,
   isAddingLeaderTrait: false,
+  isRemovingTrait: false,
   traitsFinalized: false,
   isSaving: false,
   saveSuccess: null,
@@ -114,6 +117,22 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     } catch (e) {
       const message = e instanceof ApiError ? e.body.message : "Failed to add leader trait";
       set({ isAddingLeaderTrait: false, error: message });
+    }
+  },
+
+  removeTrait: async () => {
+    if (get().isRerolling || get().isRerollingTrait || get().isAddingTrait || get().isRemovingTrait) return;
+    set({ isRemovingTrait: true, error: null });
+    try {
+      const empire = await api.removeTrait();
+      set((s) => ({
+        empire,
+        isRemovingTrait: false,
+        generationId: s.generationId + 1,
+      }));
+    } catch (e) {
+      const message = e instanceof ApiError ? e.body.message : "Failed to remove trait";
+      set({ isRemovingTrait: false, error: message });
     }
   },
 

@@ -1,4 +1,4 @@
-import { Dices, Loader2, Plus, CheckCircle } from "lucide-react";
+import { Dices, Loader2, Plus, CheckCircle, Minus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EntityIcon } from "@/components/EntityIcon";
@@ -31,9 +31,11 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
 
   const rerollTrait = useEmpireStore((s) => s.rerollTrait);
   const addTrait = useEmpireStore((s) => s.addTrait);
+  const removeTrait = useEmpireStore((s) => s.removeTrait);
   const finalizeTraits = useEmpireStore((s) => s.finalizeTraits);
   const isRerollingTrait = useEmpireStore((s) => s.isRerollingTrait);
   const isAddingTrait = useEmpireStore((s) => s.isAddingTrait);
+  const isRemovingTrait = useEmpireStore((s) => s.isRemovingTrait);
   const isAddingLeaderTrait = useEmpireStore((s) => s.isAddingLeaderTrait);
   const isRerolling = useEmpireStore((s) => s.isRerolling);
   const isLoading = useEmpireStore((s) => s.isLoading);
@@ -44,9 +46,10 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
   const picksRemaining = archetype.maxTraits - picksUsed;
   const ptsRemaining = pointsBudget - pointsUsed;
 
-  const anyBusy = isRerolling !== null || isLoading || isRerollingTrait !== null || isAddingTrait || isAddingLeaderTrait;
+  const anyBusy = isRerolling !== null || isLoading || isRerollingTrait !== null || isAddingTrait || isAddingLeaderTrait || isRemovingTrait;
   const canAddTrait = picksRemaining > 0 && !anyBusy;
-  const canFinalize = !traitsFinalized && ptsRemaining >= 0 && !anyBusy;
+  const canRemoveTrait = picksRemaining < 0 && !anyBusy;
+  const canFinalize = !traitsFinalized && ptsRemaining >= 0 && picksRemaining >= 0 && !anyBusy;
 
   return (
     <div className="flex flex-col gap-2 py-2 border-b border-border">
@@ -117,6 +120,22 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
           )}
           Roll Trait
         </Button>
+        {picksRemaining < 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={removeTrait}
+            disabled={!canRemoveTrait}
+            className="gap-1.5 text-xs text-destructive border-destructive/50 hover:bg-destructive/10"
+          >
+            {isRemovingTrait ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Minus className="h-3 w-3" />
+            )}
+            Remove Trait
+          </Button>
+        )}
         {!traitsFinalized && (
           <Button
             variant="ghost"

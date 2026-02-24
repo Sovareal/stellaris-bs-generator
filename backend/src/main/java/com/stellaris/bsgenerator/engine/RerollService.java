@@ -179,11 +179,38 @@ public class RerollService {
         var newCivics = new ArrayList<>(empire.civics());
         newCivics.set(index, newCivic);
         var civicsList = List.copyOf(newCivics);
+
         // Re-generate secondary species when civics change (may gain or lose secondary species from civic)
         var newSecondary = generatorService.generateSecondarySpecies(empire.origin(), civicsList, empire.speciesClass());
+
+        // Preserve random traits; update enforced layer for new civic
+        var newTraits = preserveRandomTraits(empire, empire.origin(), civicsList);
+        var originEnforcedIdSet = new HashSet<>(empire.origin().enforcedTraitIds());
+        int newPointsUsed = newTraits.stream()
+                .filter(t -> !originEnforcedIdSet.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost).sum();
+
+        // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
+        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraits);
+        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
+        PlanetClass newHomeworld = empire.homeworld();
+        PlanetClass newHabPref = empire.habitabilityPreference();
+        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
+            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraits, empire.speciesClass());
+            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
+        }
+        final var finalHomeworld = newHomeworld;
+        final var finalHabPref = newHabPref;
+        final int finalPointsUsed = newPointsUsed;
+        final var finalTraits = newTraits;
+
         return copyWith(empire, b -> {
             b.civics = civicsList;
             b.secondarySpecies = newSecondary;
+            b.speciesTraits = finalTraits;
+            b.traitPointsUsed = finalPointsUsed;
+            b.homeworld = finalHomeworld;
+            b.habitabilityPreference = finalHabPref;
         });
     }
 
@@ -210,8 +237,8 @@ public class RerollService {
         // Re-generate secondary species when origin changes
         var newSecondary = generatorService.generateSecondarySpecies(newOrigin, empire.civics(), empire.speciesClass());
 
-        // Regenerate species traits: drop old origin's enforced traits, add new origin's enforced traits
-        var newTraits = generatorService.buildSpeciesTraits(empire.speciesArchetype(), stateWithOrigin, newOrigin, empire.civics());
+        // Preserve random traits; update enforced layer for new origin
+        var newTraits = preserveRandomTraits(empire, newOrigin, empire.civics());
         // Origin-enforced traits don't count toward budget — exclude them from pointsUsed
         var newOriginEnforcedIdSet = new HashSet<>(newOrigin.enforcedTraitIds());
         int newPointsUsed = newTraits.stream()
@@ -515,6 +542,106 @@ public class RerollService {
         var updated = copyWith(empire, b -> b.leaderTraits = List.copyOf(newTraits));
         session.setEmpire(updated);
         log.info("Added leader trait: {}", newTrait.id());
+        return updated;
+    }
+
+    /**
+     * Preserve existing random traits through an origin or civic change.
+     * Gets the new enforced traits for the updated origin/civics, then filters the existing
+     * random traits to remove any that conflict with the new enforced trait opposites or are
+     * now covered by the new enforced set. Returns enforced + compatible randoms combined.
+     */
+    private List<SpeciesTrait> preserveRandomTraits(GeneratedEmpire empire, Origin newOrigin, List<Civic> newCivics) {
+        // Old enforced IDs to identify which current traits are "random"
+        var oldEnforcedIds = new HashSet<>(generatorService.collectEnforcedTraitIds(empire.origin(), empire.civics()));
+
+        // Extract current random traits (not in old enforced set)
+        var randomTraits = empire.speciesTraits().stream()
+                .filter(t -> !oldEnforcedIds.contains(t.id()))
+                .toList();
+
+        // Get new enforced traits (enforced-only, no randoms)
+        var stateForBuild = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withSpeciesArchetype(empire.speciesArchetype().id())
+                .withSpeciesClass(empire.speciesClass());
+        var newEnforcedTraits = generatorService.buildSpeciesTraits(
+                empire.speciesArchetype(), stateForBuild, newOrigin, newCivics);
+
+        // Build exclusion sets from new enforced traits
+        var newEnforcedIds = new HashSet<String>();
+        var newEnforcedOpposites = new HashSet<String>();
+        for (var t : newEnforcedTraits) {
+            newEnforcedIds.add(t.id());
+            newEnforcedOpposites.addAll(t.opposites());
+        }
+
+        // Filter randoms: drop those now covered by new enforced or conflicting with their opposites
+        var filteredRandoms = randomTraits.stream()
+                .filter(t -> !newEnforcedIds.contains(t.id()))
+                .filter(t -> !newEnforcedOpposites.contains(t.id()))
+                .toList();
+
+        var combined = new ArrayList<>(newEnforcedTraits);
+        combined.addAll(filteredRandoms);
+        return List.copyOf(combined);
+    }
+
+    /**
+     * Randomly remove one non-enforced species trait. Used when a civic/origin change pushes the
+     * trait count over the archetype maximum. Does NOT consume the session reroll token.
+     *
+     * @throws GenerationException if there are no removable (non-enforced) traits
+     */
+    public GeneratedEmpire removeRandomTrait(GenerationSession session) {
+        var empire = session.getEmpire();
+
+        // Enforced traits (origin + civic) cannot be removed
+        var enforcedIds = new HashSet<>(generatorService.collectEnforcedTraitIds(empire.origin(), empire.civics()));
+
+        var removable = empire.speciesTraits().stream()
+                .filter(t -> !enforcedIds.contains(t.id()))
+                .toList();
+
+        if (removable.isEmpty()) {
+            throw new GenerationException("No removable traits available");
+        }
+
+        var toRemove = removable.get(random.nextInt(removable.size()));
+
+        var newTraits = empire.speciesTraits().stream()
+                .filter(t -> !t.id().equals(toRemove.id()))
+                .toList();
+
+        var originEnforcedIdSet = new HashSet<>(empire.origin().enforcedTraitIds());
+        int newPointsUsed = newTraits.stream()
+                .filter(t -> !originEnforcedIdSet.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost).sum();
+
+        // Re-derive homeworld if planet constraints changed (e.g., Aquatic removed)
+        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(List.copyOf(newTraits));
+        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
+        PlanetClass newHomeworld = empire.homeworld();
+        PlanetClass newHabPref = empire.habitabilityPreference();
+        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
+            newHomeworld = generatorService.pickHomeworld(empire.origin(), List.copyOf(newTraits), empire.speciesClass());
+            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
+        }
+        final var finalHomeworld = newHomeworld;
+        final var finalHabPref = newHabPref;
+        final int finalPointsUsed = newPointsUsed;
+        final var finalTraits = List.copyOf(newTraits);
+
+        var updated = copyWith(empire, b -> {
+            b.speciesTraits = finalTraits;
+            b.traitPointsUsed = finalPointsUsed;
+            b.homeworld = finalHomeworld;
+            b.habitabilityPreference = finalHabPref;
+        });
+
+        session.setEmpire(updated);
+        log.info("Removed species trait: {}", toRemove.id());
         return updated;
     }
 

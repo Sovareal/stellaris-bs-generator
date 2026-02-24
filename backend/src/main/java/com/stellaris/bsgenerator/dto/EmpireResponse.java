@@ -35,7 +35,8 @@ public record EmpireResponse(
         }
         var traitDtos = empire.speciesTraits().stream()
                 .map(t -> originEnforcedIds.contains(t.id()) ? TraitDto.fromFreeEnforced(t, loc)
-                        : civicEnforcedIds.contains(t.id()) ? TraitDto.fromEnforced(t, loc)
+                        : civicEnforcedIds.contains(t.id())
+                            ? (t.cost() == 0 ? TraitDto.fromFreeEnforced(t, loc) : TraitDto.fromEnforced(t, loc))
                         : TraitDto.from(t, loc))
                 .toList();
 
