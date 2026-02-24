@@ -50,6 +50,9 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
   const canAddTrait = picksRemaining > 0 && !anyBusy;
   const canRemoveTrait = picksRemaining < 0 && !anyBusy;
   const canFinalize = !traitsFinalized && ptsRemaining >= 0 && picksRemaining >= 0 && !anyBusy;
+  const randomTraitsCount = traits.filter(t => !t.enforced).length;
+  const rollPulse = canAddTrait && randomTraitsCount === 0;
+  const donePulse = canFinalize && randomTraitsCount > 0;
 
   return (
     <div className="flex flex-col gap-2 py-2 border-b border-border">
@@ -114,7 +117,7 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
           size="sm"
           onClick={addTrait}
           disabled={!canAddTrait}
-          className="gap-1.5 text-xs"
+          className={`gap-1.5 text-xs${rollPulse ? " animate-pulse ring-2 ring-primary/60" : ""}`}
         >
           {isAddingTrait ? (
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -145,7 +148,7 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
             size="sm"
             onClick={finalizeTraits}
             disabled={!canFinalize}
-            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className={`gap-1.5 text-xs${donePulse ? " text-green-400 animate-pulse" : " text-muted-foreground hover:text-foreground"}`}
           >
             <CheckCircle className="h-3 w-3" />
             Done Rolling

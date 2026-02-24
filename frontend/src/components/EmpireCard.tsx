@@ -40,6 +40,9 @@ export function EmpireCard({ empire }: EmpireCardProps) {
   const anyBusy = isRerolling !== null || isLoading || isAddingTrait || isAddingLeaderTrait;
   const canAddLeaderTrait = isLuminary && leaderPicksRemaining > 0 && !anyBusy;
   const canFinalizeLeader = isLuminary && !leaderTraitsFinalized && leaderBudgetRemaining >= 0 && leaderPicksRemaining >= 0 && !anyBusy;
+  const leaderTraitCount = empire.leader.traits.length;
+  const rollLeaderPulse = canAddLeaderTrait && leaderTraitCount === 0;
+  const doneLeaderPulse = canFinalizeLeader && leaderTraitCount > 0;
 
   return (
     <Card className="w-full max-w-2xl animate-empire-enter">
@@ -70,6 +73,11 @@ export function EmpireCard({ empire }: EmpireCardProps) {
             }
             iconCategory="civics"
             iconId={civic.id}
+            effects={
+              civic.description || civic.modifiers.length > 0
+                ? { description: civic.description, modifiers: civic.modifiers }
+                : undefined
+            }
           />
         ))}
 
@@ -176,7 +184,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
                 size="sm"
                 onClick={addLeaderTrait}
                 disabled={!canAddLeaderTrait}
-                className="gap-1.5 text-xs"
+                className={`gap-1.5 text-xs${rollLeaderPulse ? " animate-pulse ring-2 ring-primary/60" : ""}`}
               >
                 {isAddingLeaderTrait ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -191,7 +199,7 @@ export function EmpireCard({ empire }: EmpireCardProps) {
                   size="sm"
                   onClick={finalizeLeaderTraits}
                   disabled={!canFinalizeLeader}
-                  className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  className={`gap-1.5 text-xs${doneLeaderPulse ? " text-green-400 animate-pulse" : " text-muted-foreground hover:text-foreground"}`}
                 >
                   <CheckCircle className="h-3 w-3" />
                   Done Rolling

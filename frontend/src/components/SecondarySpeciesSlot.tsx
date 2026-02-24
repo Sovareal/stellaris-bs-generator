@@ -38,6 +38,8 @@ export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: Seco
   const anyBusy = isRerolling !== null || isLoading || isAddingTrait || isAddingSecondaryTrait;
   const canAddTrait = picksRemaining > 0 && !anyBusy;
   const canFinalize = !secondaryTraitsFinalized && ptsRemaining >= 0 && picksRemaining >= 0 && !anyBusy;
+  const rollPulse = canAddTrait && additionalPicksUsed === 0;
+  const donePulse = canFinalize && additionalPicksUsed > 0;
 
   return (
     <div className="flex flex-col gap-2 py-2 border-b border-border">
@@ -94,7 +96,7 @@ export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: Seco
           size="sm"
           onClick={addSecondaryTrait}
           disabled={!canAddTrait}
-          className="gap-1.5 text-xs"
+          className={`gap-1.5 text-xs${rollPulse ? " animate-pulse ring-2 ring-primary/60" : ""}`}
         >
           {isAddingSecondaryTrait ? (
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -109,7 +111,7 @@ export function SecondarySpeciesSlot({ secondarySpecies, rerollAvailable }: Seco
             size="sm"
             onClick={finalizeSecondaryTraits}
             disabled={!canFinalize}
-            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className={`gap-1.5 text-xs${donePulse ? " text-green-400 animate-pulse" : " text-muted-foreground hover:text-foreground"}`}
           >
             <CheckCircle className="h-3 w-3" />
             Done Rolling
