@@ -113,18 +113,9 @@ class RerollServiceTest {
     }
 
     @Test
-    void rerollTraits() {
-        var updated = rerollService.reroll(session, RerollCategory.TRAITS);
-
-        assertNotNull(updated);
-        assertTrue(updated.traitPointsUsed() <= updated.traitPointsBudget());
-        assertFalse(session.canReroll());
-    }
-
-    @Test
     void cannotRerollTwice() {
         rerollService.reroll(session, RerollCategory.ORIGIN);
-        // Second reroll of ANY category should fail
+        // Second reroll of ANY big category should fail
         assertThrows(IllegalStateException.class,
                 () -> rerollService.reroll(session, RerollCategory.AUTHORITY));
     }
@@ -132,9 +123,43 @@ class RerollServiceTest {
     @Test
     void cannotRerollDifferentCategoryAfterFirst() {
         rerollService.reroll(session, RerollCategory.CIVIC1);
-        // Even a different category should fail after one reroll
+        // Even a different big category should fail after one reroll
         assertThrows(IllegalStateException.class,
-                () -> rerollService.reroll(session, RerollCategory.TRAITS));
+                () -> rerollService.reroll(session, RerollCategory.ETHICS));
+    }
+
+    @Test
+    void addOneTraitIncreasesTraitCount() {
+        int before = session.getEmpire().speciesTraits().size();
+        var updated = rerollService.addOneTrait(session);
+        int after = updated.speciesTraits().size();
+        assertEquals(before + 1, after, "addOneTrait should add exactly one trait");
+        assertTrue(updated.traitPointsUsed() <= updated.traitPointsBudget(),
+                "Points used should not exceed budget after adding trait");
+    }
+
+    @Test
+    void addOneTraitIsUnlimited() {
+        // Adding a trait should not consume the reroll token
+        rerollService.addOneTrait(session);
+        assertTrue(session.canReroll(), "Reroll token should still be available after addOneTrait");
+    }
+
+    @Test
+    void rerollSingleTraitIsUnlimited() {
+        // Add one trait first since initial empire has no random traits
+        rerollService.addOneTrait(session);
+        var emp = session.getEmpire();
+        var enforcedIds = new java.util.HashSet<String>();
+        enforcedIds.addAll(emp.origin().enforcedTraitIds());
+        emp.civics().forEach(c -> enforcedIds.addAll(c.enforcedTraitIds()));
+        var nonEnforced = emp.speciesTraits().stream()
+                .filter(t -> !enforcedIds.contains(t.id()))
+                .findFirst();
+        if (nonEnforced.isEmpty()) return; // No non-enforced traits — skip
+
+        rerollService.rerollSingleTrait(session, nonEnforced.get().id());
+        assertTrue(session.canReroll(), "Reroll token should still be available after rerollSingleTrait");
     }
 
     @Test

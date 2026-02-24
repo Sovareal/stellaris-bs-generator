@@ -33,8 +33,8 @@ public class EmpireGeneratorService {
     );
 
     /** Luminary leader trait budget and max picks for origin_legendary_leader. */
-    private static final int LUMINARY_BUDGET = 1;
-    private static final int LUMINARY_MAX_PICKS = 3;
+    static final int LUMINARY_BUDGET = 1;
+    static final int LUMINARY_MAX_PICKS = 3;
 
     /** Origins that fix the homeworld planet type (skip random selection). */
     private static final Map<String, String> ORIGIN_FIXED_PLANETS = Map.ofEntries(
@@ -91,19 +91,11 @@ public class EmpireGeneratorService {
             state = state.withCivics(toIdSet(civics));
         }
 
-        // 6. Collect enforced trait IDs
+        // 6. Build enforced-only trait list — random traits start empty; user rolls one by one
         var allEnforcedTraitIds = collectEnforcedTraitIds(origin, civics);
-        // Only civic-enforced traits count against trait slots and budget
-        var civicEnforcedIds = collectCivicEnforcedTraitIds(civics);
+        List<SpeciesTrait> traits = prependEnforcedTraits(allEnforcedTraitIds, List.of());
 
-        // Pick compatible traits within budget, excluding all enforced IDs from the random pool.
-        // Only civic-enforced traits reduce maxTraits and starting pointsSpent.
-        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds, civicEnforcedIds);
-
-        // 6b. Prepend enforced species traits (origin-enforced show real cost but don't count toward budget)
-        traits = prependEnforcedTraits(allEnforcedTraitIds, traits);
-
-        // Count only non-origin-enforced trait costs for traitPointsUsed display
+        // traitPointsUsed = civic-enforced costs only (origin-enforced are free, no random yet)
         var originEnforcedIdSet = new HashSet<>(origin.enforcedTraitIds());
         int pointsUsed = traits.stream()
                 .filter(t -> !originEnforcedIdSet.contains(t.id()))
@@ -704,11 +696,14 @@ public class EmpireGeneratorService {
      * Build the full species trait list (enforced + random) for the given state.
      * Package-private so RerollService can call it when regenerating traits after an origin reroll.
      */
+    /**
+     * Build the enforced-only species trait list for the given origin + civics.
+     * Random traits are not included — the user rolls them one by one after generation.
+     * Package-private so RerollService can call it when regenerating traits after an origin/civic reroll.
+     */
     List<SpeciesTrait> buildSpeciesTraits(SpeciesArchetype archetype, EmpireState state, Origin origin, List<Civic> civics) {
         var allEnforcedTraitIds = collectEnforcedTraitIds(origin, civics);
-        var civicEnforcedIds = collectCivicEnforcedTraitIds(civics);
-        List<SpeciesTrait> traits = pickTraits(archetype, state, allEnforcedTraitIds, civicEnforcedIds);
-        return prependEnforcedTraits(allEnforcedTraitIds, traits);
+        return prependEnforcedTraits(allEnforcedTraitIds, List.of());
     }
 
     List<String> collectEnforcedTraitIds(Origin origin, List<Civic> civics) {
@@ -756,7 +751,8 @@ public class EmpireGeneratorService {
 
         boolean isLuminary = "origin_legendary_leader".equals(state.origin());
         if (isLuminary) {
-            return pickLuminaryTraits(compatible);
+            // Luminary leader traits start empty — user rolls them one by one via "Roll Leader Trait"
+            return List.of();
         }
 
         // Regular: pick 0 or 1 trait

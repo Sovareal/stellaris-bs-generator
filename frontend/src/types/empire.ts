@@ -56,6 +56,8 @@ export interface LeaderTraitDto {
 export interface LeaderDto {
   leaderClass: string;
   traits: LeaderTraitDto[];
+  leaderPicksMax: number;
+  leaderBudget: number;
 }
 
 export interface SecondarySpeciesDto {
@@ -76,8 +78,9 @@ export type RerollCategory =
   | "civic1"
   | "civic2"
   | "origin"
-  | "traits"
   | "trait_single"
+  | "trait_add"
+  | "leader_trait_add"
   | "homeworld"
   | "shipset"
   | "leader"

@@ -54,7 +54,7 @@ public record EmpireResponse(
                 PlanetClassDto.from(empire.habitabilityPreference(), loc),
                 empire.shipset().id(),
                 loc.getDisplayName(empire.shipset().id()),
-                LeaderDto.from(empire.leaderClass(), empire.leaderTraits(), loc),
+                LeaderDto.from(empire.leaderClass(), empire.leaderTraits(), loc, empire.origin().id()),
                 SecondarySpeciesDto.from(empire.secondarySpecies(), loc),
                 buildRerollMap(empire, session)
         );
@@ -68,7 +68,6 @@ public record EmpireResponse(
         map.put("civic1", available);
         map.put("civic2", available);
         map.put("origin", available);
-        map.put("traits", available);
         map.put("homeworld", available);
         map.put("shipset", available);
         map.put("leader", available);

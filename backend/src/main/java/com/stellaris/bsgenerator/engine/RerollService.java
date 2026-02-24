@@ -43,12 +43,12 @@ public class RerollService {
             case CIVIC1 -> rerollCivic(empire, 0);
             case CIVIC2 -> rerollCivic(empire, 1);
             case ORIGIN -> rerollOrigin(empire);
-            case TRAITS -> rerollTraits(empire);
-            case TRAIT_SINGLE -> throw new IllegalArgumentException("Use rerollSingleTrait() for TRAIT_SINGLE");
             case HOMEWORLD -> rerollHomeworld(empire);
             case SHIPSET -> rerollShipset(empire);
             case LEADER -> rerollLeader(empire);
             case SECONDARY_SPECIES -> rerollSecondarySpecies(empire);
+            case TRAIT_SINGLE, TRAIT_ADD, LEADER_TRAIT_ADD ->
+                throw new IllegalArgumentException("Use dedicated methods for " + category);
         };
 
         session.markRerolled();
@@ -252,10 +252,10 @@ public class RerollService {
      * Reroll a single non-enforced species trait, replacing it with a compatible alternative.
      * Respects the remaining trait budget and the opposites of kept traits.
      */
+    /**
+     * Reroll a single non-enforced species trait. Unlimited — does not consume the session reroll token.
+     */
     public GeneratedEmpire rerollSingleTrait(GenerationSession session, String targetTraitId) {
-        if (!session.canReroll()) {
-            throw new IllegalStateException("Reroll already used for this generation");
-        }
         var empire = session.getEmpire();
 
         // Enforced traits (from origin + civics) cannot be individually rerolled
@@ -346,10 +346,158 @@ public class RerollService {
             b.habitabilityPreference = finalHabPref;
         });
 
-        session.markRerolled();
         session.setEmpire(updated);
 
         log.info("Single-trait reroll: {} → {}", targetTraitId, replacement.id());
+        return updated;
+    }
+
+    /**
+     * Add one random species trait to the empire. Unlimited — does not consume the session reroll token.
+     * Respects the archetype trait budget and the opposites of already-picked traits.
+     *
+     * @throws GenerationException if no picks remain or no compatible trait can be found
+     */
+    public GeneratedEmpire addOneTrait(GenerationSession session) {
+        var empire = session.getEmpire();
+        var archetype = empire.speciesArchetype();
+
+        // Compute enforced ID sets to determine picks remaining
+        var originEnforcedIds = new HashSet<>(empire.origin().enforcedTraitIds());
+        var civicEnforcedIds = new HashSet<String>();
+        for (var civic : empire.civics()) {
+            civicEnforcedIds.addAll(civic.enforcedTraitIds());
+        }
+        var allEnforcedIds = new HashSet<String>();
+        allEnforcedIds.addAll(originEnforcedIds);
+        allEnforcedIds.addAll(civicEnforcedIds);
+
+        int civicEnforcedCount = civicEnforcedIds.size();
+        long randomCount = empire.speciesTraits().stream()
+                .filter(t -> !allEnforcedIds.contains(t.id()))
+                .count();
+        int picksRemaining = archetype.maxTraits() - civicEnforcedCount - (int) randomCount;
+        if (picksRemaining <= 0) {
+            throw new GenerationException("No trait picks remaining");
+        }
+
+        var state = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withCivics(toCivicIds(empire.civics()))
+                .withOrigin(empire.origin().id())
+                .withSpeciesArchetype(archetype.id())
+                .withSpeciesClass(empire.speciesClass());
+
+        var available = filterService.getCompatibleTraits(archetype.id(), state);
+
+        // Exclude all current traits (including enforced) and their opposites
+        var excludedIds = new HashSet<String>();
+        var excludedByOpposites = new HashSet<String>();
+        for (var t : empire.speciesTraits()) {
+            excludedIds.add(t.id());
+            excludedByOpposites.addAll(t.opposites());
+        }
+
+        int budget = archetype.traitPoints();
+        int pointsSpent = empire.traitPointsUsed();
+
+        var candidates = available.stream()
+                .filter(t -> !excludedIds.contains(t.id()))
+                .filter(t -> !excludedByOpposites.contains(t.id()))
+                .filter(t -> pointsSpent + t.cost() >= 0 && pointsSpent + t.cost() <= budget)
+                .toList();
+
+        if (candidates.isEmpty()) {
+            throw new GenerationException("No compatible traits available to add");
+        }
+
+        var newTrait = candidates.get(random.nextInt(candidates.size()));
+
+        var newTraits = new ArrayList<>(empire.speciesTraits());
+        newTraits.add(newTrait);
+        var newTraitList = List.copyOf(newTraits);
+        int newPointsUsed = pointsSpent + newTrait.cost();
+
+        // Re-derive homeworld if planet constraints changed (e.g., Aquatic added)
+        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);
+        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
+        PlanetClass newHomeworld = empire.homeworld();
+        PlanetClass newHabPref = empire.habitabilityPreference();
+        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
+            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraitList, empire.speciesClass());
+            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
+        }
+        final var finalHomeworld = newHomeworld;
+        final var finalHabPref = newHabPref;
+        final int finalPointsUsed = newPointsUsed;
+        final var finalTraits = newTraitList;
+
+        var updated = copyWith(empire, b -> {
+            b.speciesTraits = finalTraits;
+            b.traitPointsUsed = finalPointsUsed;
+            b.homeworld = finalHomeworld;
+            b.habitabilityPreference = finalHabPref;
+        });
+
+        session.setEmpire(updated);
+        log.info("Added species trait: {}", newTrait.id());
+        return updated;
+    }
+
+    /**
+     * Add one leader trait for Under One Rule (Luminary) empires.
+     * Unlimited — does not consume the session reroll token.
+     *
+     * @throws GenerationException if not Luminary, no picks remain, or no compatible trait found
+     */
+    public GeneratedEmpire addLeaderTrait(GenerationSession session) {
+        var empire = session.getEmpire();
+
+        if (!"origin_legendary_leader".equals(empire.origin().id())) {
+            throw new GenerationException("Leader trait rolling is only available for Under One Rule (origin_legendary_leader)");
+        }
+
+        int picksRemaining = EmpireGeneratorService.LUMINARY_MAX_PICKS - empire.leaderTraits().size();
+        if (picksRemaining <= 0) {
+            throw new GenerationException("No leader trait picks remaining");
+        }
+
+        var state = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withCivics(toCivicIds(empire.civics()))
+                .withOrigin(empire.origin().id());
+
+        var compatible = filterService.getCompatibleRulerTraits(empire.leaderClass(), state);
+
+        var excludedIds = new HashSet<String>();
+        var excludedByOpposites = new HashSet<String>();
+        for (var t : empire.leaderTraits()) {
+            excludedIds.add(t.id());
+            excludedByOpposites.addAll(t.opposites());
+        }
+
+        int pointsSpent = empire.leaderTraits().stream().mapToInt(StartingRulerTrait::cost).sum();
+
+        var candidates = compatible.stream()
+                .filter(t -> !excludedIds.contains(t.id()))
+                .filter(t -> !excludedByOpposites.contains(t.id()))
+                .filter(t -> pointsSpent + t.cost() >= 0
+                          && pointsSpent + t.cost() <= EmpireGeneratorService.LUMINARY_BUDGET)
+                .toList();
+
+        if (candidates.isEmpty()) {
+            throw new GenerationException("No compatible leader traits available to add");
+        }
+
+        var newTrait = candidates.get(random.nextInt(candidates.size()));
+        var newTraits = new ArrayList<>(empire.leaderTraits());
+        newTraits.add(newTrait);
+
+        var updated = copyWith(empire, b -> b.leaderTraits = List.copyOf(newTraits));
+        session.setEmpire(updated);
+        log.info("Added leader trait: {}", newTrait.id());
         return updated;
     }
 
@@ -583,7 +731,6 @@ public class RerollService {
             case CIVIC1 -> old.civics().get(0).id() + " → " + updated.civics().get(0).id();
             case CIVIC2 -> old.civics().get(1).id() + " → " + updated.civics().get(1).id();
             case ORIGIN -> old.origin().id() + " → " + updated.origin().id();
-            case TRAITS -> old.speciesTraits().stream().map(SpeciesTrait::id).toList() + " → " + updated.speciesTraits().stream().map(SpeciesTrait::id).toList();
             case HOMEWORLD -> old.homeworld().id() + " → " + updated.homeworld().id();
             case SHIPSET -> old.shipset().id() + " → " + updated.shipset().id();
             case LEADER -> (old.leaderClass() + "/" + old.leaderTraits().stream().map(StartingRulerTrait::id).toList())
@@ -592,6 +739,8 @@ public class RerollService {
                     + " → " + (updated.secondarySpecies() != null ? updated.secondarySpecies().speciesClass() : "none");
             case TRAIT_SINGLE -> old.speciesTraits().stream().map(SpeciesTrait::id).toList()
                     + " → " + updated.speciesTraits().stream().map(SpeciesTrait::id).toList();
+            case TRAIT_ADD -> "+ " + updated.speciesTraits().getLast().id();
+            case LEADER_TRAIT_ADD -> "+ " + updated.leaderTraits().getLast().id();
         };
     }
 }

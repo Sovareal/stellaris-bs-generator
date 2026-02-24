@@ -6,9 +6,10 @@ import { ExportModal } from "@/components/ExportModal";
 
 export function SaveToGameButton() {
   const empire = useEmpireStore((s) => s.empire);
+  const traitsFinalized = useEmpireStore((s) => s.traitsFinalized);
   const [open, setOpen] = useState(false);
 
-  if (!empire) return null;
+  if (!empire || !traitsFinalized) return null;
 
   return (
     <>

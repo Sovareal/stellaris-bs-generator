@@ -43,22 +43,30 @@ public class EmpireController {
             throw new IllegalStateException("No active session — generate an empire first");
         }
 
-        // Single-trait reroll is handled separately since it requires an additional traitId parameter
-        if ("trait_single".equalsIgnoreCase(request.category())) {
+        // Trait-level operations — unlimited, don't consume the session reroll token
+        String cat = request.category().toLowerCase();
+        if ("trait_single".equals(cat)) {
             if (request.traitId() == null || request.traitId().isBlank()) {
                 throw new IllegalArgumentException("traitId is required for trait_single reroll");
             }
             var updated = rerollService.rerollSingleTrait(session, request.traitId());
             return EmpireResponse.from(updated, session, localizationService);
         }
+        if ("trait_add".equals(cat)) {
+            var updated = rerollService.addOneTrait(session);
+            return EmpireResponse.from(updated, session, localizationService);
+        }
+        if ("leader_trait_add".equals(cat)) {
+            var updated = rerollService.addLeaderTrait(session);
+            return EmpireResponse.from(updated, session, localizationService);
+        }
 
-        RerollCategory category = switch (request.category().toLowerCase()) {
+        RerollCategory category = switch (cat) {
             case "ethics" -> RerollCategory.ETHICS;
             case "authority" -> RerollCategory.AUTHORITY;
             case "civic1" -> RerollCategory.CIVIC1;
             case "civic2" -> RerollCategory.CIVIC2;
             case "origin" -> RerollCategory.ORIGIN;
-            case "traits" -> RerollCategory.TRAITS;
             case "homeworld" -> RerollCategory.HOMEWORLD;
             case "shipset" -> RerollCategory.SHIPSET;
             case "leader" -> RerollCategory.LEADER;

@@ -1,4 +1,6 @@
+import { Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmpireSlot } from "@/components/EmpireSlot";
 import { EntityIcon } from "@/components/EntityIcon";
@@ -7,6 +9,7 @@ import { RerollButton } from "@/components/RerollButton";
 import { SecondarySpeciesSlot } from "@/components/SecondarySpeciesSlot";
 import { TraitsSlot } from "@/components/TraitsSlot";
 import { displayName, humanizeId } from "@/lib/format";
+import { useEmpireStore } from "@/stores/useEmpireStore";
 import type { EmpireResponse } from "@/types/empire";
 
 interface EmpireCardProps {
@@ -15,6 +18,19 @@ interface EmpireCardProps {
 
 export function EmpireCard({ empire }: EmpireCardProps) {
   const leaderClassName = humanizeId(empire.leader.leaderClass);
+
+  const addLeaderTrait = useEmpireStore((s) => s.addLeaderTrait);
+  const isAddingLeaderTrait = useEmpireStore((s) => s.isAddingLeaderTrait);
+  const isRerolling = useEmpireStore((s) => s.isRerolling);
+  const isLoading = useEmpireStore((s) => s.isLoading);
+  const isAddingTrait = useEmpireStore((s) => s.isAddingTrait);
+
+  const isLuminary = empire.origin.id === "origin_legendary_leader";
+  const leaderBudgetUsed = empire.leader.traits.reduce((sum, t) => sum + t.cost, 0);
+  const leaderBudgetRemaining = empire.leader.leaderBudget - leaderBudgetUsed;
+  const leaderPicksRemaining = empire.leader.leaderPicksMax - empire.leader.traits.length;
+  const anyBusy = isRerolling !== null || isLoading || isAddingTrait || isAddingLeaderTrait;
+  const canAddLeaderTrait = isLuminary && leaderPicksRemaining > 0 && leaderBudgetRemaining > 0 && !anyBusy;
 
   return (
     <Card className="w-full max-w-2xl animate-empire-enter">
@@ -65,7 +81,6 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           traits={empire.speciesTraits}
           pointsUsed={empire.traitPointsUsed}
           pointsBudget={empire.traitPointsBudget}
-          rerollAvailable={empire.rerollsAvailable["traits"] ?? false}
         />
 
         {empire.secondarySpecies && (
@@ -109,24 +124,47 @@ export function EmpireCard({ empire }: EmpireCardProps) {
           rerollAvailable={empire.rerollsAvailable["shipset"] ?? false}
         />
 
-        <div className="flex items-start justify-between gap-4 py-2 border-b border-border last:border-b-0">
-          <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              Starting Leader
-            </span>
-            <span className="text-foreground font-medium">{leaderClassName}</span>
-            {empire.leader.traits.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {empire.leader.traits.map((trait) => (
-                  <Badge key={trait.id} className="flex items-center gap-1 bg-emerald-900/50 text-emerald-100 border border-emerald-700/40 hover:bg-emerald-900/60">
-                    <EntityIcon category="leadertraits" id={trait.id} size={24} />
-                    <span>{trait.displayName ?? humanizeId(trait.id)}</span>
-                  </Badge>
-                ))}
-              </div>
-            )}
+        <div className="flex flex-col gap-2 py-2 border-b border-border last:border-b-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                Starting Leader
+              </span>
+              <span className="text-foreground font-medium">{leaderClassName}</span>
+              {empire.leader.traits.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {empire.leader.traits.map((trait) => (
+                    <Badge key={trait.id} className="flex items-center gap-1 bg-emerald-900/50 text-emerald-100 border border-emerald-700/40 hover:bg-emerald-900/60">
+                      <EntityIcon category="leadertraits" id={trait.id} size={24} />
+                      <span>{trait.displayName ?? humanizeId(trait.id)}</span>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {isLuminary && (
+                <span className="text-xs text-muted-foreground">
+                  {empire.leader.traits.length}/{empire.leader.leaderPicksMax} traits · {leaderBudgetRemaining} budget remaining
+                </span>
+              )}
+            </div>
+            <RerollButton category="leader" available={empire.rerollsAvailable["leader"] ?? false} />
           </div>
-          <RerollButton category="leader" available={empire.rerollsAvailable["leader"] ?? false} />
+          {isLuminary && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addLeaderTrait}
+              disabled={!canAddLeaderTrait}
+              className="gap-1.5 text-xs self-start"
+            >
+              {isAddingLeaderTrait ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Plus className="h-3 w-3" />
+              )}
+              Roll Leader Trait
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
