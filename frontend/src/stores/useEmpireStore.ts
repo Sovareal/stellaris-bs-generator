@@ -77,11 +77,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     set({ isRerollingTrait: traitId, error: null });
     try {
       const empire = await api.rerollTrait(traitId);
-      set((s) => ({
-        empire,
-        isRerollingTrait: null,
-        generationId: s.generationId + 1,
-      }));
+      set({ empire, isRerollingTrait: null });
     } catch (e) {
       const message = e instanceof ApiError ? e.body.message : "Failed to reroll trait";
       set({ error: message, isRerollingTrait: null });
@@ -93,11 +89,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     set({ isAddingTrait: true, error: null, traitsFinalized: false });
     try {
       const empire = await api.addTrait();
-      set((s) => ({
-        empire,
-        isAddingTrait: false,
-        generationId: s.generationId + 1,
-      }));
+      set({ empire, isAddingTrait: false });
     } catch (e) {
       const message = e instanceof ApiError ? e.body.message : "Failed to add trait";
       set({ isAddingTrait: false, error: message });
@@ -109,11 +101,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     set({ isAddingLeaderTrait: true, error: null, traitsFinalized: false });
     try {
       const empire = await api.addLeaderTrait();
-      set((s) => ({
-        empire,
-        isAddingLeaderTrait: false,
-        generationId: s.generationId + 1,
-      }));
+      set({ empire, isAddingLeaderTrait: false });
     } catch (e) {
       const message = e instanceof ApiError ? e.body.message : "Failed to add leader trait";
       set({ isAddingLeaderTrait: false, error: message });
@@ -125,11 +113,7 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     set({ isRemovingTrait: true, error: null });
     try {
       const empire = await api.removeTrait();
-      set((s) => ({
-        empire,
-        isRemovingTrait: false,
-        generationId: s.generationId + 1,
-      }));
+      set({ empire, isRemovingTrait: false });
     } catch (e) {
       const message = e instanceof ApiError ? e.body.message : "Failed to remove trait";
       set({ isRemovingTrait: false, error: message });

@@ -16,8 +16,8 @@ public record TraitDto(String id, String displayName, int cost, List<String> all
         return new TraitDto(t.id(), loc.getDisplayName(t.id()), t.cost(), t.allowedArchetypes(), true, false);
     }
 
-    /** Origin-enforced trait: locked, does NOT count toward picks or budget (cost is 0 in display). */
+    /** Origin-enforced trait: locked, does NOT count toward picks limit but real cost counts toward budget. */
     public static TraitDto fromFreeEnforced(SpeciesTrait t, LocalizationService loc) {
-        return new TraitDto(t.id(), loc.getDisplayName(t.id()), 0, t.allowedArchetypes(), true, true);
+        return new TraitDto(t.id(), loc.getDisplayName(t.id()), t.cost(), t.allowedArchetypes(), true, true);
     }
 }

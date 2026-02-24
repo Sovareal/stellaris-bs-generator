@@ -134,8 +134,8 @@ class RerollServiceTest {
         var updated = rerollService.addOneTrait(session);
         int after = updated.speciesTraits().size();
         assertEquals(before + 1, after, "addOneTrait should add exactly one trait");
-        assertTrue(updated.traitPointsUsed() <= updated.traitPointsBudget(),
-                "Points used should not exceed budget after adding trait");
+        // Note: traitPointsUsed may exceed budget (in-debt state is valid; 3-case logic enforces
+        // balance >= 0 only on the last pick). No strict budget assertion here.
     }
 
     @Test
@@ -147,19 +147,33 @@ class RerollServiceTest {
 
     @Test
     void rerollSingleTraitConsumesToken() {
-        // Add one trait first since initial empire has no random traits
-        rerollService.addOneTrait(session);
-        var emp = session.getEmpire();
-        var enforcedIds = new java.util.HashSet<String>();
-        enforcedIds.addAll(emp.origin().enforcedTraitIds());
-        emp.civics().forEach(c -> enforcedIds.addAll(c.enforcedTraitIds()));
-        var nonEnforced = emp.speciesTraits().stream()
-                .filter(t -> !enforcedIds.contains(t.id()))
-                .findFirst();
-        if (nonEnforced.isEmpty()) return; // No non-enforced traits — skip
-
-        rerollService.rerollSingleTrait(session, nonEnforced.get().id());
-        assertFalse(session.canReroll(), "Reroll token should be consumed after rerollSingleTrait");
+        // Retry with different empires: some (e.g. Evolutionary Predators with Malleable Genes)
+        // have origin-enforced costs that consume the full budget, leaving no valid replacement.
+        for (int attempt = 0; attempt < 20; attempt++) {
+            var empire = generator.generate();
+            var testSession = new GenerationSession(empire);
+            try {
+                rerollService.addOneTrait(testSession);
+            } catch (GenerationException e) {
+                continue; // No traits available to add — try another empire
+            }
+            var emp = testSession.getEmpire();
+            var enforcedIds = new java.util.HashSet<String>();
+            enforcedIds.addAll(emp.origin().enforcedTraitIds());
+            emp.civics().forEach(c -> enforcedIds.addAll(c.enforcedTraitIds()));
+            var nonEnforced = emp.speciesTraits().stream()
+                    .filter(t -> !enforcedIds.contains(t.id()))
+                    .findFirst();
+            if (nonEnforced.isEmpty()) continue;
+            try {
+                rerollService.rerollSingleTrait(testSession, nonEnforced.get().id());
+                assertFalse(testSession.canReroll(), "Reroll token should be consumed after rerollSingleTrait");
+                return; // Test passed
+            } catch (GenerationException e) {
+                // Budget too restricted for replacement in this empire — try another
+            }
+        }
+        fail("Could not find an empire configuration that allows single-trait reroll in 20 attempts");
     }
 
     @Test

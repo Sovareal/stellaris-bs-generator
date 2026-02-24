@@ -185,10 +185,7 @@ public class RerollService {
 
         // Preserve random traits; update enforced layer for new civic
         var newTraits = preserveRandomTraits(empire, empire.origin(), civicsList);
-        var originEnforcedIdSet = new HashSet<>(empire.origin().enforcedTraitIds());
-        int newPointsUsed = newTraits.stream()
-                .filter(t -> !originEnforcedIdSet.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost).sum();
+        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
 
         // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
         var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraits);
@@ -239,11 +236,7 @@ public class RerollService {
 
         // Preserve random traits; update enforced layer for new origin
         var newTraits = preserveRandomTraits(empire, newOrigin, empire.civics());
-        // Origin-enforced traits don't count toward budget — exclude them from pointsUsed
-        var newOriginEnforcedIdSet = new HashSet<>(newOrigin.enforcedTraitIds());
-        int newPointsUsed = newTraits.stream()
-                .filter(t -> !newOriginEnforcedIdSet.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost).sum();
+        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
 
         // Regenerate leader traits: origin change may affect valid trait pool (e.g., Treasure Hunters → other)
         var newLeaderTraits = generatorService.pickLeaderTraits(empire.leaderClass(), stateWithOrigin);
@@ -313,13 +306,9 @@ public class RerollService {
             excludedIds.addAll(t.opposites());
         }
 
-        // Remaining budget = total budget minus kept trait costs, excluding origin-enforced (free) traits
-        var originEnforcedIdSet = new HashSet<>(empire.origin().enforcedTraitIds());
+        // Remaining budget = total budget minus ALL kept trait costs (origin-enforced count toward budget)
         int budget = empire.traitPointsBudget();
-        int spentByKept = remainingTraits.stream()
-                .filter(t -> !originEnforcedIdSet.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost)
-                .sum();
+        int spentByKept = remainingTraits.stream().mapToInt(SpeciesTrait::cost).sum();
         int availableBudget = budget - spentByKept;
 
         var state = EmpireState.empty()
@@ -351,11 +340,7 @@ public class RerollService {
         }
         var newTraitList = List.copyOf(newTraits);
 
-        // Points used = sum of non-origin-enforced trait costs (origin-enforced are free)
-        int newPointsUsed = newTraitList.stream()
-                .filter(t -> !originEnforcedIdSet.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost)
-                .sum();
+        int newPointsUsed = newTraitList.stream().mapToInt(SpeciesTrait::cost).sum();
 
         // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
         var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);
@@ -523,12 +508,23 @@ public class RerollService {
         }
 
         int pointsSpent = empire.leaderTraits().stream().mapToInt(StartingRulerTrait::cost).sum();
+        int balance = EmpireGeneratorService.LUMINARY_BUDGET - pointsSpent;
 
         var candidates = compatible.stream()
                 .filter(t -> !excludedIds.contains(t.id()))
                 .filter(t -> !excludedByOpposites.contains(t.id()))
-                .filter(t -> pointsSpent + t.cost() >= 0
-                          && pointsSpent + t.cost() <= EmpireGeneratorService.LUMINARY_BUDGET)
+                .filter(t -> {
+                    if (picksRemaining == 1) {
+                        // Last pick: must leave balance >= 0
+                        return t.cost() <= balance;
+                    } else if (balance < 0) {
+                        // In debt with picks to spare: only negatives can recover balance
+                        return t.cost() < 0;
+                    } else {
+                        // balance >= 0, picks > 1: any trait allowed; temporary debt is fine
+                        return true;
+                    }
+                })
                 .toList();
 
         if (candidates.isEmpty()) {
@@ -614,10 +610,7 @@ public class RerollService {
                 .filter(t -> !t.id().equals(toRemove.id()))
                 .toList();
 
-        var originEnforcedIdSet = new HashSet<>(empire.origin().enforcedTraitIds());
-        int newPointsUsed = newTraits.stream()
-                .filter(t -> !originEnforcedIdSet.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost).sum();
+        int newPointsUsed = List.copyOf(newTraits).stream().mapToInt(SpeciesTrait::cost).sum();
 
         // Re-derive homeworld if planet constraints changed (e.g., Aquatic removed)
         var newPlanetConstraint = generatorService.collectTraitPlanetClasses(List.copyOf(newTraits));

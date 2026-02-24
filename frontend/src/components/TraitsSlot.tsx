@@ -100,7 +100,7 @@ export function TraitsSlot({ archetype, speciesClass, speciesClassName, traits, 
               );
             })}
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className={`text-xs ${ptsRemaining >= 0 && picksRemaining >= 0 ? "text-green-500" : "text-destructive"}`}>
             {picksUsed}/{archetype.maxTraits} picks · {ptsRemaining} pts remaining
           </span>
         </div>

@@ -95,11 +95,8 @@ public class EmpireGeneratorService {
         var allEnforcedTraitIds = collectEnforcedTraitIds(origin, civics);
         List<SpeciesTrait> traits = prependEnforcedTraits(allEnforcedTraitIds, List.of());
 
-        // traitPointsUsed = civic-enforced costs only (origin-enforced are free, no random yet)
-        var originEnforcedIdSet = new HashSet<>(origin.enforcedTraitIds());
-        int pointsUsed = traits.stream()
-                .filter(t -> !originEnforcedIdSet.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost).sum();
+        // traitPointsUsed = sum of ALL enforced trait costs (origin-enforced count toward budget)
+        int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
         // 7. Pick homeworld planet (or use origin-fixed, constrained by traits + species class)
         PlanetClass homeworld = pickHomeworld(origin, traits, speciesClass);
