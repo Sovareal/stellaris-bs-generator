@@ -11,17 +11,9 @@ export interface AuthorityDto {
   isGestalt: boolean;
 }
 
-export interface CivicModifierEntry {
-  name: string;
-  value: string;
-  positive: boolean;
-}
-
 export interface CivicDto {
   id: string;
   displayName: string | null;
-  description: string | null;
-  modifiers: CivicModifierEntry[];
 }
 
 export interface OriginDto {

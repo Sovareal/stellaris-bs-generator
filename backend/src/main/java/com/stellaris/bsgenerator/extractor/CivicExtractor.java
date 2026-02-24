@@ -8,10 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -75,23 +72,8 @@ public class CivicExtractor {
                     })
                     .orElse(List.of());
 
-            String descriptionKey = node.childValue("description").orElse(null);
-
-            Map<String, Double> modifiers = new LinkedHashMap<>();
-            node.child("modifier").ifPresent(mod -> {
-                for (var entry : mod.children()) {
-                    if (entry.key() == null || entry.value() == null) continue;
-                    if (entry.key().startsWith("add_attunement_")) continue;
-                    if (entry.value().startsWith("@")) continue;
-                    try {
-                        modifiers.put(entry.key(), Double.parseDouble(entry.value()));
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-            });
-
             civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies,
-                    enforcedTraitIds, requiredShipsetIds, descriptionKey, Collections.unmodifiableMap(modifiers)));
+                    enforcedTraitIds, requiredShipsetIds));
         }
 
         log.info("Extracted {} civics", civics.size());

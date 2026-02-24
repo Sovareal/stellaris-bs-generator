@@ -1,19 +1,6 @@
-import { Info } from "lucide-react";
 import { EntityIcon } from "@/components/EntityIcon";
 import { RerollButton } from "@/components/RerollButton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { RerollCategory } from "@/types/empire";
-
-interface ModifierEntry {
-  name: string;
-  value: string;
-  positive: boolean;
-}
-
-interface CivicEffects {
-  description: string | null;
-  modifiers: ModifierEntry[];
-}
 
 interface EmpireSlotProps {
   label: string;
@@ -23,12 +10,9 @@ interface EmpireSlotProps {
   rerollAvailable: boolean;
   iconCategory?: string;
   iconId?: string;
-  effects?: CivicEffects;
 }
 
-export function EmpireSlot({ label, value, sublabel, category, rerollAvailable, iconCategory, iconId, effects }: EmpireSlotProps) {
-  const hasEffects = effects && (effects.description || effects.modifiers.length > 0);
-
+export function EmpireSlot({ label, value, sublabel, category, rerollAvailable, iconCategory, iconId }: EmpireSlotProps) {
   return (
     <div className="flex items-center justify-between gap-4 py-2 border-b border-border last:border-b-0">
       <div className="flex flex-col gap-0.5 min-w-0">
@@ -45,39 +29,7 @@ export function EmpireSlot({ label, value, sublabel, category, rerollAvailable, 
           <span className="text-xs text-muted-foreground">{sublabel}</span>
         )}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        {hasEffects && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs text-xs leading-relaxed" side="left">
-                {effects!.description && (
-                  <div className={effects!.modifiers.length > 0 ? "mb-2 space-y-0.5" : "space-y-0.5"}>
-                    {effects!.description
-                      .split("\\n")
-                      .filter(line => line.trim().length > 1)
-                      .map((line, i) => (
-                        <p key={i}>{line.trim()}</p>
-                      ))}
-                  </div>
-                )}
-                {effects!.modifiers.length > 0 && (
-                  <ul className="space-y-0.5">
-                    {effects!.modifiers.map((mod, i) => (
-                      <li key={i} className={mod.positive ? "text-green-400" : "text-destructive"}>
-                        {mod.value} {mod.name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-        <RerollButton category={category} available={rerollAvailable} />
-      </div>
+      <RerollButton category={category} available={rerollAvailable} />
     </div>
   );
 }

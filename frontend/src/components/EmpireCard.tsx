@@ -73,11 +73,6 @@ export function EmpireCard({ empire }: EmpireCardProps) {
             }
             iconCategory="civics"
             iconId={civic.id}
-            effects={
-              civic.description || civic.modifiers.length > 0
-                ? { description: civic.description, modifiers: civic.modifiers }
-                : undefined
-            }
           />
         ))}
 
