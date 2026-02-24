@@ -11,5 +11,6 @@ public record Civic(
         boolean pickableAtStart,
         int randomWeight,
         SecondarySpeciesConfig secondarySpecies,
-        List<String> enforcedTraitIds
+        List<String> enforcedTraitIds,
+        List<String> requiredShipsetIds
 ) {}

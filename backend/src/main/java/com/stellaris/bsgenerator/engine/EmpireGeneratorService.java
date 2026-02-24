@@ -104,8 +104,8 @@ public class EmpireGeneratorService {
         // 7b. Determine habitability preference
         PlanetClass habPref = pickHabitabilityPreference(origin, homeworld);
 
-        // 8. Pick random shipset
-        GraphicalCulture shipset = pickShipset();
+        // 8. Pick random shipset (constrained by origin/civic graphical_culture requirements)
+        GraphicalCulture shipset = pickShipset(origin, civics);
 
         // 9. Pick leader class and starting trait(s)
         String leaderClass = pickLeaderClass();
@@ -683,8 +683,25 @@ public class EmpireGeneratorService {
         return result;
     }
 
-    private GraphicalCulture pickShipset() {
+    private GraphicalCulture pickShipset(Origin origin, List<Civic> civics) {
         var shipsets = filterService.getSelectableShipsets();
+
+        // Collect shipset requirements from origin and civics (e.g. biogenesis for Wilderness)
+        var requiredIds = new HashSet<String>();
+        requiredIds.addAll(origin.requiredShipsetIds());
+        for (var civic : civics) {
+            requiredIds.addAll(civic.requiredShipsetIds());
+        }
+
+        if (!requiredIds.isEmpty()) {
+            var filtered = shipsets.stream()
+                    .filter(s -> requiredIds.contains(s.id()))
+                    .toList();
+            if (!filtered.isEmpty()) {
+                return filtered.get(random.nextInt(filtered.size()));
+            }
+        }
+
         if (shipsets.isEmpty()) {
             throw new GenerationException("No selectable shipsets available");
         }

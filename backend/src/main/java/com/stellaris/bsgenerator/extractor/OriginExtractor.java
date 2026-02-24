@@ -79,7 +79,19 @@ public class OriginExtractor {
             // Parse habitability preference (e.g. pc_ocean, pc_habitat)
             String habitabilityPreference = node.childValue("habitability_preference").orElse(null);
 
-            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath, habitabilityPreference));
+            // Parse shipset requirement from possible.graphical_culture (e.g. biogenesis_01/02 for Wilderness)
+            List<String> requiredShipsetIds = node.child("possible")
+                    .flatMap(p -> p.child("graphical_culture"))
+                    .map(gc -> {
+                        var orNode = gc.child("OR").orElse(gc);
+                        return orNode.children("value").stream()
+                                .map(ClausewitzNode::value)
+                                .filter(Objects::nonNull)
+                                .toList();
+                    })
+                    .orElse(List.of());
+
+            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath, habitabilityPreference, requiredShipsetIds));
         }
 
         log.info("Extracted {} playable origins", origins.size());

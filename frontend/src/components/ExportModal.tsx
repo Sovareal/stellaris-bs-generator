@@ -21,6 +21,8 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
   const [speciesPlural, setSpeciesPlural] = useState("");
   const [speciesAdjective, setSpeciesAdjective] = useState("");
   const [rulerName, setRulerName] = useState("");
+  const [homeworldName, setHomeworldName] = useState("");
+  const [homeSystemName, setHomeSystemName] = useState("");
 
   // Close automatically on success
   useEffect(() => {
@@ -38,6 +40,8 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       setSpeciesPlural("");
       setSpeciesAdjective("");
       setRulerName("");
+      setHomeworldName("");
+      setHomeSystemName("");
     }
   }, [open, clearSaveState]);
 
@@ -55,6 +59,8 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       rulerName: rulerName.trim(),
       ...(speciesPlural.trim() ? { speciesPlural: speciesPlural.trim() } : {}),
       ...(speciesAdjective.trim() ? { speciesAdjective: speciesAdjective.trim() } : {}),
+      ...(homeworldName.trim() ? { homeworldName: homeworldName.trim() } : {}),
+      ...(homeSystemName.trim() ? { homeSystemName: homeSystemName.trim() } : {}),
     };
 
     await saveToGame(req);
@@ -131,6 +137,20 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             value={rulerName}
             onChange={setRulerName}
             placeholder="e.g. Grand Admiral Zhao"
+            disabled={isSaving}
+          />
+          <FormField
+            label="Homeworld Name"
+            value={homeworldName}
+            onChange={setHomeworldName}
+            placeholder="auto: Homeworld"
+            disabled={isSaving}
+          />
+          <FormField
+            label="Home System Name"
+            value={homeSystemName}
+            onChange={setHomeSystemName}
+            placeholder="auto: Home System"
             disabled={isSaving}
           />
 

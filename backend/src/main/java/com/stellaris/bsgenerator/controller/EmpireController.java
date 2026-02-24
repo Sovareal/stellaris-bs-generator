@@ -99,12 +99,21 @@ public class EmpireController {
                 ? req.speciesAdjective()
                 : req.speciesName();
 
+        String homeworldName = (req.homeworldName() != null && !req.homeworldName().isBlank())
+                ? req.homeworldName()
+                : "Homeworld";
+        String homeSystemName = (req.homeSystemName() != null && !req.homeSystemName().isBlank())
+                ? req.homeSystemName()
+                : "Home System";
+
         var opts = new ExportOptions(
                 req.empireName(),
                 req.speciesName(),
                 plural,
                 adjective,
-                req.rulerName()
+                req.rulerName(),
+                homeworldName,
+                homeSystemName
         );
 
         String block = exporterService.buildEmpireBlock(session.getEmpire(), opts);

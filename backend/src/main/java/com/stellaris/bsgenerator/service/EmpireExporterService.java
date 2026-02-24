@@ -184,9 +184,9 @@ public class EmpireExporterService {
         }
 
         // Homeworld
-        appendNameBlock(sb, "\tplanet_name", "Homeworld");
+        appendNameBlock(sb, "\tplanet_name", opts.homeworldName());
         sb.append("\tplanet_class=").append(q(empire.homeworld().id())).append("\n");
-        appendNameBlock(sb, "\tsystem_name", "Home System");
+        appendNameBlock(sb, "\tsystem_name", opts.homeSystemName());
         sb.append("\tinitializer=\"\"\n");
 
         // Graphical culture (shipset)

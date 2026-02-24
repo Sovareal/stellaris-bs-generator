@@ -16,6 +16,12 @@ interface EmpireCardProps {
   empire: EmpireResponse;
 }
 
+function traitColor(cost: number): string {
+  if (cost > 0) return "text-primary";
+  if (cost < 0) return "text-destructive";
+  return "text-muted-foreground";
+}
+
 export function EmpireCard({ empire }: EmpireCardProps) {
   const leaderClassName = humanizeId(empire.leader.leaderClass);
 
@@ -138,17 +144,27 @@ export function EmpireCard({ empire }: EmpireCardProps) {
               {empire.leader.traits.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {empire.leader.traits.map((trait) => (
-                    <Badge key={trait.id} className="flex items-center gap-1 bg-emerald-900/50 text-emerald-100 border border-emerald-700/40 hover:bg-emerald-900/60">
+                    <Badge key={trait.id} variant="secondary" className="flex items-center gap-1">
                       <EntityIcon category="leadertraits" id={trait.id} size={24} />
-                      <span>{trait.displayName ?? humanizeId(trait.id)}</span>
+                      <span className={traitColor(trait.cost)}>
+                        {trait.displayName ?? humanizeId(trait.id)}
+                      </span>
+                      <span className={`ml-1 text-xs ${traitColor(trait.cost)}`}>
+                        {trait.cost > 0 ? `+${trait.cost}` : trait.cost}
+                      </span>
                     </Badge>
                   ))}
                 </div>
               )}
               {isLuminary && (
-                <span className="text-xs text-muted-foreground">
-                  {empire.leader.traits.length}/{empire.leader.leaderPicksMax} traits · {leaderBudgetRemaining} budget remaining
-                </span>
+                <>
+                  <span className={`text-xs ${leaderPicksRemaining >= 0 ? "text-green-500" : "text-destructive"}`}>
+                    {empire.leader.traits.length}/{empire.leader.leaderPicksMax} picks
+                  </span>
+                  <span className={`text-xs font-medium ${leaderBudgetRemaining >= 0 ? "text-green-500" : "text-destructive"}`}>
+                    {leaderBudgetRemaining >= 0 ? `+${leaderBudgetRemaining}` : leaderBudgetRemaining} pts remaining
+                  </span>
+                </>
               )}
             </div>
             <RerollButton category="leader" available={empire.rerollsAvailable["leader"] ?? false} />

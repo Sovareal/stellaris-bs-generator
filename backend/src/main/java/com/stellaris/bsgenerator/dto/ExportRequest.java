@@ -9,5 +9,7 @@ public record ExportRequest(
         String speciesName,
         String speciesPlural,
         String speciesAdjective,
-        String rulerName
+        String rulerName,
+        String homeworldName,
+        String homeSystemName
 ) {}

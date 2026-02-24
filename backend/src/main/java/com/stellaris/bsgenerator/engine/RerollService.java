@@ -856,8 +856,15 @@ public class RerollService {
     }
 
     private GeneratedEmpire rerollShipset(GeneratedEmpire empire) {
+        var requiredIds = new HashSet<String>();
+        requiredIds.addAll(empire.origin().requiredShipsetIds());
+        for (var civic : empire.civics()) {
+            requiredIds.addAll(civic.requiredShipsetIds());
+        }
+
         var shipsets = filterService.getSelectableShipsets().stream()
                 .filter(s -> !s.id().equals(empire.shipset().id()))
+                .filter(s -> requiredIds.isEmpty() || requiredIds.contains(s.id()))
                 .toList();
 
         if (shipsets.isEmpty()) {

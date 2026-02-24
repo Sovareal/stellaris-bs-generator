@@ -129,6 +129,8 @@ export interface ExportRequest {
   speciesPlural?: string;
   speciesAdjective?: string;
   rulerName: string;
+  homeworldName?: string;
+  homeSystemName?: string;
 }
 
 export interface ExportResponse {

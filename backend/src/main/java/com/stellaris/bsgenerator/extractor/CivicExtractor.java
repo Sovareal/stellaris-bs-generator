@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -59,7 +60,19 @@ public class CivicExtractor {
                             .toList())
                     .orElse(List.of());
 
-            civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies, enforcedTraitIds));
+            // Parse shipset requirement from possible.graphical_culture (e.g. biogenesis_01/02 for Aerospace Adaptation)
+            List<String> requiredShipsetIds = node.child("possible")
+                    .flatMap(p -> p.child("graphical_culture"))
+                    .map(gc -> {
+                        var orNode = gc.child("OR").orElse(gc);
+                        return orNode.children("value").stream()
+                                .map(ClausewitzNode::value)
+                                .filter(Objects::nonNull)
+                                .toList();
+                    })
+                    .orElse(List.of());
+
+            civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies, enforcedTraitIds, requiredShipsetIds));
         }
 
         log.info("Extracted {} civics", civics.size());

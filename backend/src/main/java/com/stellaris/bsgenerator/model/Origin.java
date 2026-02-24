@@ -13,5 +13,6 @@ public record Origin(
         SecondarySpeciesConfig secondarySpecies,
         List<String> enforcedTraitIds,
         String iconPath,
-        String habitabilityPreference
+        String habitabilityPreference,
+        List<String> requiredShipsetIds
 ) {}
