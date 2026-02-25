@@ -1,6 +1,6 @@
 [package]
 name = "stellaris-bs-generator"
-version = "0.1.0"
+version = "1.0.0"
 description = "Stellaris BS Empire Generator"
 authors = ["Sova"]
 license = "MIT"
