@@ -13,7 +13,7 @@ fn find_backend_jar(app: &tauri::App) -> Option<std::path::PathBuf> {
     let dev_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(|p| p.parent())
-        .map(|root| root.join("backend/build/libs/backend-0.1.0.jar"));
+        .map(|root| root.join(format!("backend/build/libs/backend-{}.jar", env!("CARGO_PKG_VERSION"))));
 
     if let Some(ref path) = dev_path {
         if path.exists() {

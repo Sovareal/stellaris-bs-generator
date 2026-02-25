@@ -23,7 +23,10 @@ const gradlew = isWin ? 'gradlew.bat' : './gradlew';
 run(`${gradlew} :backend:bootJar`);
 
 // 2. Copy the JAR into src-tauri so Tauri can bundle it as a resource
-const jarSrc = path.join(root, 'backend', 'build', 'libs', 'backend-0.1.0.jar');
+const gradleContent = fs.readFileSync(path.join(root, 'backend', 'build.gradle.kts'), 'utf8');
+const versionMatch = gradleContent.match(/^version\s*=\s*"([^"]+)"/m);
+const backendVersion = versionMatch ? versionMatch[1] : '0.1.0';
+const jarSrc = path.join(root, 'backend', 'build', 'libs', `backend-${backendVersion}.jar`);
 const jarDst = path.join(root, 'frontend', 'src-tauri', 'backend.jar');
 console.log(`\nCopying ${jarSrc} → ${jarDst}`);
 fs.copyFileSync(jarSrc, jarDst);
