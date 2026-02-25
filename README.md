@@ -174,3 +174,7 @@ In the installed app, backend stdout/stderr are redirected to a log file for dia
 | Windows | `%APPDATA%\com.stellaris.bs-generator\logs\backend.log` |
 | Linux | `~/.local/share/com.stellaris.bs-generator/logs/backend.log` |
 | macOS | `~/Library/Logs/com.stellaris.bs-generator/backend.log` |
+
+## License
+
+[MIT](LICENSE) — Oleksandr Savenko, 2026
