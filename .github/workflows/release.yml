@@ -15,7 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04, macos-latest]
+        include:
+          - os: windows-latest
+          - os: macos-latest
+          - os: ubuntu-22.04
+            # AppImage requires linuxdeploy which fails on GitHub runners;
+            # ship deb + rpm instead (both build successfully)
+            args: --bundles deb,rpm
 
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +67,7 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
         with:
           projectPath: ./frontend
+          args: ${{ matrix.args }}
           tagName: ${{ github.ref_name }}
           releaseName: Stellaris BS Generator ${{ github.ref_name }}
           releaseDraft: true
