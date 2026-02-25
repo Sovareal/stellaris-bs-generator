@@ -42,6 +42,10 @@ jobs:
             librsvg2-dev \
             patchelf
 
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+        if: runner.os != 'Windows'
+
       - name: Install frontend dependencies
         run: npm ci
         working-directory: frontend

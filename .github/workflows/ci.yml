@@ -19,7 +19,9 @@ jobs:
           java-version: 25
 
       - name: Run backend tests
-        run: ./gradlew :backend:test
+        run: |
+          chmod +x gradlew
+          ./gradlew :backend:test
 
   frontend:
     name: Frontend Type Check
