@@ -2,6 +2,18 @@
 
 A desktop application that generates random, rule-valid Stellaris empires by parsing the game's own data files.
 
+## Download
+
+Pre-built installers for every platform are attached to each [GitHub Release](https://github.com/Sovareal/stellaris-bs-generator/releases):
+
+| Platform | Installer |
+|----------|-----------|
+| Windows | `.exe` (NSIS) |
+| macOS | `.dmg` |
+| Linux | `.deb` (Debian/Ubuntu), `.rpm` (Fedora/RHEL) |
+
+> These installers are unsigned. Windows and macOS will show a security warning on first launch -- click "More info → Run anyway" (Windows) or right-click → Open (macOS).
+
 ## How It Works
 
 The app reads your local Stellaris installation files (Clausewitz `.txt` format) and extracts all ethics, authorities, civics, origins, species archetypes, traits, homeworlds, shipsets, and starting leader traits - along with their full compatibility rules. It then generates randomized empires that respect every constraint the game enforces.
@@ -73,7 +85,7 @@ npm run tauri dev                # Full app (Tauri + auto-started backend sideca
 ```
 
 In `tauri dev` mode the backend is started automatically from the pre-built JAR at
-`backend/build/libs/backend-0.1.0.jar`. If it doesn't exist yet, build it first:
+`backend/build/libs/backend-<version>.jar`. If it doesn't exist yet, build it first:
 
 ```bash
 # Windows
@@ -95,7 +107,7 @@ npm run tauri build
 This runs the following steps automatically:
 
 1. **`gradlew :backend:bootJar`** - compiles the Spring Boot backend into a fat JAR
-2. **Copy** `backend/build/libs/backend-0.1.0.jar` → `frontend/src-tauri/backend.jar`
+2. **Copy** `backend/build/libs/backend-<version>.jar` → `frontend/src-tauri/backend.jar`
 3. **`scripts/bundle-jre.bat`** (Windows) or **`scripts/bundle-jre.sh`** (Linux/macOS) - uses `jlink` to produce a minimal JRE (~50 MB) containing only the modules Spring Boot needs
 4. **`npm run build`** - compiles the React + TypeScript frontend via Vite
 5. **Tauri** - compiles the Rust shell in release mode and packages everything into a platform installer
@@ -105,7 +117,7 @@ This runs the following steps automatically:
 | Platform | Format | Path |
 |----------|--------|------|
 | Windows | NSIS installer (`.exe`) | `frontend/src-tauri/target/release/bundle/nsis/` |
-| Linux | AppImage + `.deb` | `frontend/src-tauri/target/release/bundle/appimage/` and `deb/` |
+| Linux | `.deb` + `.rpm` | `frontend/src-tauri/target/release/bundle/deb/` and `rpm/` |
 | macOS | `.dmg` + `.app` | `frontend/src-tauri/target/release/bundle/dmg/` and `macos/` |
 
 ### First Run
@@ -143,8 +155,12 @@ Stellaris BS Generator/
 │   └── src-tauri/              # Tauri Rust shell + config
 │       ├── src/lib.rs          # Backend sidecar launcher
 │       └── tauri.conf.json     # App config, bundle targets, resources
+├── .github/workflows/
+│   ├── ci.yml                  # Backend tests + TS type-check on push/PR to main
+│   └── release.yml             # 3-platform installers on v* tag push
 └── scripts/
     ├── before-build.js         # Cross-platform build orchestration (Node.js)
+    ├── bump-version.js         # Sync version across all 4 manifest files
     ├── bundle-jre.bat          # Windows JRE bundler (jlink)
     └── bundle-jre.sh           # Linux/macOS JRE bundler (jlink)
 ```
