@@ -2,6 +2,10 @@
 
 A desktop application that generates random, rule-valid Stellaris empires by parsing the game's own data files.
 
+## Demo
+
+![Stellaris BS Empire Generator demo](.github/assets/demo.gif)
+
 ## Download
 
 Pre-built installers for every platform are attached to each [GitHub Release](https://github.com/Sovareal/stellaris-bs-generator/releases):
