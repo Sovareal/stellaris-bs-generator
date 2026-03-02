@@ -11,6 +11,7 @@ interface ExportModalProps {
 }
 
 export function ExportModal({ open, onClose }: ExportModalProps) {
+  const empire = useEmpireStore((s) => s.empire);
   const isSaving = useEmpireStore((s) => s.isSaving);
   const saveToGame = useEmpireStore((s) => s.saveToGame);
   const saveSuccess = useEmpireStore((s) => s.saveSuccess);
@@ -35,7 +36,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
   useEffect(() => {
     if (open) {
       clearSaveState();
-      setEmpireName("");
+      setEmpireName(empire?.suggestedName ?? "");
       setSpeciesName("");
       setSpeciesPlural("");
       setSpeciesAdjective("");

@@ -104,6 +104,7 @@ export interface EmpireResponse {
   leader: LeaderDto;
   secondarySpecies: SecondarySpeciesDto | null;
   rerollsAvailable: Record<string, boolean>;
+  suggestedName?: string;
 }
 
 export interface VersionResponse {
