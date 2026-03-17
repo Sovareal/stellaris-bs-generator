@@ -54,8 +54,8 @@ public class LocalizationService {
         var map = new HashMap<String, String>();
         long start = System.currentTimeMillis();
 
-        try (Stream<Path> files = Files.list(locDir)) {
-            files.filter(p -> p.getFileName().toString().endsWith("_l_english.yml"))
+        try (Stream<Path> files = Files.walk(locDir)) {
+            files.filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith("_l_english.yml"))
                     .sorted()
                     .forEach(file -> parseFile(file, map));
         } catch (IOException e) {

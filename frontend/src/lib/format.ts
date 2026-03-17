@@ -50,7 +50,6 @@ const SPECIES_CLASS_NAMES: Record<string, string> = {
   AQUATIC: "Aquatic",
   TOX: "Toxoid",
   INF: "Infernal",
-  BIOGENESIS_01: "BioGenesis",
   MINDWARDEN: "Mindwarden",
   MACHINE: "Machine",
   ROBOT: "Robot",

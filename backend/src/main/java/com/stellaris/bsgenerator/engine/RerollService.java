@@ -120,16 +120,13 @@ public class RerollService {
         var compatible = filterService.getCompatibleAuthorities(state).stream()
                 .filter(a -> !a.id().equals(empire.authority().id()))
                 .filter(a -> {
+                    // Ensure at least CIVIC_COUNT civics exist for this authority
                     var withAuth = state.withAuthority(a.id());
-                    for (var civic : empire.civics()) {
-                        if (!evaluator.evaluateBoth(civic.potential(), civic.possible(), withAuth)) return false;
-                    }
-                    var withCivics = withAuth.withCivics(toCivicIds(empire.civics()));
-                    return evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), withCivics);
+                    return filterService.getCompatibleCivics(withAuth).size() >= 2;
                 }).toList();
 
         if (compatible.isEmpty()) {
-            // Gestalt empires: switching hive↔machine requires archetype change.
+            // Gestalt empires: switching hive<->machine requires archetype change.
             // Generate a fresh empire with the other gestalt authority type.
             if (empire.authority().isGestalt()) {
                 return performGestaltSwitch(empire);
@@ -138,7 +135,54 @@ public class RerollService {
         }
 
         var newAuth = WeightedRandom.select(compatible, Authority::randomWeight, random);
-        return copyWith(empire, b -> b.authority = newAuth);
+        var newState = state.withAuthority(newAuth.id());
+
+        // Re-pick civics for the new authority
+        var newCivics = generatorService.pickCivicsForState(newState);
+
+        // Verify origin is still compatible with new authority + new civics
+        var stateWithNewCivics = newState.withCivics(toCivicIds(newCivics));
+        List<Civic> finalCivics;
+        if (evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), stateWithNewCivics)) {
+            finalCivics = newCivics;
+        } else {
+            // Fall back to old civics if they are compatible with the new authority
+            var stateWithOldCivics = newState.withCivics(toCivicIds(empire.civics()));
+            if (evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), stateWithOldCivics)) {
+                finalCivics = empire.civics();
+            } else {
+                throw new GenerationException("Could not find civics compatible with new authority and existing origin");
+            }
+        }
+
+        // Re-generate secondary species and traits for new civics
+        var finalCivicsList = finalCivics;
+        var newSecondary = generatorService.generateSecondarySpecies(empire.origin(), finalCivicsList, empire.speciesClass());
+        var newTraits = preserveRandomTraits(empire, empire.origin(), finalCivicsList);
+        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
+
+        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraits);
+        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
+        PlanetClass newHomeworld = empire.homeworld();
+        PlanetClass newHabPref = empire.habitabilityPreference();
+        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
+            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraits, empire.speciesClass());
+            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
+        }
+        final var finalHomeworld = newHomeworld;
+        final var finalHabPref = newHabPref;
+        final int finalPointsUsed = newPointsUsed;
+        final var finalTraits = newTraits;
+
+        return copyWith(empire, b -> {
+            b.authority = newAuth;
+            b.civics = finalCivicsList;
+            b.secondarySpecies = newSecondary;
+            b.speciesTraits = finalTraits;
+            b.traitPointsUsed = finalPointsUsed;
+            b.homeworld = finalHomeworld;
+            b.habitabilityPreference = finalHabPref;
+        });
     }
 
     /**

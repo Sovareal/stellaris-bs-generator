@@ -268,6 +268,11 @@ public class EmpireGeneratorService {
         return WeightedRandom.select(compatible, Authority::randomWeight, random);
     }
 
+    /** Package-private: picks CIVIC_COUNT civics for a given state. Used by RerollService. */
+    List<Civic> pickCivicsForState(EmpireState state) {
+        return pickCivics(state, CIVIC_COUNT);
+    }
+
     private List<Civic> pickCivics(EmpireState state, int count) {
         List<Civic> picked = new ArrayList<>();
 
@@ -458,12 +463,11 @@ public class EmpireGeneratorService {
 
     // Per-class weights for species classes that gate exclusively restricted origins.
     // Classes not listed default to 1x weight.
+    // DLC-locked classes (INF, MINDWARDEN, BIOGENESIS_01) are excluded by the extractor
+    // and do not appear in the pool, so their weights here have no effect.
     private static final Map<String, Integer> SPECIES_CLASS_WEIGHTS = Map.of(
-            "INF",           8,  // Infernals  — sole class for origin_cosmic_dawn
-            "MINDWARDEN",    8,  // The Shroud — sole class for origin_mindwardens / progenitor_hive
-            "FUN",           7,  // Fungoid    — gates origin_fruitful
-            "PLANT",         7,  // Plantoid   — gates origin_fruitful, origin_tree_of_life
-            "BIOGENESIS_01", 4   // BioGenesis — gates biogenesis-restricted origins
+            "FUN",   7,  // Fungoid   — gates origin_fruitful
+            "PLANT", 7   // Plantoid  — gates origin_fruitful, origin_tree_of_life
     );
 
     private String pickSpeciesClass(SpeciesArchetype archetype) {

@@ -41,6 +41,16 @@ public class SpeciesClassExtractor {
                 if ("game_started".equals(globalFlag)) continue;
             }
 
+            // Skip classes explicitly marked as non-randomizable: randomized = { always = no }
+            var randomizedNode = node.child("randomized").orElse(null);
+            if (randomizedNode != null && randomizedNode.isBlock()) {
+                var alwaysVal = randomizedNode.childValue("always").orElse(null);
+                if ("no".equals(alwaysVal)) {
+                    log.debug("Skipping non-randomizable species class: {}", id);
+                    continue;
+                }
+            }
+
             classes.add(new SpeciesClass(id, archetypeValue));
         }
 
