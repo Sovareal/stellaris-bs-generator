@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useBackendReady } from "@/hooks/useBackendReady";
 import { Header } from "@/components/Header";
@@ -9,11 +10,25 @@ import { SettingsPage } from "@/components/SettingsPage";
 
 function App() {
   const backend = useBackendReady();
+  const [showSettings, setShowSettings] = useState(false);
+
+  function handleSettingsSaved() {
+    if (backend.needsSetup) {
+      window.location.reload();
+    } else {
+      setShowSettings(false);
+    }
+  }
+
+  const settingsOpen = showSettings || backend.needsSetup;
 
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background text-foreground flex flex-col">
-        <Header gameVersion={backend.gameVersion} />
+        <Header
+          gameVersion={backend.gameVersion}
+          onSettingsClick={backend.ready ? () => setShowSettings((v) => !v) : undefined}
+        />
 
         {!backend.ready && !backend.error && !backend.needsSetup && (
           <LoadingScreen />
@@ -21,13 +36,13 @@ function App() {
         {backend.error && !backend.needsSetup && (
           <ErrorScreen message={backend.error} />
         )}
-        {backend.needsSetup && (
+        {settingsOpen && (
           <SettingsPage
-            onSaved={() => window.location.reload()}
-            errorMessage={backend.error}
+            onSaved={handleSettingsSaved}
+            errorMessage={backend.needsSetup ? backend.error : null}
           />
         )}
-        {backend.ready && <EmpireView />}
+        {backend.ready && !settingsOpen && <EmpireView />}
 
         <Footer
           connected={backend.ready}

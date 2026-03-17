@@ -1,8 +1,12 @@
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 interface HeaderProps {
   gameVersion: string | null;
+  onSettingsClick?: () => void;
 }
 
-export function Header({ gameVersion }: HeaderProps) {
+export function Header({ gameVersion, onSettingsClick }: HeaderProps) {
   return (
     <header className="border-b border-border px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -11,11 +15,18 @@ export function Header({ gameVersion }: HeaderProps) {
           Stellaris BS Empire Generator
         </h1>
       </div>
-      {gameVersion && (
-        <span className="text-sm text-muted-foreground">
-          Stellaris {gameVersion}
-        </span>
-      )}
+      <div className="flex items-center gap-3">
+        {gameVersion && (
+          <span className="text-sm text-muted-foreground">
+            Stellaris {gameVersion}
+          </span>
+        )}
+        {onSettingsClick && (
+          <Button variant="ghost" size="icon" onClick={onSettingsClick} title="Settings">
+            <Settings className="size-4" />
+          </Button>
+        )}
+      </div>
     </header>
   );
 }
