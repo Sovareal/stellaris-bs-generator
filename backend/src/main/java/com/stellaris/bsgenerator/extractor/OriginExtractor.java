@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.extractor;
 
+import com.stellaris.bsgenerator.config.DlcRegistry;
 import com.stellaris.bsgenerator.model.Origin;
 import com.stellaris.bsgenerator.model.SecondarySpeciesConfig;
 import com.stellaris.bsgenerator.model.requirement.RequirementBlock;
@@ -57,10 +58,25 @@ public class OriginExtractor {
                     .map(RequirementBlockParser::parse)
                     .orElse(null);
 
-            // Extract DLC requirement from playable = { host_has_dlc = "..." }
+            // Extract DLC requirement from playable = { host_has_dlc = "..." } or has_xxx_dlc triggers
             String dlcRequirement = null;
             if (playableNode != null) {
-                dlcRequirement = playableNode.childValue("host_has_dlc").orElse(null);
+                String hostDlc = playableNode.childValue("host_has_dlc").orElse(null);
+                if (hostDlc != null) {
+                    dlcRequirement = DlcRegistry.fromHostDlc(hostDlc);
+                    if (dlcRequirement == null) dlcRequirement = hostDlc; // keep raw value if not in registry
+                }
+                if (dlcRequirement == null) {
+                    for (var child : playableNode.children()) {
+                        if (child.key() != null && child.isLeaf()) {
+                            String mapped = DlcRegistry.fromTrigger(child.key());
+                            if (mapped != null) {
+                                dlcRequirement = mapped;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             SecondarySpeciesConfig secondarySpecies = parseSecondarySpecies(node);

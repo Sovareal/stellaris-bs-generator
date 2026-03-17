@@ -7,5 +7,7 @@ package com.stellaris.bsgenerator.model;
  */
 public record SpeciesClass(
         String id,
-        String archetype
+        String archetype,
+        /** Canonical DLC name required to use this species class, or null if base-game. */
+        String dlcRequirement
 ) {}

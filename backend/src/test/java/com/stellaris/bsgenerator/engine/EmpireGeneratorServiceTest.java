@@ -56,7 +56,7 @@ class EmpireGeneratorServiceTest {
         gameDataManager.loadGameData(false);
 
         evaluator = new RequirementEvaluator();
-        var filterService = new CompatibilityFilterService(gameDataManager, evaluator);
+        var filterService = new CompatibilityFilterService(gameDataManager, evaluator, settingsService);
         generator = new EmpireGeneratorService(filterService, evaluator);
     }
 

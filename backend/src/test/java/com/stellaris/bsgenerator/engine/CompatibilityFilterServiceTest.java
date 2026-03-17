@@ -52,7 +52,7 @@ class CompatibilityFilterServiceTest {
         gameDataManager.loadGameData(false);
 
         var evaluator = new RequirementEvaluator();
-        filterService = new CompatibilityFilterService(gameDataManager, evaluator);
+        filterService = new CompatibilityFilterService(gameDataManager, evaluator, settingsService);
     }
 
     // --- Ethics filtering ---

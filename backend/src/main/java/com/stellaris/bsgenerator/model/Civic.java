@@ -12,5 +12,7 @@ public record Civic(
         int randomWeight,
         SecondarySpeciesConfig secondarySpecies,
         List<String> enforcedTraitIds,
-        List<String> requiredShipsetIds
+        List<String> requiredShipsetIds,
+        /** Canonical DLC name required to use this civic, or null if base-game. */
+        String dlcRequirement
 ) {}

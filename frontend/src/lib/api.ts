@@ -79,10 +79,10 @@ export const api = {
   getSettings: () =>
     request<SettingsResponse>("/api/settings"),
 
-  saveSettings: (gamePath: string) =>
+  saveSettings: (gamePath: string, disabledDlcs: string[]) =>
     request<SettingsResponse>("/api/settings", {
       method: "PUT",
-      body: JSON.stringify({ gamePath }),
+      body: JSON.stringify({ gamePath, disabledDlcs }),
     }),
 
   exportEmpire: (req: ExportRequest) =>

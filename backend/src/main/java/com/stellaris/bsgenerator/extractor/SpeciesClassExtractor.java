@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.extractor;
 
+import com.stellaris.bsgenerator.config.DlcRegistry;
 import com.stellaris.bsgenerator.model.SpeciesClass;
 import com.stellaris.bsgenerator.parser.ast.ClausewitzNode;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,29 @@ public class SpeciesClassExtractor {
                 }
             }
 
-            classes.add(new SpeciesClass(id, archetypeValue));
+            // Extract DLC requirement from the playable block
+            String dlcRequirement = null;
+            if (playableNode != null && playableNode.isBlock()) {
+                // Try host_has_dlc first
+                String hostDlc = playableNode.childValue("host_has_dlc").orElse(null);
+                if (hostDlc != null) {
+                    dlcRequirement = DlcRegistry.fromHostDlc(hostDlc);
+                }
+                // Then try has_xxx_dlc triggers
+                if (dlcRequirement == null) {
+                    for (var child : playableNode.children()) {
+                        if (child.key() != null && child.isLeaf()) {
+                            String mapped = DlcRegistry.fromTrigger(child.key());
+                            if (mapped != null) {
+                                dlcRequirement = mapped;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            classes.add(new SpeciesClass(id, archetypeValue, dlcRequirement));
         }
 
         log.info("Extracted {} playable species classes", classes.size());

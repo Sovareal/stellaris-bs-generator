@@ -14,7 +14,17 @@ import java.util.List;
 @Service
 public class SettingsService {
 
-    public record Settings(String gamePath) {}
+    /**
+     * @param gamePath     path to the Stellaris installation directory
+     * @param disabledDlcs DLC names (canonical, see DlcRegistry) the user does NOT own.
+     *                     Null or empty means all DLCs are enabled (default).
+     */
+    public record Settings(String gamePath, java.util.Set<String> disabledDlcs) {
+        /** Convenience constructor for backwards-compat (no DLC field in old settings.json). */
+        public Settings(String gamePath) {
+            this(gamePath, null);
+        }
+    }
 
     private final Path settingsFile;
     private final String defaultGamePath;

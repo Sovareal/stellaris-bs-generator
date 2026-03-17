@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.extractor;
 
+import com.stellaris.bsgenerator.config.DlcRegistry;
 import com.stellaris.bsgenerator.model.Civic;
 import com.stellaris.bsgenerator.model.SecondarySpeciesConfig;
 import com.stellaris.bsgenerator.model.requirement.RequirementBlock;
@@ -36,6 +37,27 @@ public class CivicExtractor {
                     continue;
                 }
             }
+            // Extract DLC requirement from playable = { host_has_dlc = "..." } (positive form only)
+            String dlcRequirement = null;
+            if (playableNode != null) {
+                String hostDlc = playableNode.childValue("host_has_dlc").orElse(null);
+                if (hostDlc != null) {
+                    dlcRequirement = DlcRegistry.fromHostDlc(hostDlc);
+                }
+                // Also check has_xxx_dlc triggers in the playable block
+                if (dlcRequirement == null) {
+                    for (var child : playableNode.children()) {
+                        if (child.key() != null && child.isLeaf()) {
+                            String mapped = DlcRegistry.fromTrigger(child.key());
+                            if (mapped != null) {
+                                dlcRequirement = mapped;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             boolean pickableAtStart = node.childBool("pickable_at_start", true);
 
             RequirementBlock potential = node.child("potential")
@@ -73,7 +95,7 @@ public class CivicExtractor {
                     .orElse(List.of());
 
             civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies,
-                    enforcedTraitIds, requiredShipsetIds));
+                    enforcedTraitIds, requiredShipsetIds, dlcRequirement));
         }
 
         log.info("Extracted {} civics", civics.size());

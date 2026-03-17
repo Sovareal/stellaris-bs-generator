@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.engine;
 
+import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.model.*;
 import com.stellaris.bsgenerator.parser.cache.GameDataManager;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class CompatibilityFilterService {
 
     private final GameDataManager gameDataManager;
     private final RequirementEvaluator evaluator;
+    private final SettingsService settingsService;
 
     /**
      * Get authorities compatible with the current empire state.
@@ -39,22 +41,26 @@ public class CompatibilityFilterService {
     /**
      * Get civics compatible with the current empire state.
      * Filters by potential (visibility), possible (validity), pickable_at_start,
-     * and excludes civics already selected in the state.
+     * excludes civics already selected, and respects DLC filter settings.
      */
     public List<Civic> getCompatibleCivics(EmpireState state) {
+        var disabled = disabledDlcs();
         return gameDataManager.getCivics().stream()
                 .filter(Civic::pickableAtStart)
                 .filter(c -> !state.civics().contains(c.id()))
+                .filter(c -> !isDlcDisabled(c.dlcRequirement(), disabled))
                 .filter(c -> evaluator.evaluateBoth(c.potential(), c.possible(), state))
                 .toList();
     }
 
     /**
      * Get origins compatible with the current empire state.
-     * Evaluates both potential and possible blocks.
+     * Evaluates both potential and possible blocks, and respects DLC filter settings.
      */
     public List<Origin> getCompatibleOrigins(EmpireState state) {
+        var disabled = disabledDlcs();
         return gameDataManager.getOrigins().stream()
+                .filter(o -> !isDlcDisabled(o.dlcRequirement(), disabled))
                 .filter(o -> evaluator.evaluateBoth(o.potential(), o.possible(), state))
                 .toList();
     }
@@ -151,12 +157,25 @@ public class CompatibilityFilterService {
     }
 
     /**
-     * Get species classes belonging to the given archetype.
+     * Get species classes belonging to the given archetype, filtered by DLC settings.
      */
     public List<SpeciesClass> getSpeciesClassesForArchetype(String archetypeId) {
+        var disabled = disabledDlcs();
         return gameDataManager.getSpeciesClasses().stream()
                 .filter(sc -> sc.archetype().equals(archetypeId))
+                .filter(sc -> !isDlcDisabled(sc.dlcRequirement(), disabled))
                 .toList();
+    }
+
+    /** Load disabled DLC set once per filter call. */
+    private java.util.Set<String> disabledDlcs() {
+        var d = settingsService.load().disabledDlcs();
+        return d != null ? d : Set.of();
+    }
+
+    /** Returns true if the given DLC name is in the disabled set. Null requirement = base game = never disabled. */
+    private static boolean isDlcDisabled(String dlcRequirement, java.util.Set<String> disabled) {
+        return dlcRequirement != null && disabled.contains(dlcRequirement);
     }
 
     /**

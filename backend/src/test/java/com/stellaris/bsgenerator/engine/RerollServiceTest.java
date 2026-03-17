@@ -52,7 +52,7 @@ class RerollServiceTest {
         gameDataManager.loadGameData(false);
 
         var evaluator = new RequirementEvaluator();
-        var filterService = new CompatibilityFilterService(gameDataManager, evaluator);
+        var filterService = new CompatibilityFilterService(gameDataManager, evaluator, settingsService);
         generator = new EmpireGeneratorService(filterService, evaluator);
         rerollService = new RerollService(filterService, evaluator, generator);
     }

@@ -118,10 +118,17 @@ export interface ErrorResponse {
   status: number;
 }
 
+export interface DlcInfo {
+  name: string;
+  category: string;
+}
+
 export interface SettingsResponse {
   gamePath: string;
   valid: boolean;
   validationMessage: string;
+  disabledDlcs: string[] | null;
+  availableDlcs: DlcInfo[];
 }
 
 export interface ExportRequest {
