@@ -119,11 +119,8 @@ public class RerollService {
                 .withSpeciesClass(empire.speciesClass());
         var compatible = filterService.getCompatibleAuthorities(state).stream()
                 .filter(a -> !a.id().equals(empire.authority().id()))
-                .filter(a -> {
-                    // Ensure at least CIVIC_COUNT civics exist for this authority
-                    var withAuth = state.withAuthority(a.id());
-                    return filterService.getCompatibleCivics(withAuth).size() >= 2;
-                }).toList();
+                .filter(a -> filterService.getCompatibleCivics(state.withAuthority(a.id())).size() >= 2)
+                .toList();
 
         if (compatible.isEmpty()) {
             // Gestalt empires: switching hive<->machine requires archetype change.
@@ -137,28 +134,47 @@ public class RerollService {
         var newAuth = WeightedRandom.select(compatible, Authority::randomWeight, random);
         var newState = state.withAuthority(newAuth.id());
 
-        // Re-pick civics for the new authority
-        var newCivics = generatorService.pickCivicsForState(newState);
-
-        // Verify origin is still compatible with new authority + new civics
-        var stateWithNewCivics = newState.withCivics(toCivicIds(newCivics));
-        List<Civic> finalCivics;
-        if (evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), stateWithNewCivics)) {
-            finalCivics = newCivics;
-        } else {
-            // Fall back to old civics if they are compatible with the new authority
-            var stateWithOldCivics = newState.withCivics(toCivicIds(empire.civics()));
-            if (evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), stateWithOldCivics)) {
-                finalCivics = empire.civics();
-            } else {
-                throw new GenerationException("Could not find civics compatible with new authority and existing origin");
+        // Keep each existing civic if it is still compatible with the new authority;
+        // replace only the ones that are not. Process sequentially so each replacement
+        // is aware of previously decided civics.
+        var updatedCivics = new ArrayList<>(empire.civics());
+        boolean civicsChanged = false;
+        for (int i = 0; i < updatedCivics.size(); i++) {
+            var civic = updatedCivics.get(i);
+            var otherIds = new HashSet<String>();
+            for (int j = 0; j < updatedCivics.size(); j++) {
+                if (j != i) otherIds.add(updatedCivics.get(j).id());
+            }
+            var checkState = newState.withCivics(otherIds);
+            if (!evaluator.evaluateBoth(civic.potential(), civic.possible(), checkState)) {
+                // Civic is incompatible with the new authority — replace it
+                var pickable = filterService.getCompatibleCivics(checkState).stream()
+                        .filter(c -> !otherIds.contains(c.id()))
+                        .toList();
+                if (pickable.isEmpty()) {
+                    throw new GenerationException("No replacement civic for slot " + i + " after authority change");
+                }
+                updatedCivics.set(i, WeightedRandom.select(pickable, Civic::randomWeight, random));
+                civicsChanged = true;
             }
         }
 
-        // Re-generate secondary species and traits for new civics
-        var finalCivicsList = finalCivics;
-        var newSecondary = generatorService.generateSecondarySpecies(empire.origin(), finalCivicsList, empire.speciesClass());
-        var newTraits = preserveRandomTraits(empire, empire.origin(), finalCivicsList);
+        var finalCivics = List.copyOf(updatedCivics);
+
+        // Verify origin is still compatible with new authority + final civics
+        var stateWithFinalCivics = newState.withCivics(toCivicIds(finalCivics));
+        if (!evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), stateWithFinalCivics)) {
+            throw new GenerationException("Origin incompatible with new authority and civics after reroll");
+        }
+
+        if (!civicsChanged) {
+            // No civic changes — only swap the authority
+            return copyWith(empire, b -> b.authority = newAuth);
+        }
+
+        // Civics changed — re-derive dependent fields (same as rerollCivic)
+        var newSecondary = generatorService.generateSecondarySpecies(empire.origin(), finalCivics, empire.speciesClass());
+        var newTraits = preserveRandomTraits(empire, empire.origin(), finalCivics);
         int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
 
         var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraits);
@@ -176,7 +192,7 @@ public class RerollService {
 
         return copyWith(empire, b -> {
             b.authority = newAuth;
-            b.civics = finalCivicsList;
+            b.civics = finalCivics;
             b.secondarySpecies = newSecondary;
             b.speciesTraits = finalTraits;
             b.traitPointsUsed = finalPointsUsed;
