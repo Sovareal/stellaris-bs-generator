@@ -918,13 +918,16 @@ public class RerollService {
     private GeneratedEmpire rerollShipset(GeneratedEmpire empire) {
         var requiredIds = new HashSet<String>();
         requiredIds.addAll(empire.origin().requiredShipsetIds());
-        for (var civic : empire.civics()) {
-            requiredIds.addAll(civic.requiredShipsetIds());
-        }
+        for (var civic : empire.civics()) requiredIds.addAll(civic.requiredShipsetIds());
+
+        var excludedIds = new HashSet<String>();
+        excludedIds.addAll(empire.origin().excludedShipsetIds());
+        for (var civic : empire.civics()) excludedIds.addAll(civic.excludedShipsetIds());
 
         var shipsets = filterService.getSelectableShipsets().stream()
                 .filter(s -> !s.id().equals(empire.shipset().id()))
                 .filter(s -> requiredIds.isEmpty() || requiredIds.contains(s.id()))
+                .filter(s -> !excludedIds.contains(s.id()))
                 .toList();
 
         if (shipsets.isEmpty()) {

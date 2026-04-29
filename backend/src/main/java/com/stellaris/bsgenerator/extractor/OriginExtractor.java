@@ -95,19 +95,26 @@ public class OriginExtractor {
             // Parse habitability preference (e.g. pc_ocean, pc_habitat)
             String habitabilityPreference = node.childValue("habitability_preference").orElse(null);
 
-            // Parse shipset requirement from possible.graphical_culture (e.g. biogenesis_01/02 for Wilderness)
-            List<String> requiredShipsetIds = node.child("possible")
-                    .flatMap(p -> p.child("graphical_culture"))
-                    .map(gc -> {
-                        var orNode = gc.child("OR").orElse(gc);
-                        return orNode.children("value").stream()
-                                .map(ClausewitzNode::value)
-                                .filter(Objects::nonNull)
-                                .toList();
-                    })
+            // Parse shipset constraints from possible.graphical_culture:
+            // OR { value = x } -> whitelist (requiredShipsetIds)
+            // NOR { value = x } -> blacklist (excludedShipsetIds)
+            var gcNode = node.child("possible").flatMap(p -> p.child("graphical_culture"));
+            List<String> requiredShipsetIds = gcNode
+                    .flatMap(gc -> gc.child("OR"))
+                    .map(or -> or.children("value").stream()
+                            .map(ClausewitzNode::value)
+                            .filter(Objects::nonNull)
+                            .toList())
+                    .orElse(List.of());
+            List<String> excludedShipsetIds = gcNode
+                    .flatMap(gc -> gc.child("NOR"))
+                    .map(nor -> nor.children("value").stream()
+                            .map(ClausewitzNode::value)
+                            .filter(Objects::nonNull)
+                            .toList())
                     .orElse(List.of());
 
-            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath, habitabilityPreference, requiredShipsetIds));
+            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath, habitabilityPreference, requiredShipsetIds, excludedShipsetIds));
         }
 
         log.info("Extracted {} playable origins", origins.size());

@@ -82,20 +82,27 @@ public class CivicExtractor {
                             .toList())
                     .orElse(List.of());
 
-            // Parse shipset requirement from possible.graphical_culture (e.g. biogenesis_01/02 for Aerospace Adaptation)
-            List<String> requiredShipsetIds = node.child("possible")
-                    .flatMap(p -> p.child("graphical_culture"))
-                    .map(gc -> {
-                        var orNode = gc.child("OR").orElse(gc);
-                        return orNode.children("value").stream()
-                                .map(ClausewitzNode::value)
-                                .filter(Objects::nonNull)
-                                .toList();
-                    })
+            // Parse shipset constraints from possible.graphical_culture:
+            // OR { value = x } -> whitelist (requiredShipsetIds)
+            // NOR { value = x } -> blacklist (excludedShipsetIds)
+            var gcNode = node.child("possible").flatMap(p -> p.child("graphical_culture"));
+            List<String> requiredShipsetIds = gcNode
+                    .flatMap(gc -> gc.child("OR"))
+                    .map(or -> or.children("value").stream()
+                            .map(ClausewitzNode::value)
+                            .filter(Objects::nonNull)
+                            .toList())
+                    .orElse(List.of());
+            List<String> excludedShipsetIds = gcNode
+                    .flatMap(gc -> gc.child("NOR"))
+                    .map(nor -> nor.children("value").stream()
+                            .map(ClausewitzNode::value)
+                            .filter(Objects::nonNull)
+                            .toList())
                     .orElse(List.of());
 
             civics.add(new Civic(id, potential, possible, pickableAtStart, randomWeight, secondarySpecies,
-                    enforcedTraitIds, requiredShipsetIds, dlcRequirement));
+                    enforcedTraitIds, requiredShipsetIds, excludedShipsetIds, dlcRequirement));
         }
 
         log.info("Extracted {} civics", civics.size());

@@ -690,26 +690,23 @@ public class EmpireGeneratorService {
     private GraphicalCulture pickShipset(Origin origin, List<Civic> civics) {
         var shipsets = filterService.getSelectableShipsets();
 
-        // Collect shipset requirements from origin and civics (e.g. biogenesis for Wilderness)
         var requiredIds = new HashSet<String>();
         requiredIds.addAll(origin.requiredShipsetIds());
-        for (var civic : civics) {
-            requiredIds.addAll(civic.requiredShipsetIds());
-        }
+        for (var civic : civics) requiredIds.addAll(civic.requiredShipsetIds());
 
-        if (!requiredIds.isEmpty()) {
-            var filtered = shipsets.stream()
-                    .filter(s -> requiredIds.contains(s.id()))
-                    .toList();
-            if (!filtered.isEmpty()) {
-                return filtered.get(random.nextInt(filtered.size()));
-            }
-        }
+        var excludedIds = new HashSet<String>();
+        excludedIds.addAll(origin.excludedShipsetIds());
+        for (var civic : civics) excludedIds.addAll(civic.excludedShipsetIds());
 
-        if (shipsets.isEmpty()) {
+        var candidates = shipsets.stream()
+                .filter(s -> requiredIds.isEmpty() || requiredIds.contains(s.id()))
+                .filter(s -> !excludedIds.contains(s.id()))
+                .toList();
+
+        if (candidates.isEmpty()) {
             throw new GenerationException("No selectable shipsets available");
         }
-        return shipsets.get(random.nextInt(shipsets.size()));
+        return candidates.get(random.nextInt(candidates.size()));
     }
 
     private String pickLeaderClass() {

@@ -14,5 +14,6 @@ public record Origin(
         List<String> enforcedTraitIds,
         String iconPath,
         String habitabilityPreference,
-        List<String> requiredShipsetIds
+        List<String> requiredShipsetIds,
+        List<String> excludedShipsetIds
 ) {}

@@ -13,6 +13,7 @@ public record Civic(
         SecondarySpeciesConfig secondarySpecies,
         List<String> enforcedTraitIds,
         List<String> requiredShipsetIds,
+        List<String> excludedShipsetIds,
         /** Canonical DLC name required to use this civic, or null if base-game. */
         String dlcRequirement
 ) {}
