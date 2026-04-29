@@ -6,6 +6,7 @@ import { FolderOpen, Loader2, CheckCircle, XCircle } from "lucide-react";
 
 interface SettingsPageProps {
   onSaved: () => void;
+  onClose?: () => void;
   errorMessage?: string | null;
 }
 
@@ -19,7 +20,7 @@ function groupByCategory(dlcs: DlcInfo[]): [string, DlcInfo[]][] {
   return Array.from(map.entries());
 }
 
-export function SettingsPage({ onSaved, errorMessage }: SettingsPageProps) {
+export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPageProps) {
   const [gamePath, setGamePath] = useState("");
   const [saving, setSaving] = useState(false);
   const [validation, setValidation] = useState<{
@@ -184,14 +185,26 @@ export function SettingsPage({ onSaved, errorMessage }: SettingsPageProps) {
             </div>
           )}
 
-          <Button
-            onClick={handleSave}
-            disabled={saving || !gamePath.trim()}
-            className="w-full"
-          >
-            {saving && <Loader2 className="size-4 animate-spin" />}
-            {saving ? "Saving & Reloading..." : "Save & Reload"}
-          </Button>
+          <div className={onClose ? "flex gap-3" : ""}>
+            {onClose && (
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            )}
+            <Button
+              onClick={handleSave}
+              disabled={saving || !gamePath.trim()}
+              className={onClose ? "flex-1" : "w-full"}
+            >
+              {saving && <Loader2 className="size-4 animate-spin" />}
+              {saving ? "Saving & Reloading..." : "Save & Reload"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

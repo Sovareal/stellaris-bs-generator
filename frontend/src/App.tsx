@@ -39,6 +39,7 @@ function App() {
         {settingsOpen && (
           <SettingsPage
             onSaved={handleSettingsSaved}
+            onClose={!backend.needsSetup ? () => setShowSettings(false) : undefined}
             errorMessage={backend.needsSetup ? backend.error : null}
           />
         )}
