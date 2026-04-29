@@ -13,6 +13,11 @@
   --color-stellaris-muted: #7a8ba8;
 
   --animate-empire-enter: empire-enter 0.35s ease-out;
+  --animate-telemetry-pulse: telemetryPulse 2s ease-in-out infinite;
+  --animate-telemetry-attn: telemetryAttn 1.8s ease-in-out infinite;
+
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme inline {
@@ -74,6 +79,26 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes telemetryPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes telemetryAttn {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(79, 195, 247, 0.5),
+      0 0 14px rgba(79, 195, 247, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.25) inset;
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(79, 195, 247, 0.7),
+      0 0 26px rgba(79, 195, 247, 0.85),
+      0 1px 0 rgba(255, 255, 255, 0.25) inset;
   }
 }
 
