@@ -741,6 +741,20 @@ public class RerollService {
             combined.remove(t);
         }
 
+        // Trim over-count randoms: new enforced traits may consume pick slots that old randoms relied on
+        int maxTraits = empire.speciesArchetype().maxTraits();
+        if (combined.size() > maxTraits) {
+            var removable = new ArrayList<SpeciesTrait>();
+            for (var t : combined) {
+                if (!newEnforcedIds.contains(t.id())) removable.add(t);
+            }
+            Collections.shuffle(removable, random);
+            for (var t : removable) {
+                if (combined.size() <= maxTraits) break;
+                combined.remove(t);
+            }
+        }
+
         return List.copyOf(combined);
     }
 
@@ -796,95 +810,6 @@ public class RerollService {
         session.setEmpire(updated);
         log.info("Removed species trait: {}", toRemove.id());
         return updated;
-    }
-
-    private GeneratedEmpire rerollTraits(GeneratedEmpire empire) {
-        var archetype = empire.speciesArchetype();
-        var state = EmpireState.empty()
-                .withEthics(toEthicIds(empire.ethics()))
-                .withAuthority(empire.authority().id())
-                .withCivics(toCivicIds(empire.civics()))
-                .withOrigin(empire.origin().id())
-                .withSpeciesArchetype(archetype.id())
-                .withSpeciesClass(empire.speciesClass());
-        var available = filterService.getCompatibleTraits(archetype.id(), state);
-        int budget = archetype.traitPoints();
-
-        // Separate origin-free from civic-counted enforced traits
-        var originEnforcedIds = new HashSet<>(empire.origin().enforcedTraitIds());
-        var civicEnforcedIds = new HashSet<String>();
-        for (var civic : empire.civics()) {
-            civicEnforcedIds.addAll(civic.enforcedTraitIds());
-        }
-        var allEnforcedIds = new HashSet<String>();
-        allEnforcedIds.addAll(originEnforcedIds);
-        allEnforcedIds.addAll(civicEnforcedIds);
-
-        List<SpeciesTrait> enforced = empire.speciesTraits().stream()
-                .filter(t -> allEnforcedIds.contains(t.id()))
-                .toList();
-
-        // Only civic-enforced traits reduce available random slots
-        int maxRandomPicks = archetype.maxTraits() - civicEnforcedIds.size();
-        // Only civic-enforced costs count against budget
-        int civicEnforcedCostSum = enforced.stream()
-                .filter(t -> civicEnforcedIds.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost).sum();
-
-        Set<String> pickedIds = new HashSet<>(allEnforcedIds);
-        Set<String> excludedByOpposites = new HashSet<>();
-        for (var t : enforced) {
-            excludedByOpposites.addAll(t.opposites());
-        }
-        int pointsSpent = civicEnforcedCostSum;
-        int randomPicksCount = 0;
-
-        List<SpeciesTrait> randomPicked = new ArrayList<>();
-        var shuffled = new ArrayList<>(available);
-        Collections.shuffle(shuffled, random);
-
-        for (var trait : shuffled) {
-            if (randomPicksCount >= maxRandomPicks) break;
-            if (pickedIds.contains(trait.id())) continue;
-            if (excludedByOpposites.contains(trait.id())) continue;
-
-            int newTotal = pointsSpent + trait.cost();
-            if (newTotal > budget) continue;
-            if (newTotal < 0) continue;
-
-            randomPicked.add(trait);
-            pickedIds.add(trait.id());
-            pointsSpent = newTotal;
-            randomPicksCount++;
-            excludedByOpposites.addAll(trait.opposites());
-        }
-
-        // Enforced first, then random
-        var combined = new ArrayList<>(enforced);
-        combined.addAll(randomPicked);
-        // traitPointsUsed = all enforced (origin + civic) + random
-        int finalPointsSpent = pointsSpent;
-        var newTraitList = List.copyOf(combined);
-
-        // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
-        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);
-        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
-        PlanetClass newHomeworld = empire.homeworld();
-        PlanetClass newHabPref = empire.habitabilityPreference();
-        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
-            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraitList, empire.speciesClass());
-            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
-        }
-        final var finalHomeworld = newHomeworld;
-        final var finalHabPref = newHabPref;
-
-        return copyWith(empire, b -> {
-            b.speciesTraits = newTraitList;
-            b.traitPointsUsed = finalPointsSpent;
-            b.traitPointsBudget = budget;
-            b.homeworld = finalHomeworld;
-            b.habitabilityPreference = finalHabPref;
-        });
     }
 
     /** Cold planet types that Infernal species cannot inhabit. */
