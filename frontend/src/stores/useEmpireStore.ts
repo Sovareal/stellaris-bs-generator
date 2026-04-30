@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { api, ApiError } from "@/lib/api";
-import type { EmpireResponse, ExportRequest, RerollCategory } from "@/types/empire";
+import type { EmpireResponse, ExportRequest, RerollCategory, SuggestedNames } from "@/types/empire";
 
 interface EmpireStore {
   empire: EmpireResponse | null;
@@ -16,6 +16,8 @@ interface EmpireStore {
   leaderTraitsFinalized: boolean;
   isSaving: boolean;
   saveSuccess: string | null; // file path on success, null otherwise
+  suggestedNames: SuggestedNames | null;
+  isSuggestingNames: boolean;
   error: string | null;
   generationId: number;
   generate: () => Promise<void>;
@@ -29,6 +31,7 @@ interface EmpireStore {
   finalizeSecondaryTraits: () => void;
   finalizeLeaderTraits: () => void;
   saveToGame: (req: ExportRequest) => Promise<void>;
+  suggestNames: () => Promise<void>;
   clearError: () => void;
   clearSaveState: () => void;
 }
@@ -47,6 +50,8 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
   leaderTraitsFinalized: false,
   isSaving: false,
   saveSuccess: null,
+  suggestedNames: null,
+  isSuggestingNames: false,
   error: null,
   generationId: 0,
 
@@ -155,6 +160,17 @@ export const useEmpireStore = create<EmpireStore>((set, get) => ({
     } catch (e) {
       const message = e instanceof ApiError ? e.body.message : "Failed to save empire";
       set({ isSaving: false, error: message });
+    }
+  },
+
+  suggestNames: async () => {
+    set({ isSuggestingNames: true, error: null });
+    try {
+      const suggestedNames = await api.suggestNames();
+      set({ suggestedNames, isSuggestingNames: false });
+    } catch (e) {
+      const message = e instanceof ApiError ? e.body.message : "Failed to suggest names";
+      set({ isSuggestingNames: false, error: message });
     }
   },
 

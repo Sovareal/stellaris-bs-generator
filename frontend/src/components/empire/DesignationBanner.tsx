@@ -24,19 +24,16 @@ export function DesignationBanner({ empire }: DesignationBannerProps) {
       <div style={{ fontSize: 12, color: "#4fc3f7", letterSpacing: 1.4 }}>EMPIRE</div>
       <div
         style={{
-          fontSize: 26,
+          fontSize: 18,
           fontWeight: 600,
           color: "#e0e6ed",
-          letterSpacing: 0.5,
+          letterSpacing: 0.3,
           fontFamily: "Inter, system-ui, sans-serif",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          marginTop: 2,
         }}
       >
-        {empire.suggestedName ?? "Unknown Empire"}
+        {subtitle}
       </div>
-      <div style={{ fontSize: 13, color: "#7a8ba8", marginTop: 2 }}>{subtitle}</div>
     </div>
   );
 }

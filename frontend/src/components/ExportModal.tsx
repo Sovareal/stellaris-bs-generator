@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEmpireStore } from "@/stores/useEmpireStore";
 import type { ExportRequest } from "@/types/empire";
@@ -11,11 +11,13 @@ interface ExportModalProps {
 }
 
 export function ExportModal({ open, onClose }: ExportModalProps) {
-  const empire = useEmpireStore((s) => s.empire);
   const isSaving = useEmpireStore((s) => s.isSaving);
   const saveToGame = useEmpireStore((s) => s.saveToGame);
   const saveSuccess = useEmpireStore((s) => s.saveSuccess);
   const clearSaveState = useEmpireStore((s) => s.clearSaveState);
+  const suggestedNames = useEmpireStore((s) => s.suggestedNames);
+  const isSuggestingNames = useEmpireStore((s) => s.isSuggestingNames);
+  const suggestNames = useEmpireStore((s) => s.suggestNames);
 
   const [empireName, setEmpireName] = useState("");
   const [speciesName, setSpeciesName] = useState("");
@@ -32,19 +34,32 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     }
   }, [saveSuccess, open, onClose]);
 
-  // Reset form when modal opens and clear any stale save success state
+  // Reset form and trigger name suggestions when modal opens
   useEffect(() => {
     if (open) {
       clearSaveState();
-      setEmpireName(empire?.suggestedName ?? "");
+      setEmpireName("");
       setSpeciesName("");
       setSpeciesPlural("");
       setSpeciesAdjective("");
       setRulerName("");
       setHomeworldName("");
       setHomeSystemName("");
+      suggestNames();
     }
-  }, [open, clearSaveState]);
+  }, [open, clearSaveState, suggestNames]);
+
+  // Auto-fill fields whenever suggestions arrive (on open or "Suggest again")
+  useEffect(() => {
+    if (!suggestedNames || !open) return;
+    setEmpireName(suggestedNames.empireName);
+    setSpeciesName(suggestedNames.speciesName);
+    setSpeciesPlural(suggestedNames.speciesPlural);
+    setSpeciesAdjective(suggestedNames.speciesAdjective);
+    setRulerName(suggestedNames.rulerName);
+    setHomeworldName(suggestedNames.homeworldName);
+    setHomeSystemName(suggestedNames.systemName);
+  }, [suggestedNames]);
 
   if (!open) return null;
 
@@ -88,16 +103,30 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">Save Empire to Game</h2>
-          {!isSaving && (
+          <div className="flex items-center gap-1">
             <Button
+              type="button"
               variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              size="sm"
+              onClick={suggestNames}
+              disabled={isSuggestingNames || isSaving}
+              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              title="Suggest new names"
             >
-              <X className="h-4 w-4" />
+              <RefreshCw className={`h-3.5 w-3.5 ${isSuggestingNames ? "animate-spin" : ""}`} />
+              Suggest again
             </Button>
-          )}
+            {!isSaving && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Form */}

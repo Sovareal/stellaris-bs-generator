@@ -1,4 +1,4 @@
-import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, VersionResponse } from "@/types/empire";
+import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, SuggestedNames, VersionResponse } from "@/types/empire";
 
 const BASE_URL = "http://localhost:8080";
 
@@ -90,4 +90,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify(req),
     }),
+
+  suggestNames: () =>
+    request<SuggestedNames>("/api/empire/suggest-names", { method: "POST" }),
 };

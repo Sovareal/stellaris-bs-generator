@@ -38,3 +38,14 @@ springBoot {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register<JavaExec>("extractNamePool") {
+    group = "stellaris"
+    description = "One-off: extract name_lists from game files and merge into name_pool.json"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.stellaris.bsgenerator.namepool.extractor.NamePoolExtractorRunner")
+    args = listOf(
+        "--game-dir=F:/Games/SteamLibrary/steamapps/common/Stellaris",
+        "--output=${projectDir}/src/main/resources/data/name_pool.json"
+    )
+}

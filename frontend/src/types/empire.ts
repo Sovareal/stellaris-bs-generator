@@ -104,7 +104,16 @@ export interface EmpireResponse {
   leader: LeaderDto;
   secondarySpecies: SecondarySpeciesDto | null;
   rerollsAvailable: Record<string, boolean>;
-  suggestedName?: string;
+}
+
+export interface SuggestedNames {
+  empireName: string;
+  rulerName: string;
+  homeworldName: string;
+  systemName: string;
+  speciesName: string;
+  speciesPlural: string;
+  speciesAdjective: string;
 }
 
 export interface VersionResponse {
