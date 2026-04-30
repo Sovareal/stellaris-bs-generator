@@ -19,8 +19,8 @@ export function RowReroll({ available, onClick, loading = false, title }: RowRer
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 18,
-        height: 18,
+        width: 22,
+        height: 22,
         padding: 0,
         color: active ? "#4fc3f7" : "#3a4866",
         background: active ? "rgba(79,195,247,0.10)" : "transparent",
@@ -33,9 +33,9 @@ export function RowReroll({ available, onClick, loading = false, title }: RowRer
       }}
     >
       {loading ? (
-        <Loader2 size={9} style={{ animation: "spin 1s linear infinite" }} />
+        <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
       ) : (
-        <Dices size={9} />
+        <Dices size={11} />
       )}
     </button>
   );

@@ -27,7 +27,7 @@ export function Panel({ title, code, children, headerTag, headerReroll }: PanelP
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "5px 10px",
+          padding: "7px 12px",
           background: "#131b2e",
           borderBottom: "1px solid #1a2238",
           flexShrink: 0,
@@ -37,7 +37,7 @@ export function Panel({ title, code, children, headerTag, headerReroll }: PanelP
           <span
             style={{
               fontFamily: "JetBrains Mono, monospace",
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: 700,
               color: "#4fc3f7",
               letterSpacing: 1.2,
@@ -48,7 +48,7 @@ export function Panel({ title, code, children, headerTag, headerReroll }: PanelP
           <span
             style={{
               fontFamily: "JetBrains Mono, monospace",
-              fontSize: 10.5,
+              fontSize: 14,
               fontWeight: 600,
               color: "#9aabc7",
               letterSpacing: 1.2,
@@ -63,7 +63,7 @@ export function Panel({ title, code, children, headerTag, headerReroll }: PanelP
       </div>
 
       {/* Body */}
-      <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
         {children}
       </div>
     </div>

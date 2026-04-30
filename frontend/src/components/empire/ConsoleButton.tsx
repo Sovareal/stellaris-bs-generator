@@ -42,7 +42,7 @@ export function ConsoleButton({
   loading = false,
   disabled = false,
 }: ConsoleButtonProps) {
-  const isDisabled = disabled || loading;
+  const isDisabled  = disabled || loading;
   const shouldPulse = pulse && !isDisabled && variant === "primary";
 
   return (
@@ -56,9 +56,9 @@ export function ConsoleButton({
         alignItems: "center",
         justifyContent: "center",
         gap: 6,
-        padding: "7px 12px",
+        padding: "8px 14px",
         fontFamily: "JetBrains Mono, monospace",
-        fontSize: 11,
+        fontSize: 14,
         fontWeight: 700,
         letterSpacing: 1.2,
         borderRadius: 3,
@@ -69,7 +69,7 @@ export function ConsoleButton({
         ...STYLES[variant],
       }}
     >
-      {loading ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : icon}
+      {loading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : icon}
       {children}
     </button>
   );

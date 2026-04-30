@@ -26,9 +26,9 @@ export function InlineReroll({
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
-        padding: "2px 7px",
+        padding: "3px 9px",
         fontFamily: "JetBrains Mono, monospace",
-        fontSize: 9.5,
+        fontSize: 12,
         fontWeight: 700,
         letterSpacing: 1,
         color: active ? "#4fc3f7" : "#3a4866",
@@ -41,9 +41,9 @@ export function InlineReroll({
       }}
     >
       {loading ? (
-        <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} />
+        <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
       ) : (
-        <Dices size={10} />
+        <Dices size={13} />
       )}
       {label}
     </button>
