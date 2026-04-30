@@ -1,27 +1,62 @@
 import { useEmpireStore } from "@/stores/useEmpireStore";
-import { GenerateButton } from "@/components/GenerateButton";
 import { StatusToast } from "@/components/StatusToast";
-import { EmpireCard } from "@/components/EmpireCard";
-import { SaveToGameButton } from "@/components/SaveToGameButton";
+import { StatusBar } from "@/components/empire/StatusBar";
+import { DesignationBanner } from "@/components/empire/DesignationBanner";
+import { EmpireConsole } from "@/components/empire/EmpireConsole";
 
-export function EmpireView() {
-  const empire = useEmpireStore((s) => s.empire);
+interface EmpireViewProps {
+  gameVersion: string | null;
+}
+
+export function EmpireView({ gameVersion }: EmpireViewProps) {
+  const empire       = useEmpireStore((s) => s.empire);
   const generationId = useEmpireStore((s) => s.generationId);
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
+    <main
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        overflow: "hidden",
+      }}
+    >
       <StatusToast />
+      <StatusBar empire={empire} gameVersion={gameVersion} generationId={generationId} />
+
       {empire ? (
-        <EmpireCard key={generationId} empire={empire} />
+        <div
+          key={generationId}
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            padding: "14px 16px",
+            gap: 12,
+            minHeight: 0,
+            overflow: "hidden",
+          }}
+        >
+          <DesignationBanner empire={empire} />
+          <EmpireConsole empire={empire} />
+        </div>
       ) : (
-        <p className="text-muted-foreground text-lg">
-          Generate a random valid Stellaris empire
-        </p>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#5d6e8a",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: 12,
+            letterSpacing: 0.8,
+          }}
+        >
+          PRESS GENERATE TO BEGIN
+        </div>
       )}
-      <div className="flex gap-4">
-        <GenerateButton />
-        <SaveToGameButton />
-      </div>
     </main>
   );
 }

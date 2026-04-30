@@ -43,7 +43,7 @@ function App() {
             errorMessage={backend.needsSetup ? backend.error : null}
           />
         )}
-        {backend.ready && !settingsOpen && <EmpireView />}
+        {backend.ready && !settingsOpen && <EmpireView gameVersion={backend.gameVersion} />}
 
         <Footer
           connected={backend.ready}
