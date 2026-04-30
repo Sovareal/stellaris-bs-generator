@@ -451,7 +451,7 @@ public class RerollService {
         allEnforcedIds.addAll(civicEnforcedIds);
 
         long nonFreeEnforcedCount = empire.speciesTraits().stream()
-                .filter(t -> civicEnforcedIds.contains(t.id()) && t.cost() != 0)
+                .filter(t -> allEnforcedIds.contains(t.id()) && t.cost() != 0)
                 .count();
         long randomCount = empire.speciesTraits().stream()
                 .filter(t -> !allEnforcedIds.contains(t.id()))
@@ -826,12 +826,9 @@ public class RerollService {
 
         // Only civic-enforced traits reduce available random slots
         int maxRandomPicks = archetype.maxTraits() - civicEnforcedIds.size();
-        // All enforced costs (origin + civic) count against budget
+        // Only civic-enforced costs count against budget
         int civicEnforcedCostSum = enforced.stream()
                 .filter(t -> civicEnforcedIds.contains(t.id()))
-                .mapToInt(SpeciesTrait::cost).sum();
-        int originEnforcedCostSum = enforced.stream()
-                .filter(t -> originEnforcedIds.contains(t.id()))
                 .mapToInt(SpeciesTrait::cost).sum();
 
         Set<String> pickedIds = new HashSet<>(allEnforcedIds);
@@ -839,7 +836,7 @@ public class RerollService {
         for (var t : enforced) {
             excludedByOpposites.addAll(t.opposites());
         }
-        int pointsSpent = originEnforcedCostSum + civicEnforcedCostSum;
+        int pointsSpent = civicEnforcedCostSum;
         int randomPicksCount = 0;
 
         List<SpeciesTrait> randomPicked = new ArrayList<>();
