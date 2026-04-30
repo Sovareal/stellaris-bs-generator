@@ -38,7 +38,7 @@ export function CivicsPanel({ empire }: CivicsPanelProps) {
             k={SLOT_LABELS[i] ?? `SLOT.${i + 1}`}
             v={
               <>
-                <EntityIcon category="civics" id={civic.id} size={16} />
+                <EntityIcon category="civics" id={civic.id} size={32} />
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {displayName(civic)}
                 </span>

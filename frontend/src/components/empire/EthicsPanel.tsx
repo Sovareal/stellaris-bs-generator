@@ -42,7 +42,7 @@ export function EthicsPanel({ empire }: EthicsPanelProps) {
           k={ethic.isFanatic ? "FANATIC" : "STANDARD"}
           v={
             <>
-              <EntityIcon category="ethics" id={ethic.id} size={16} />
+              <EntityIcon category="ethics" id={ethic.id} size={32} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {displayName(ethic)}
               </span>

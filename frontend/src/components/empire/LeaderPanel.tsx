@@ -15,28 +15,28 @@ interface LeaderPanelProps {
 }
 
 export function LeaderPanel({ empire }: LeaderPanelProps) {
-  const reroll              = useEmpireStore((s) => s.reroll);
-  const addLeaderTrait      = useEmpireStore((s) => s.addLeaderTrait);
+  const reroll               = useEmpireStore((s) => s.reroll);
+  const addLeaderTrait       = useEmpireStore((s) => s.addLeaderTrait);
   const finalizeLeaderTraits = useEmpireStore((s) => s.finalizeLeaderTraits);
-  const isRerolling         = useEmpireStore((s) => s.isRerolling);
-  const isLoading           = useEmpireStore((s) => s.isLoading);
-  const isAddingTrait       = useEmpireStore((s) => s.isAddingTrait);
-  const isAddingLeaderTrait = useEmpireStore((s) => s.isAddingLeaderTrait);
+  const isRerolling          = useEmpireStore((s) => s.isRerolling);
+  const isLoading            = useEmpireStore((s) => s.isLoading);
+  const isAddingTrait        = useEmpireStore((s) => s.isAddingTrait);
+  const isAddingLeaderTrait  = useEmpireStore((s) => s.isAddingLeaderTrait);
   const leaderTraitsFinalized = useEmpireStore((s) => s.leaderTraitsFinalized);
 
   const { leader, origin } = empire;
   const isLuminary = origin.id === "origin_legendary_leader";
 
-  const budgetUsed      = leader.traits.reduce((sum, t) => sum + t.cost, 0);
-  const picksRemaining  = leader.leaderPicksMax - leader.traits.length;
-  const ptsRemaining    = leader.leaderBudget - budgetUsed;
+  const budgetUsed     = leader.traits.reduce((sum, t) => sum + t.cost, 0);
+  const picksRemaining = leader.leaderPicksMax - leader.traits.length;
+  const ptsRemaining   = leader.leaderBudget - budgetUsed;
 
-  const anyBusy      = isRerolling !== null || isLoading || isAddingTrait || isAddingLeaderTrait;
-  const canAddTrait  = isLuminary && picksRemaining > 0 && !anyBusy && !leaderTraitsFinalized;
-  const canFinalize  = isLuminary && !leaderTraitsFinalized && ptsRemaining >= 0 && picksRemaining >= 0 && !anyBusy;
-  const rollPulse    = canAddTrait && leader.traits.length === 0;
+  const anyBusy     = isRerolling !== null || isLoading || isAddingTrait || isAddingLeaderTrait;
+  const canAddTrait = isLuminary && picksRemaining > 0 && !anyBusy && !leaderTraitsFinalized;
+  const canFinalize = isLuminary && !leaderTraitsFinalized && ptsRemaining >= 0 && picksRemaining >= 0 && !anyBusy;
+  const rollPulse   = canAddTrait && leader.traits.length === 0;
 
-  const r = empire.rerollsAvailable;
+  const r        = empire.rerollsAvailable;
   const tagColor = leader.traits.length <= leader.leaderPicksMax ? "#22c55e" : "#ef4444";
 
   return (
@@ -53,11 +53,44 @@ export function LeaderPanel({ empire }: LeaderPanelProps) {
         />
       }
     >
-      <MonoRow k="CLASS" v={humanizeId(leader.leaderClass)} id="" last={!isLuminary || leader.traits.length === 0} />
+      <MonoRow
+        k="CLASS"
+        v={humanizeId(leader.leaderClass)}
+        id=""
+        last={leader.traits.length === 0}
+      />
 
+      {/* Non-Luminary: show traits as colored badge chips */}
+      {!isLuminary && leader.traits.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+          {leader.traits.map((trait) => (
+            <span
+              key={trait.id}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "3px 8px",
+                background: `${traitCostColor(trait.cost)}18`,
+                border: `1px solid ${traitCostColor(trait.cost)}45`,
+                borderRadius: 3,
+                fontFamily: "Inter, system-ui, sans-serif",
+                fontSize: 12,
+                fontWeight: 500,
+                color: traitCostColor(trait.cost),
+                whiteSpace: "nowrap",
+              }}
+            >
+              <EntityIcon category="leadertraits" id={trait.id} size={26} />
+              {displayName(trait)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Luminary: interactive trait rolling section */}
       {isLuminary && (
         <>
-          {/* Traits separator */}
           <div
             style={{
               borderTop: "1px dashed #1c2740",
@@ -68,7 +101,7 @@ export function LeaderPanel({ empire }: LeaderPanelProps) {
             <span
               style={{
                 fontFamily: "JetBrains Mono, monospace",
-                fontSize: 9,
+                fontSize: 12,
                 fontWeight: 600,
                 color: "#5d6e8a",
                 letterSpacing: 0.8,
@@ -79,24 +112,23 @@ export function LeaderPanel({ empire }: LeaderPanelProps) {
             </span>
           </div>
 
-          {/* Trait list */}
           <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4, flex: 1, overflowY: "auto", minHeight: 0 }}>
             {leader.traits.map((trait) => (
               <div
                 key={trait.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "20px 1fr auto",
+                  gridTemplateColumns: "24px 1fr auto",
                   alignItems: "center",
                   gap: 5,
                   padding: "2px 0",
                 }}
               >
-                <EntityIcon category="leadertraits" id={trait.id} size={18} />
+                <EntityIcon category="leadertraits" id={trait.id} size={32} />
                 <span
                   style={{
                     fontFamily: "Inter, system-ui, sans-serif",
-                    fontSize: 11,
+                    fontSize: 14,
                     fontWeight: 500,
                     color: "#e0e6ed",
                     overflow: "hidden",
@@ -109,7 +141,7 @@ export function LeaderPanel({ empire }: LeaderPanelProps) {
                 <span
                   style={{
                     fontFamily: "JetBrains Mono, monospace",
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 600,
                     color: traitCostColor(trait.cost),
                     whiteSpace: "nowrap",
@@ -121,10 +153,8 @@ export function LeaderPanel({ empire }: LeaderPanelProps) {
             ))}
           </div>
 
-          {/* Budget bar */}
           <HBar used={budgetUsed} max={leader.leaderBudget} label="Leader Budget" />
 
-          {/* Action row */}
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             {!leaderTraitsFinalized ? (
               <>
@@ -151,14 +181,14 @@ export function LeaderPanel({ empire }: LeaderPanelProps) {
               <span
                 style={{
                   fontFamily: "JetBrains Mono, monospace",
-                  fontSize: 10,
+                  fontSize: 13,
                   color: "#22c55e",
                   display: "flex",
                   alignItems: "center",
                   gap: 5,
                 }}
               >
-                <CheckCircle size={11} />
+                <CheckCircle size={14} />
                 Traits finalized
               </span>
             )}
