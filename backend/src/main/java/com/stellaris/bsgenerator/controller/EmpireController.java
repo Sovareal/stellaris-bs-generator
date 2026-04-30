@@ -4,7 +4,9 @@ import com.stellaris.bsgenerator.dto.EmpireResponse;
 import com.stellaris.bsgenerator.dto.ExportRequest;
 import com.stellaris.bsgenerator.dto.ExportResponse;
 import com.stellaris.bsgenerator.dto.RerollRequest;
+import com.stellaris.bsgenerator.dto.SuggestedNames;
 import com.stellaris.bsgenerator.engine.*;
+import com.stellaris.bsgenerator.namepool.NameGeneratorService;
 import com.stellaris.bsgenerator.parser.LocalizationService;
 import com.stellaris.bsgenerator.service.EmpireExporterService;
 import com.stellaris.bsgenerator.service.ExportOptions;
@@ -26,6 +28,7 @@ public class EmpireController {
     private final LocalizationService localizationService;
     private final EmpireExporterService exporterService;
     private final UserEmpireFileService userEmpireFileService;
+    private final NameGeneratorService nameGeneratorService;
 
     // In-memory session (single user desktop app)
     private GenerationSession session;
@@ -120,5 +123,13 @@ public class EmpireController {
         Path file = userEmpireFileService.appendEmpire(block);
 
         return ResponseEntity.ok(new ExportResponse(true, file.toString(), req.empireName()));
+    }
+
+    @PostMapping("/suggest-names")
+    public SuggestedNames suggestNames() {
+        if (session == null) {
+            throw new IllegalStateException("No active session -- generate an empire first");
+        }
+        return nameGeneratorService.suggest(session.getEmpire());
     }
 }

@@ -3,7 +3,6 @@ package com.stellaris.bsgenerator.dto;
 import com.stellaris.bsgenerator.engine.GeneratedEmpire;
 import com.stellaris.bsgenerator.engine.GenerationSession;
 import com.stellaris.bsgenerator.parser.LocalizationService;
-import com.stellaris.bsgenerator.service.NameSuggestionService;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,8 +25,7 @@ public record EmpireResponse(
         String shipsetName,
         LeaderDto leader,
         SecondarySpeciesDto secondarySpecies,
-        Map<String, Boolean> rerollsAvailable,
-        String suggestedName
+        Map<String, Boolean> rerollsAvailable
 ) {
     public static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc) {
         var originEnforcedIds = new java.util.HashSet<>(empire.origin().enforcedTraitIds());
@@ -60,8 +58,7 @@ public record EmpireResponse(
                 loc.getDisplayName(empire.shipset().id()),
                 LeaderDto.from(empire.leaderClass(), empire.leaderTraits(), loc, empire.origin().id()),
                 SecondarySpeciesDto.from(empire.secondarySpecies(), loc),
-                buildRerollMap(empire, session),
-                NameSuggestionService.suggest(empire.ethics(), empire.authority(), empire.speciesArchetype())
+                buildRerollMap(empire, session)
         );
     }
 
