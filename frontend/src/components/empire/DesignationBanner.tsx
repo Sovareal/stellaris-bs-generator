@@ -21,10 +21,10 @@ export function DesignationBanner({ empire }: DesignationBannerProps) {
         flexShrink: 0,
       }}
     >
-      <div style={{ fontSize: 9, color: "#4fc3f7", letterSpacing: 1.4 }}>DESIGNATION</div>
+      <div style={{ fontSize: 12, color: "#4fc3f7", letterSpacing: 1.4 }}>EMPIRE</div>
       <div
         style={{
-          fontSize: 22,
+          fontSize: 26,
           fontWeight: 600,
           color: "#e0e6ed",
           letterSpacing: 0.5,
@@ -36,7 +36,7 @@ export function DesignationBanner({ empire }: DesignationBannerProps) {
       >
         {empire.suggestedName ?? "Unknown Empire"}
       </div>
-      <div style={{ fontSize: 10, color: "#7a8ba8", marginTop: 2 }}>{subtitle}</div>
+      <div style={{ fontSize: 13, color: "#7a8ba8", marginTop: 2 }}>{subtitle}</div>
     </div>
   );
 }

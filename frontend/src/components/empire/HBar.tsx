@@ -10,10 +10,10 @@ interface HBarProps {
 }
 
 export function HBar({ used, max, label, accent = "#4fc3f7" }: HBarProps) {
-  const remaining = max - used;
+  const remaining  = max - used;
   const overBudget = used > max;
 
-  const filled = max > 0 ? Math.min(Math.round((used / max) * SEGMENTS), SEGMENTS) : 0;
+  const filled   = max > 0 ? Math.min(Math.round((used / max) * SEGMENTS), SEGMENTS) : 0;
   const segColor = overBudget ? "#ef4444" : accent;
   const remColor = remaining >= 0 ? "#22c55e" : "#ef4444";
 
@@ -31,7 +31,7 @@ export function HBar({ used, max, label, accent = "#4fc3f7" }: HBarProps) {
         <span
           style={{
             fontFamily: "JetBrains Mono, monospace",
-            fontSize: 9,
+            fontSize: 12,
             fontWeight: 600,
             color: "#7a8ba8",
             letterSpacing: 0.8,
@@ -43,7 +43,7 @@ export function HBar({ used, max, label, accent = "#4fc3f7" }: HBarProps) {
         <span
           style={{
             fontFamily: "JetBrains Mono, monospace",
-            fontSize: 9.5,
+            fontSize: 12,
             fontWeight: 600,
             color: remColor,
             letterSpacing: 0.4,
@@ -63,7 +63,7 @@ export function HBar({ used, max, label, accent = "#4fc3f7" }: HBarProps) {
             key={i}
             style={{
               flex: 1,
-              height: 6,
+              height: 8,
               borderRadius: 1,
               background: i < filled ? segColor : "#1a2238",
               transition: "background 0.15s",

@@ -11,9 +11,9 @@ export function Tag({ children, color = "#4fc3f7" }: TagProps) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        padding: "1px 5px",
+        padding: "2px 7px",
         fontFamily: "JetBrains Mono, monospace",
-        fontSize: 9.5,
+        fontSize: 12,
         fontWeight: 600,
         letterSpacing: 0.4,
         color,

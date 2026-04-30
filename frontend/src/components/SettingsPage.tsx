@@ -20,16 +20,19 @@ function groupByCategory(dlcs: DlcInfo[]): [string, DlcInfo[]][] {
   return Array.from(map.entries());
 }
 
+function dlcsKey(set: Set<string>): string {
+  return [...set].sort().join(",");
+}
+
 export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPageProps) {
-  const [gamePath, setGamePath] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [validation, setValidation] = useState<{
-    valid: boolean;
-    message: string;
-  } | null>(null);
+  const [gamePath, setGamePath]           = useState("");
+  const [saving, setSaving]               = useState(false);
+  const [validation, setValidation]       = useState<{ valid: boolean; message: string } | null>(null);
   const [availableDlcs, setAvailableDlcs] = useState<DlcInfo[]>([]);
-  // Set of DLC names the user has DISABLED (unchecked). Empty = all enabled.
-  const [disabledDlcs, setDisabledDlcs] = useState<Set<string>>(new Set());
+  const [disabledDlcs, setDisabledDlcs]   = useState<Set<string>>(new Set());
+
+  const [originalGamePath, setOriginalGamePath] = useState("");
+  const [originalDlcsKey, setOriginalDlcsKey]   = useState("");
 
   useEffect(() => {
     api
@@ -37,12 +40,12 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
       .then((settings) => {
         setGamePath(settings.gamePath);
         setAvailableDlcs(settings.availableDlcs ?? []);
-        setDisabledDlcs(new Set(settings.disabledDlcs ?? []));
+        const loadedDlcs = new Set<string>(settings.disabledDlcs ?? []);
+        setDisabledDlcs(loadedDlcs);
+        setOriginalGamePath(settings.gamePath);
+        setOriginalDlcsKey(dlcsKey(loadedDlcs));
         if (settings.validationMessage) {
-          setValidation({
-            valid: settings.valid,
-            message: settings.validationMessage,
-          });
+          setValidation({ valid: settings.valid, message: settings.validationMessage });
         }
       })
       .catch(() => {
@@ -54,9 +57,9 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
     setDisabledDlcs((prev) => {
       const next = new Set(prev);
       if (enabled) {
-        next.delete(name);   // user checked it = not disabled
+        next.delete(name);
       } else {
-        next.add(name);      // user unchecked = disabled
+        next.add(name);
       }
       return next;
     });
@@ -81,6 +84,7 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
     }
   }
 
+  const hasChanges = gamePath !== originalGamePath || dlcsKey(disabledDlcs) !== originalDlcsKey;
   const categories = groupByCategory(availableDlcs);
 
   return (
@@ -193,7 +197,7 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
                 disabled={saving}
                 className="flex-1"
               >
-                Close
+                {hasChanges ? "Cancel" : "Close"}
               </Button>
             )}
             <Button
