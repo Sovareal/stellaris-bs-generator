@@ -37,7 +37,7 @@ export function AuthorityPanel({ empire }: AuthorityPanelProps) {
         k="TYPE"
         v={
           <>
-            <EntityIcon category="authorities" id={empire.authority.id} size={16} />
+            <EntityIcon category="authorities" id={empire.authority.id} size={32} />
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {displayName(empire.authority)}
             </span>

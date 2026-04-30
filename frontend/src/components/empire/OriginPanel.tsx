@@ -40,7 +40,7 @@ export function OriginPanel({ empire }: OriginPanelProps) {
         k="ORIGIN"
         v={
           <>
-            <EntityIcon category="origins" id={empire.origin.id} size={16} />
+            <EntityIcon category="origins" id={empire.origin.id} size={36} />
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {displayName(empire.origin)}
             </span>

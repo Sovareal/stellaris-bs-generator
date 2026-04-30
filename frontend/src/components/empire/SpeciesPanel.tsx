@@ -41,7 +41,7 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
   const canFinalize  = !traitsFinalized && ptsRemaining >= 0 && picksRemaining >= 0 && !anyBusy;
   const rollPulse    = canAddTrait && !traitsFinalized;
 
-  const tagColor = picksUsed <= archetype.maxTraits ? "#22c55e" : "#ef4444";
+  const tagColor   = picksUsed <= archetype.maxTraits ? "#22c55e" : "#ef4444";
   const classLabel = speciesClassName ?? humanizeId(speciesClass);
 
   return (
@@ -50,12 +50,6 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
       title="Species"
       headerTag={<Tag color={tagColor}>{picksUsed}/{archetype.maxTraits}</Tag>}
     >
-      {/* Archetype + class rows */}
-      <MonoRow
-        k="ARCHETYPE"
-        v={displayName(archetype)}
-        id={archetype.robotic ? "ROBOTIC" : "ORGANIC"}
-      />
       <MonoRow
         k="CLASS"
         v={classLabel}
@@ -63,7 +57,6 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
         last
       />
 
-      {/* Traits separator */}
       <div
         style={{
           borderTop: "1px dashed #1c2740",
@@ -77,7 +70,7 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
         <span
           style={{
             fontFamily: "JetBrains Mono, monospace",
-            fontSize: 9,
+            fontSize: 12,
             fontWeight: 600,
             color: "#5d6e8a",
             letterSpacing: 0.8,
@@ -88,27 +81,26 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
         </span>
       </div>
 
-      {/* Trait list */}
       <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4, flex: 1, overflowY: "auto", minHeight: 0 }}>
         {traits.map((trait) => {
           const isThisRerolling = isRerollingTrait === trait.id;
-          const canRerollThis = !trait.enforced && !anyBusy && !traitsFinalized;
+          const canRerollThis   = !trait.enforced && !anyBusy && !traitsFinalized;
           return (
             <div
               key={trait.id}
               style={{
                 display: "grid",
-                gridTemplateColumns: "20px 1fr auto 18px",
+                gridTemplateColumns: "24px 1fr auto 22px",
                 alignItems: "center",
                 gap: 5,
                 padding: "2px 0",
               }}
             >
-              <EntityIcon category="traits" id={trait.id} size={18} />
+              <EntityIcon category="traits" id={trait.id} size={32} />
               <span
                 style={{
                   fontFamily: "Inter, system-ui, sans-serif",
-                  fontSize: 11,
+                  fontSize: 14,
                   fontWeight: 500,
                   color: "#e0e6ed",
                   display: "flex",
@@ -121,13 +113,13 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
                   {displayName(trait)}
                 </span>
                 {trait.enforced && (
-                  <Lock size={9} style={{ color: "#7a8ba8", flexShrink: 0 }} />
+                  <Lock size={11} style={{ color: "#7a8ba8", flexShrink: 0 }} />
                 )}
               </span>
               <span
                 style={{
                   fontFamily: "JetBrains Mono, monospace",
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: 600,
                   color: traitCostColor(trait.cost),
                   whiteSpace: "nowrap",
@@ -146,10 +138,8 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
         })}
       </div>
 
-      {/* Budget bar */}
       <HBar used={traitPointsUsed} max={traitPointsBudget} label="Trait Budget" />
 
-      {/* Action row */}
       <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
         {!traitsFinalized ? (
           <>
@@ -187,14 +177,14 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
           <span
             style={{
               fontFamily: "JetBrains Mono, monospace",
-              fontSize: 10,
+              fontSize: 13,
               color: "#22c55e",
               display: "flex",
               alignItems: "center",
               gap: 5,
             }}
           >
-            <CheckCircle size={11} />
+            <CheckCircle size={14} />
             Traits finalized
           </span>
         )}
