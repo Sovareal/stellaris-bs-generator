@@ -451,7 +451,7 @@ public class RerollService {
         allEnforcedIds.addAll(civicEnforcedIds);
 
         long nonFreeEnforcedCount = empire.speciesTraits().stream()
-                .filter(t -> allEnforcedIds.contains(t.id()) && t.cost() != 0)
+                .filter(t -> civicEnforcedIds.contains(t.id()) && t.cost() != 0)
                 .count();
         long randomCount = empire.speciesTraits().stream()
                 .filter(t -> !allEnforcedIds.contains(t.id()))
@@ -730,6 +730,17 @@ public class RerollService {
 
         var combined = new ArrayList<>(newEnforcedTraits);
         combined.addAll(filteredRandoms);
+
+        // Trim over-budget randoms: new enforced traits may consume budget that old randoms relied on
+        int budget = empire.speciesArchetype().traitPoints();
+        var mutableRandoms = new ArrayList<>(filteredRandoms);
+        mutableRandoms.sort(Comparator.comparingInt(SpeciesTrait::cost).reversed());
+        for (var t : mutableRandoms) {
+            int total = combined.stream().mapToInt(SpeciesTrait::cost).sum();
+            if (total <= budget) break;
+            combined.remove(t);
+        }
+
         return List.copyOf(combined);
     }
 
@@ -815,9 +826,12 @@ public class RerollService {
 
         // Only civic-enforced traits reduce available random slots
         int maxRandomPicks = archetype.maxTraits() - civicEnforcedIds.size();
-        // Only civic-enforced costs count against budget
+        // All enforced costs (origin + civic) count against budget
         int civicEnforcedCostSum = enforced.stream()
                 .filter(t -> civicEnforcedIds.contains(t.id()))
+                .mapToInt(SpeciesTrait::cost).sum();
+        int originEnforcedCostSum = enforced.stream()
+                .filter(t -> originEnforcedIds.contains(t.id()))
                 .mapToInt(SpeciesTrait::cost).sum();
 
         Set<String> pickedIds = new HashSet<>(allEnforcedIds);
@@ -825,7 +839,7 @@ public class RerollService {
         for (var t : enforced) {
             excludedByOpposites.addAll(t.opposites());
         }
-        int pointsSpent = civicEnforcedCostSum;
+        int pointsSpent = originEnforcedCostSum + civicEnforcedCostSum;
         int randomPicksCount = 0;
 
         List<SpeciesTrait> randomPicked = new ArrayList<>();
@@ -851,7 +865,7 @@ public class RerollService {
         // Enforced first, then random
         var combined = new ArrayList<>(enforced);
         combined.addAll(randomPicked);
-        // traitPointsUsed = civic-enforced + random (not origin-enforced)
+        // traitPointsUsed = all enforced (origin + civic) + random
         int finalPointsSpent = pointsSpent;
         var newTraitList = List.copyOf(combined);
 

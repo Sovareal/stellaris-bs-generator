@@ -37,7 +37,7 @@ export function SpeciesPanel({ empire }: SpeciesPanelProps) {
   const anyBusy      = isRerolling !== null || isLoading || isRerollingTrait !== null
                        || isAddingTrait || isAddingLeaderTrait || isRemovingTrait;
   const canAddTrait  = picksRemaining > 0 && !anyBusy && !traitsFinalized;
-  const canRemove    = picksRemaining < 0 && !anyBusy;
+  const canRemove    = (picksRemaining < 0 || ptsRemaining < 0) && !anyBusy;
   const canFinalize  = !traitsFinalized && ptsRemaining >= 0 && picksRemaining >= 0 && !anyBusy;
   const rollPulse    = canAddTrait && !traitsFinalized;
 
