@@ -21,6 +21,7 @@ export function InlineReroll({
       onClick={active ? onClick : undefined}
       disabled={!active}
       title={title ?? (available ? label : "Reroll used")}
+      aria-label={title ?? label}
       style={{
         display: "inline-flex",
         alignItems: "center",

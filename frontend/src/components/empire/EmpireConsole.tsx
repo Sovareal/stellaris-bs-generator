@@ -19,14 +19,15 @@ export function EmpireConsole({ empire }: EmpireConsoleProps) {
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr",
+        gridTemplateRows: "1fr",
         gap: 10,
         flex: 1,
         minHeight: 0,
-        overflowY: "auto",
+        overflow: "hidden",
       }}
     >
       {/* IDEOLOGY column */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0, overflowY: "auto" }}>
         <EthicsPanel empire={empire} />
         <AuthorityPanel empire={empire} />
         <CivicsPanel empire={empire} />
@@ -34,7 +35,7 @@ export function EmpireConsole({ empire }: EmpireConsoleProps) {
       </div>
 
       {/* GENOME column */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0, overflowY: "auto" }}>
         <SpeciesPanel empire={empire} />
         {empire.secondarySpecies && (
           <SecondarySpeciesPanel empire={empire} />
@@ -42,7 +43,7 @@ export function EmpireConsole({ empire }: EmpireConsoleProps) {
       </div>
 
       {/* LOGISTICS column */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0, overflowY: "auto" }}>
         <HomeworldPanel empire={empire} />
         <ShipsetPanel empire={empire} />
         <LeaderPanel empire={empire} />

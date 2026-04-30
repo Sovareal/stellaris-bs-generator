@@ -89,6 +89,7 @@ export function StatusBar({ empire, gameVersion, generationId }: StatusBarProps)
         <button
           disabled={!empire}
           onClick={() => setExportOpen(true)}
+          aria-label="Export empire"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -112,6 +113,7 @@ export function StatusBar({ empire, gameVersion, generationId }: StatusBarProps)
         <button
           disabled={isLoading}
           onClick={generate}
+          aria-label="Generate empire"
           style={{
             display: "inline-flex",
             alignItems: "center",

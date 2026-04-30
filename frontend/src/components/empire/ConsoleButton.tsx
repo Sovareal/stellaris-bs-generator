@@ -49,6 +49,7 @@ export function ConsoleButton({
     <button
       onClick={isDisabled ? undefined : onClick}
       disabled={isDisabled}
+      aria-label={typeof children === "string" ? children : undefined}
       style={{
         flex: 1,
         display: "inline-flex",
