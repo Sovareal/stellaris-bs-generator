@@ -1,9 +1,7 @@
 package com.stellaris.bsgenerator.namepool.extractor;
 
-import com.stellaris.bsgenerator.namepool.model.NamePool;
-import com.stellaris.bsgenerator.namepool.model.PoolSection;
+import com.stellaris.bsgenerator.namepool.model.ExtractedNameFile;
 import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,12 +14,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * One-off tool: reads Stellaris name_lists and localisation files,
- * merges extracted names into the existing name_pool.json custom entries,
- * and writes the result back to the output file.
+ * One-off tool: reads Stellaris name_lists and localisation files, builds
+ * name_pool_extracted.json in compact JSON format.
  *
  * Run via Gradle: ./gradlew :backend:extractNamePool
- * Or directly: java -cp ... NamePoolExtractorRunner --game-dir=F:/Games/... --output=src/main/resources/data/name_pool.json
+ * Or directly: java -cp ... NamePoolExtractorRunner --game-dir=F:/Games/... --output=src/main/resources/data/name_pool_extracted.json
  */
 public class NamePoolExtractorRunner {
 
@@ -32,20 +29,18 @@ public class NamePoolExtractorRunner {
 
     public static void main(String[] args) throws Exception {
         var params = parseArgs(args);
-        Path gameDir   = Path.of(params.getOrDefault("game-dir",
+        Path gameDir    = Path.of(params.getOrDefault("game-dir",
                 "F:/Games/SteamLibrary/steamapps/common/Stellaris"));
         Path outputPath = Path.of(params.getOrDefault("output",
-                "backend/src/main/resources/data/name_pool.json"));
+                "backend/src/main/resources/data/name_pool_extracted.json"));
 
         System.out.println("Game dir:  " + gameDir);
         System.out.println("Output:    " + outputPath);
 
-        // Load loc keys
         System.out.println("Loading localisation...");
         var loc = loadLoc(gameDir);
         System.out.println("  Loaded " + loc.size() + " loc keys");
 
-        // Extract names
         System.out.println("Extracting ruler names...");
         var rulerResult = new RulerNameExtractor().extract(gameDir.resolve("common"), loc);
         System.out.println("  " + rulerResult.rulerNames().size() + " ruler names, "
@@ -56,28 +51,20 @@ public class NamePoolExtractorRunner {
                 gameDir.resolve("common"), loc);
         System.out.println("  " + homeworldNames.size() + " homeworld names");
 
-        // Load existing pool (preserves custom arrays)
-        var mapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
-        NamePool existing;
-        if (Files.exists(outputPath)) {
-            existing = mapper.readValue(outputPath.toFile(), NamePool.class);
-            System.out.println("Loaded existing name_pool.json (custom arrays preserved)");
-        } else {
-            existing = emptyPool();
-            System.out.println("No existing name_pool.json -- creating fresh");
-        }
-
-        // Detect game version
         String stellarisVersion = detectVersion(gameDir);
 
-        // Merge
-        var merged = new NamePoolMerger().merge(
-                existing, rulerResult, homeworldNames,
-                Instant.now().toString(), stellarisVersion);
+        var extracted = new ExtractedNameFile(
+                ExtractedNameFile.CURRENT_SCHEMA_VERSION,
+                stellarisVersion,
+                Instant.now().toString(),
+                rulerResult.rulerNames(),
+                rulerResult.regnalNames(),
+                homeworldNames
+        );
 
-        // Write
+        var mapper = JsonMapper.builder().build();
         Files.createDirectories(outputPath.getParent());
-        mapper.writeValue(outputPath.toFile(), merged);
+        mapper.writeValue(outputPath.toFile(), extracted);
         System.out.println("Written to " + outputPath);
         System.out.println("Done.");
     }
@@ -125,11 +112,6 @@ public class NamePoolExtractorRunner {
             }
         } catch (IOException ignored) {}
         return "unknown";
-    }
-
-    private static NamePool emptyPool() {
-        var empty = PoolSection.empty();
-        return new NamePool(NamePool.CURRENT_SCHEMA_VERSION, "", "", empty, empty, empty, empty, empty);
     }
 
     private static Map<String, String> parseArgs(String[] args) {

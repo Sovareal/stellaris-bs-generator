@@ -46,7 +46,7 @@ public class RulerNameExtractor {
         pool.child(key).ifPresent(block ->
                 block.bareValues().forEach(locKey -> {
                     String resolved = loc.getOrDefault(locKey, null);
-                    if (resolved != null && !resolved.isBlank()) {
+                    if (resolved != null && !resolved.isBlank() && !resolved.contains("$")) {
                         target.add(resolved);
                     }
                 })
