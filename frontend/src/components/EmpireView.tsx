@@ -1,6 +1,5 @@
 import { Zap } from "lucide-react";
 import { useEmpireStore } from "@/stores/useEmpireStore";
-import { StatusToast } from "@/components/StatusToast";
 import { StatusBar } from "@/components/empire/StatusBar";
 import { DesignationBanner } from "@/components/empire/DesignationBanner";
 import { EmpireConsole } from "@/components/empire/EmpireConsole";
@@ -25,7 +24,6 @@ export function EmpireView({ gameVersion }: EmpireViewProps) {
         overflow: "hidden",
       }}
     >
-      <StatusToast />
       <StatusBar empire={empire} gameVersion={gameVersion} />
 
       {empire ? (

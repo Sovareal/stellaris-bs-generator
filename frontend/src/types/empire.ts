@@ -122,11 +122,6 @@ export interface VersionResponse {
   buildHash: string;
 }
 
-export interface ErrorResponse {
-  message: string;
-  status: number;
-}
-
 export interface DlcInfo {
   name: string;
   category: string;
