@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-01
+
+### Added
+
+#### UI Redesign -- Telemetry Console
+- Full UI redesign: three-column telemetry console layout replacing the single-card view
+- New primitive components: Panel, MonoRow, Tag, HBar (20-segment budget meter), InlineReroll, RowReroll, ConsoleButton
+- IDEOLOGY column: Ethics, Authority, Civics, Origin panels
+- GENOME column: Species, Traits, Homeworld, Shipset, Secondary Species panels
+- LOGISTICS column: Leader panel with trait display
+- Designation banner, status bar, and telemetry keyframe animations
+- Post-redesign UX fixes: font scale-up, overflow guards, aria-labels
+
+#### Name Pool
+- Name pool extraction from Stellaris game files (ruler names, regnal names, homeworld names)
+- Lazy name suggestion at export time via `POST /api/empire/suggest-names`
+- ExportModal auto-fills all name fields on open with a "Suggest again" button to re-randomize
+- Hand-authored custom name pool across all categories (empire, ruler, regnal, homeworld, system)
+
+#### Tooling
+- knip dead-code scanner for the frontend (`npm run knip` in `frontend/`)
+
+### Changed
+
+- Name pool storage: split monolithic `name_pool.json` (96KB, 4895 lines) into `custom_names.json` (hand-authored, 22KB) and `name_pool_extracted.json` (generated, 41KB) -- both compact single-line JSON
+- Notifications moved from inline layout flow to fixed bottom-right overlay (no layout jump)
+- Settings page now accessible post-setup via gear icon in the header
+- DLC content filter added to settings page
+
+### Fixed
+
+- Over-budget trait state: prevent and recover from impossible trait combinations
+- `preserveRandomTraits` pick-count trim; removed dead `rerollTraits` code
+- Incompatible civics selectively replaced on authority reroll (not full civic wipe)
+- Origin names resolved in localization; civics re-rolled on authority change
+- MINDWARDEN excluded from random species pool
+- Shipset blacklist enforced from `NOR graphical_culture` constraints
+
+### Removed
+
+- Dead code: `NameSuggestionService`, `ErrorToast` component, unused `ErrorResponse` type, unused `badge.tsx` and `card.tsx` shadcn components, unused `formatSeed` function
+
 ## [1.0.0] - 2026-02-25
 
 ### Added
@@ -87,5 +129,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Civic description/modifier tooltip feature (reverted -- incomplete)
 
-[Unreleased]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Sovareal/stellaris-bs-generator/releases/tag/v1.0.0

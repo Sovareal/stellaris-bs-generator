@@ -33,6 +33,7 @@ Each generated empire includes:
 - **Shipset** (graphical culture)
 - **Starting Leader** with class and traits
 - **Secondary Species** (for multi-species origins/civics like Necrophage, Syncretic Evolution)
+- **Suggested names** — empire name, ruler name, homeworld name, system name, and species name/plural/adjective, drawn from a curated pool at export time
 
 Reroll:
 You get one reroll per generated empire. You can spend it on an entire category (ethics, authority, civics, origin, traits, leader) or on a single species trait.
@@ -40,7 +41,8 @@ Once used, all reroll options are disabled.
 
 Save to Game:
 Once you are happy with a generated empire (or not), click **Save to Game** to export it directly into Stellaris.
-Fill in the empire name, species name, and ruler name in the dialog, then confirm - the empire is appended to your `user_empire_designs_v3.*.txt` file and will appear under Custom Empires the next time you start the game.
+The export dialog auto-fills all name fields — empire name, ruler name, homeworld name, system name, and species name — drawn from a curated name pool. Use **Suggest again** to get a different set, or edit any field manually.
+Confirm to append the empire to your `user_empire_designs_v3.*.txt` file; it will appear under Custom Empires the next time you start the game.
 After loading, you may want to adjust cosmetics such as the flag icon, flag background, and species portrait in the empire editor, as these are set to generic defaults during export.
 
 ## Tech Stack
@@ -153,8 +155,8 @@ Stellaris BS Generator/
 │       └── parser/             # Clausewitz tokenizer, AST parser, localization
 ├── frontend/                   # Vite + React 19 app (port 5173)
 │   ├── src/
-│   │   ├── components/         # UI components (EmpireCard, EntityIcon, etc)
-│   │   ├── store/              # Zustand state
+│   │   ├── components/         # UI components (telemetry console, panels, modals)
+│   │   ├── stores/             # Zustand state
 │   │   └── lib/                # API client, formatting helpers
 │   └── src-tauri/              # Tauri Rust shell + config
 │       ├── src/lib.rs          # Backend sidecar launcher
