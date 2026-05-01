@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["src/components/ui/**/*.tsx"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignoreDependencies": [
+    "@tauri-apps/api",
+    "@tauri-apps/plugin-shell",
+    "tailwindcss",
+    "shadcn",
+    "tw-animate-css"
+  ],
+  "ignoreExportsUsedInFile": true
+}

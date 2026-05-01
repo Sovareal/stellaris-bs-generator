@@ -62,14 +62,6 @@ export function displayName(item: { displayName?: string | null; id: string }): 
   return item.displayName ?? humanizeId(item.id);
 }
 
-/** Deterministic hex seed display derived from generationId. e.g. "0xA72F.E191.4B0C" */
-export function formatSeed(generationId: number): string {
-  const n = Math.abs(generationId);
-  const a = ((n * 0x9e3779b9) >>> 0).toString(16).padStart(8, "0").toUpperCase();
-  const b = (((n ^ 0xdeadbeef) * 0x85ebca6b) >>> 0).toString(16).padStart(8, "0").toUpperCase();
-  return `0x${a.slice(0, 4)}.${a.slice(4, 8)}.${b.slice(0, 4)}`;
-}
-
 /** Formats a trait/leader point cost with explicit sign. e.g. "+2", "0", "-1" */
 export function formatCost(cost: number): string {
   if (cost > 0) return `+${cost}`;
