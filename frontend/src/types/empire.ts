@@ -1,28 +1,28 @@
-export interface EthicDto {
+interface EthicDto {
   id: string;
   displayName: string | null;
   cost: number;
   isFanatic: boolean;
 }
 
-export interface AuthorityDto {
+interface AuthorityDto {
   id: string;
   displayName: string | null;
   isGestalt: boolean;
 }
 
-export interface CivicDto {
+interface CivicDto {
   id: string;
   displayName: string | null;
 }
 
-export interface OriginDto {
+interface OriginDto {
   id: string;
   displayName: string | null;
   dlcRequirement: string | null;
 }
 
-export interface ArchetypeDto {
+interface ArchetypeDto {
   id: string;
   displayName: string | null;
   traitPoints: number;
@@ -30,7 +30,7 @@ export interface ArchetypeDto {
   robotic: boolean;
 }
 
-export interface TraitDto {
+interface TraitDto {
   id: string;
   displayName: string | null;
   cost: number;
@@ -40,27 +40,27 @@ export interface TraitDto {
   free: boolean;
 }
 
-export interface PlanetClassDto {
+interface PlanetClassDto {
   id: string;
   displayName: string | null;
   climate: string;
 }
 
-export interface LeaderTraitDto {
+interface LeaderTraitDto {
   id: string;
   displayName: string | null;
   cost: number;
   gfxKey: string | null;
 }
 
-export interface LeaderDto {
+interface LeaderDto {
   leaderClass: string;
   traits: LeaderTraitDto[];
   leaderPicksMax: number;
   leaderBudget: number;
 }
 
-export interface SecondarySpeciesDto {
+interface SecondarySpeciesDto {
   title: string;
   titleDisplayName: string | null;
   speciesClass: string;
