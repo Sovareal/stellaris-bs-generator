@@ -7,6 +7,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { ErrorScreen } from "@/components/ErrorScreen";
 import { EmpireView } from "@/components/EmpireView";
 import { SettingsPage } from "@/components/SettingsPage";
+import { StatusToast } from "@/components/StatusToast";
 
 function App() {
   const backend = useBackendReady();
@@ -44,6 +45,7 @@ function App() {
           />
         )}
         {backend.ready && !settingsOpen && <EmpireView gameVersion={backend.gameVersion} />}
+        {backend.ready && <StatusToast />}
 
         <Footer
           connected={backend.ready}
