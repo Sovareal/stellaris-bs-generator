@@ -2,7 +2,6 @@ package com.stellaris.bsgenerator.namepool;
 
 import com.stellaris.bsgenerator.dto.SuggestedNames;
 import com.stellaris.bsgenerator.engine.GeneratedEmpire;
-import com.stellaris.bsgenerator.namepool.model.PoolSection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,22 +36,19 @@ public class NameGeneratorService {
         );
     }
 
-    private String pickRulerName(GeneratedEmpire empire, com.stellaris.bsgenerator.namepool.model.NamePool pool) {
+    private String pickRulerName(GeneratedEmpire empire,
+                                 com.stellaris.bsgenerator.namepool.model.NamePool pool) {
         boolean isImperial = "auth_imperial".equals(empire.authority().id());
         if (isImperial) {
-            var regnal = pool.regnalNames().all();
+            var regnal = pool.regnalNames();
             if (!regnal.isEmpty()) return pick(regnal);
         }
         return pick(pool.rulerNames());
     }
 
-    private String pick(PoolSection section) {
-        return pick(section.all());
-    }
-
     private String pick(List<String> names) {
         if (names.isEmpty()) {
-            throw new IllegalStateException("Name pool section is empty -- add entries to name_pool.json");
+            throw new IllegalStateException("Name pool section is empty -- add entries to custom_names.json");
         }
         return names.get(random.nextInt(names.size()));
     }

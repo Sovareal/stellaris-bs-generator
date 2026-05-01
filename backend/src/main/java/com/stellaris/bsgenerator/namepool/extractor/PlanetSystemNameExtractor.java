@@ -9,7 +9,7 @@ import java.util.*;
 
 /**
  * Extracts homeworld names from planet_names.generic.names blocks in name_lists.
- * System names are not present in game files -- the system names pool is hand-authored in name_pool.json.
+ * System names are not present in game files -- the system names pool is hand-authored in custom_names.json.
  */
 @Slf4j
 public class PlanetSystemNameExtractor {
