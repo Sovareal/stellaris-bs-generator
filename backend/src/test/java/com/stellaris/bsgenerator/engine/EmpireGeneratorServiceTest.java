@@ -287,6 +287,179 @@ class EmpireGeneratorServiceTest {
         System.out.println("=".repeat(66));
     }
 
+    /**
+     * Diagnostic: generates 5000 empires and logs species class distribution.
+     * Run manually to investigate species type skew (e.g. suspicion of LITHOID over-representation).
+     * Enable by removing @Disabled.
+     */
+    @Disabled("Diagnostic report -- run manually to investigate species class distribution")
+    @Test
+    void speciesClassDistributionReport() {
+        int total = 5000;
+        Map<String, Integer> counts = new LinkedHashMap<>();
+
+        for (int i = 0; i < total; i++) {
+            var empire = generator.generate();
+            counts.merge(empire.speciesClass(), 1, Integer::sum);
+        }
+
+        // Seed zeros for all known species classes so missing ones appear at the bottom
+        var allClasses = gameDataManager.getSpeciesClasses().stream()
+                .map(SpeciesClass::id)
+                .sorted()
+                .toList();
+        for (var id : allClasses) {
+            counts.putIfAbsent(id, 0);
+        }
+
+        // Sort by count descending
+        var sorted = counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .toList();
+
+        // Group counts by archetype for a summary view
+        Map<String, Integer> archetypeCounts = new LinkedHashMap<>();
+        Map<String, String> classToArchetype = new LinkedHashMap<>();
+        for (var sc : gameDataManager.getSpeciesClasses()) {
+            classToArchetype.put(sc.id(), sc.archetype());
+        }
+        for (var entry : counts.entrySet()) {
+            String archetype = classToArchetype.getOrDefault(entry.getKey(), "unknown");
+            archetypeCounts.merge(archetype, entry.getValue(), Integer::sum);
+        }
+
+        System.out.println("\n===== SPECIES CLASS DISTRIBUTION REPORT (n=" + total + ") =====");
+        System.out.printf("%-40s %-20s %6s %7s%n", "Species Class ID", "Archetype", "Count", "   %");
+        System.out.println("-".repeat(78));
+        for (var entry : sorted) {
+            String archetype = classToArchetype.getOrDefault(entry.getKey(), "?");
+            double pct = 100.0 * entry.getValue() / total;
+            System.out.printf("%-40s %-20s %6d %6.2f%%%n", entry.getKey(), archetype, entry.getValue(), pct);
+        }
+        long neverRolled = sorted.stream().filter(e -> e.getValue() == 0).count();
+        System.out.println("-".repeat(78));
+        System.out.printf("Never rolled: %d / %d classes%n", neverRolled, allClasses.size());
+
+        System.out.println("\n----- Archetype Summary -----");
+        archetypeCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .forEach(e -> {
+                    double pct = 100.0 * e.getValue() / total;
+                    System.out.printf("%-20s %6d %6.2f%%%n", e.getKey(), e.getValue(), pct);
+                });
+        System.out.println("=".repeat(78));
+    }
+
+    /**
+     * Diagnostic: generates 5000 empires and logs authority distribution.
+     * Run manually to investigate authority skew.
+     * Enable by removing @Disabled.
+     */
+    @Disabled("Diagnostic report -- run manually to investigate authority distribution")
+    @Test
+    void authorityDistributionReport() {
+        int total = 5000;
+        Map<String, Integer> counts = new LinkedHashMap<>();
+
+        for (int i = 0; i < total; i++) {
+            var empire = generator.generate();
+            counts.merge(empire.authority().id(), 1, Integer::sum);
+        }
+
+        // Seed zeros for all known authorities
+        var allAuthorities = gameDataManager.getAuthorities().stream()
+                .map(Authority::id)
+                .sorted()
+                .toList();
+        for (var id : allAuthorities) {
+            counts.putIfAbsent(id, 0);
+        }
+
+        var authorityMeta = gameDataManager.getAuthorities().stream()
+                .collect(Collectors.toMap(Authority::id, a -> a));
+
+        var sorted = counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .toList();
+
+        System.out.println("\n===== AUTHORITY DISTRIBUTION REPORT (n=" + total + ") =====");
+        System.out.printf("%-40s %-8s %-10s %6s %7s%n", "Authority ID", "Gestalt", "RandomWt", "Count", "   %");
+        System.out.println("-".repeat(78));
+        for (var entry : sorted) {
+            var auth = authorityMeta.get(entry.getKey());
+            double pct = 100.0 * entry.getValue() / total;
+            System.out.printf("%-40s %-8s %-10d %6d %6.2f%%%n",
+                    entry.getKey(),
+                    auth != null && auth.isGestalt() ? "yes" : "no",
+                    auth != null ? auth.randomWeight() : 0,
+                    entry.getValue(), pct);
+        }
+        long neverRolled = sorted.stream().filter(e -> e.getValue() == 0).count();
+        System.out.println("-".repeat(78));
+        System.out.printf("Never rolled: %d / %d authorities%n", neverRolled, allAuthorities.size());
+        System.out.println("=".repeat(78));
+    }
+
+    /**
+     * Diagnostic: generates 5000 empires and logs per-ethic frequency.
+     * Ethics are counted individually (one empire contributes to each of its ethics' buckets).
+     * Run manually to investigate ethic skew.
+     * Enable by removing @Disabled.
+     */
+    @Disabled("Diagnostic report -- run manually to investigate ethics distribution")
+    @Test
+    void ethicsDistributionReport() {
+        int total = 5000;
+        Map<String, Integer> counts = new LinkedHashMap<>();
+
+        for (int i = 0; i < total; i++) {
+            var empire = generator.generate();
+            for (var ethic : empire.ethics()) {
+                counts.merge(ethic.id(), 1, Integer::sum);
+            }
+        }
+
+        // Seed zeros for all known ethics
+        var allEthics = gameDataManager.getEthics().stream()
+                .map(Ethic::id)
+                .sorted()
+                .toList();
+        for (var id : allEthics) {
+            counts.putIfAbsent(id, 0);
+        }
+
+        var ethicMeta = gameDataManager.getEthics().stream()
+                .collect(Collectors.toMap(Ethic::id, e -> e));
+
+        int totalPicks = counts.values().stream().mapToInt(Integer::intValue).sum();
+
+        var sorted = counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .toList();
+
+        System.out.println("\n===== ETHICS DISTRIBUTION REPORT (n=" + total + " empires, " + totalPicks + " total picks) =====");
+        System.out.printf("%-45s %-8s %-8s %-6s %-10s %6s %8s %9s%n",
+                "Ethic ID", "Fanatic", "Gestalt", "Cost", "RandomWt", "Count", "%/picks", "%/empires");
+        System.out.println("-".repeat(110));
+        for (var entry : sorted) {
+            var eth = ethicMeta.get(entry.getKey());
+            double pctPicks = 100.0 * entry.getValue() / totalPicks;
+            double pctEmpires = 100.0 * entry.getValue() / total;
+            System.out.printf("%-45s %-8s %-8s %-6d %-10d %6d %7.2f%% %8.2f%%%n",
+                    entry.getKey(),
+                    eth != null && eth.isFanatic() ? "yes" : "no",
+                    eth != null && eth.isGestalt() ? "yes" : "no",
+                    eth != null ? eth.cost() : 0,
+                    eth != null ? eth.randomWeight() : 0,
+                    entry.getValue(), pctPicks, pctEmpires);
+        }
+        long neverRolled = sorted.stream().filter(e -> e.getValue() == 0).count();
+        System.out.println("-".repeat(110));
+        System.out.printf("Never rolled: %d / %d ethics | Total picks: %d (avg %.2f per empire)%n",
+                neverRolled, allEthics.size(), totalPicks, (double) totalPicks / total);
+        System.out.println("=".repeat(110));
+    }
+
     private Set<String> toIdSet(java.util.List<Ethic> ethics) {
         var set = new HashSet<String>();
         for (var e : ethics) set.add(e.id());

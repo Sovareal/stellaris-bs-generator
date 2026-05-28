@@ -22,6 +22,14 @@ public class EmpireGeneratorService {
     private static final int ETHICS_BUDGET = 3;
     private static final int CIVIC_COUNT = 2;
     private static final double GESTALT_CHANCE = 0.30;
+    // 3-regular path generates 3 picks/empire while fanatic path generates 1;
+    // 0.65 compensates for that asymmetry and raises fanatic frequency closer to regular.
+    private static final double FANATIC_ETHICS_CHANCE = 0.65;
+    // ethic_fanatic_pacifist has game randomWeight=33, producing ~1%/empire vs ~6% for weight-150 fanatics.
+    // Override to 150 so it matches the rest of the fanatic pool.
+    private static final Map<String, Integer> FANATIC_ETHICS_WEIGHT_OVERRIDES = Map.of(
+            "ethic_fanatic_pacifist", 150
+    );
     private static final List<String> LEADER_CLASSES = List.of("official", "commander", "scientist");
 
     static final int SECONDARY_SPECIES_BUDGET = 2;
@@ -209,10 +217,11 @@ public class EmpireGeneratorService {
         var fanaticEthics = regularEthics.stream().filter(Ethic::isFanatic).toList();
         var normalEthics = regularEthics.stream().filter(e -> !e.isFanatic()).toList();
 
-        // 50/50 chance: fanatic+regular or 3x regular
-        if (!fanaticEthics.isEmpty() && random.nextBoolean()) {
+        if (!fanaticEthics.isEmpty() && random.nextDouble() < FANATIC_ETHICS_CHANCE) {
             // Fanatic (cost 2) + regular (cost 1)
-            var fanatic = WeightedRandom.select(fanaticEthics, Ethic::randomWeight, random);
+            var fanatic = WeightedRandom.select(fanaticEthics,
+                    e -> FANATIC_ETHICS_WEIGHT_OVERRIDES.getOrDefault(e.id(), e.randomWeight()),
+                    random);
             // Regular must be from a different axis than the fanatic
             var compatible = normalEthics.stream()
                     .filter(e -> !isSameAxis(e, fanatic))
@@ -457,8 +466,15 @@ public class EmpireGeneratorService {
             throw new GenerationException("No compatible species archetypes");
         }
 
-        // Uniform random for archetypes (no weight field)
-        return archetypes.get(random.nextInt(archetypes.size()));
+        // Weight each archetype by its effective species class weight sum so that
+        // P(class c) = weight(c) / total_weight across all archetypes.
+        // Without this, BIOLOGICAL (13 classes) and LITHOID (1 class) each get 50%,
+        // inflating LITHOID to ~42% of non-machine empires.
+        return WeightedRandom.select(archetypes,
+                a -> filterService.getSpeciesClassesForArchetype(a.id()).stream()
+                        .mapToInt(sc -> SPECIES_CLASS_WEIGHTS.getOrDefault(sc.id(), 1))
+                        .sum(),
+                random);
     }
 
     // Per-class weights for species classes that gate exclusively restricted origins.
@@ -703,8 +719,15 @@ public class EmpireGeneratorService {
                 .filter(s -> !excludedIds.contains(s.id()))
                 .toList();
 
+        // Required IDs may reference non-player-selectable cultures (e.g. wilderness_01).
+        // Fall back to exclusion-only filter, then to the full list.
         if (candidates.isEmpty()) {
-            throw new GenerationException("No selectable shipsets available");
+            candidates = shipsets.stream()
+                    .filter(s -> !excludedIds.contains(s.id()))
+                    .toList();
+        }
+        if (candidates.isEmpty()) {
+            candidates = shipsets;
         }
         return candidates.get(random.nextInt(candidates.size()));
     }
