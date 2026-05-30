@@ -9,9 +9,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // Local-only desktop app — allow all origins
         registry.addMapping("/api/**")
-                .allowedOrigins("*")
+                .allowedOrigins("http://localhost:5173", "tauri://localhost")
                 .allowedMethods("GET", "POST", "PUT", "DELETE");
     }
 }
