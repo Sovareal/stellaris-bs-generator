@@ -36,7 +36,9 @@ REQUIREMENTS.md
 LEARNING.md
 ISSUES.md
 RESOLVED_ISSUES.md
+DECISIONS_LOG.md
 core_logic.md
+docs/
 
 # === Environment / Secrets ===
 .env
