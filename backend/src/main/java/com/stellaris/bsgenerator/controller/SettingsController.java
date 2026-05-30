@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.controller;
 
 import com.stellaris.bsgenerator.config.DlcRegistry;
+import com.stellaris.bsgenerator.config.SettingsCorruptedException;
 import com.stellaris.bsgenerator.config.SettingsService;
 import com.stellaris.bsgenerator.parser.cache.GameDataManager;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+
+import org.springframework.http.ResponseEntity;
 
 @Slf4j
 @RestController
@@ -39,13 +42,22 @@ public class SettingsController {
         return toResponse(settings, validation);
     }
 
+    @PostMapping("/reset")
+    public ResponseEntity<Void> resetSettings() throws IOException {
+        settingsService.reset();
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping
     public SettingsResponse saveSettings(@RequestBody SaveSettingsRequest request) throws IOException {
         var validation = settingsService.validate(request.gamePath());
         if (!validation.valid()) {
-            var current = settingsService.load();
+            Set<String> currentDisabledDlcs = null;
+            try {
+                currentDisabledDlcs = settingsService.load().disabledDlcs();
+            } catch (SettingsCorruptedException ignored) {}
             return new SettingsResponse(request.gamePath(), false, validation.message(),
-                    current.disabledDlcs(), availableDlcs());
+                    currentDisabledDlcs, availableDlcs());
         }
 
         var newSettings = new SettingsService.Settings(request.gamePath(), request.disabledDlcs());

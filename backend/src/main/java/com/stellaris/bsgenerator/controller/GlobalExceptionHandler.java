@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.controller;
 
+import com.stellaris.bsgenerator.config.SettingsCorruptedException;
 import com.stellaris.bsgenerator.engine.GenerationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,13 @@ import java.io.IOException;
 public class GlobalExceptionHandler {
 
     public record ErrorResponse(String error, String message) {}
+
+    @ExceptionHandler(SettingsCorruptedException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ErrorResponse handleSettingsCorrupted(SettingsCorruptedException e) {
+        log.warn("Settings file corrupted: {}", e.getMessage());
+        return new ErrorResponse("settings_corrupted", "Settings file is corrupted. Use Reset to Defaults.");
+    }
 
     @ExceptionHandler(GenerationException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)

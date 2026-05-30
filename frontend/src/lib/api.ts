@@ -4,9 +4,9 @@ const BASE_URL = "http://localhost:8080";
 
 export class ApiError extends Error {
   status: number;
-  body: { message: string };
+  body: { message: string; error?: string };
 
-  constructor(status: number, body: { message: string }) {
+  constructor(status: number, body: { message: string; error?: string }) {
     super(body.message);
     this.name = "ApiError";
     this.status = status;
@@ -21,7 +21,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    let body: { message: string };
+    let body: { message: string; error?: string };
     try {
       body = await res.json();
     } catch {
@@ -30,6 +30,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new ApiError(res.status, body);
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -93,4 +94,7 @@ export const api = {
 
   suggestNames: () =>
     request<SuggestedNames>("/api/empire/suggest-names", { method: "POST" }),
+
+  resetSettings: () =>
+    request<void>("/api/settings/reset", { method: "POST" }),
 };

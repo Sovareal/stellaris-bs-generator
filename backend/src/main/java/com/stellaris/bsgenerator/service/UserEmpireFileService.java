@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -46,12 +47,26 @@ public class UserEmpireFileService {
      */
     public Path appendEmpire(String clausewitzBlock) throws IOException {
         Path file = findEmpireDesignsFile().orElseGet(this::createDefaultDesignsFile);
-
         log.info("Appending empire to: {}", file);
-        Files.writeString(file, "\n" + clausewitzBlock,
-                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
-        return file;
+        AccessDeniedException lastDenied = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                Files.writeString(file, "\n" + clausewitzBlock,
+                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                return file;
+            } catch (AccessDeniedException e) {
+                lastDenied = e;
+                log.warn("File locked, attempt {}/3: {}", attempt, file);
+                if (attempt < 3) {
+                    try { Thread.sleep(200); } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("Interrupted while waiting for file lock", ie);
+                    }
+                }
+            }
+        }
+        throw lastDenied;
     }
 
     private Path resolveStellarisSaveDir() {

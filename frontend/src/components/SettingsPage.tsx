@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { DlcInfo } from "@/types/empire";
 import { FolderOpen, Loader2, CheckCircle, XCircle } from "lucide-react";
 
@@ -33,6 +33,8 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
 
   const [originalGamePath, setOriginalGamePath] = useState("");
   const [originalDlcsKey, setOriginalDlcsKey]   = useState("");
+  const [corrupted, setCorrupted]               = useState(false);
+  const [resetting, setResetting]               = useState(false);
 
   useEffect(() => {
     api
@@ -48,8 +50,10 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
           setValidation({ valid: settings.valid, message: settings.validationMessage });
         }
       })
-      .catch(() => {
-        // Settings endpoint may fail if backend just started
+      .catch((e) => {
+        if (e instanceof ApiError && e.body.error === "settings_corrupted") {
+          setCorrupted(true);
+        }
       });
   }, []);
 
@@ -101,6 +105,31 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
           {errorMessage && (
             <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20">
               <p className="text-sm text-destructive">{errorMessage}</p>
+            </div>
+          )}
+
+          {corrupted && (
+            <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 flex items-center justify-between gap-3">
+              <p className="text-sm text-destructive">
+                Settings file is corrupted and cannot be read.
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={resetting}
+                onClick={async () => {
+                  setResetting(true);
+                  try {
+                    await api.resetSettings();
+                    window.location.reload();
+                  } catch {
+                    setResetting(false);
+                  }
+                }}
+              >
+                {resetting && <Loader2 className="size-3 animate-spin" />}
+                Reset to Defaults
+              </Button>
             </div>
           )}
 

@@ -48,8 +48,7 @@ public class SettingsService {
             }
             return settings;
         } catch (Exception e) {
-            log.warn("Failed to read settings file, using defaults: {}", e.getMessage());
-            return new Settings(resolveGamePath(defaultGamePath));
+            throw new SettingsCorruptedException("Settings file exists but cannot be parsed", e);
         }
     }
 
@@ -101,6 +100,11 @@ public class SettingsService {
         Files.createDirectories(settingsFile.getParent());
         mapper.writeValue(settingsFile.toFile(), settings);
         log.info("Settings saved to {}", settingsFile);
+    }
+
+    public void reset() throws IOException {
+        Files.deleteIfExists(settingsFile);
+        log.info("Settings file deleted; next load will use defaults");
     }
 
     public String getEffectiveGamePath() {
