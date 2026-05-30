@@ -3,6 +3,8 @@ package com.stellaris.bsgenerator.controller;
 import com.stellaris.bsgenerator.config.DlcRegistry;
 import com.stellaris.bsgenerator.config.SettingsCorruptedException;
 import com.stellaris.bsgenerator.config.SettingsService;
+import com.stellaris.bsgenerator.dto.DlcInfo;
+import com.stellaris.bsgenerator.dto.SettingsResponse;
 import com.stellaris.bsgenerator.parser.cache.GameDataManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,16 +24,6 @@ public class SettingsController {
 
     private final SettingsService settingsService;
     private final GameDataManager gameDataManager;
-
-    public record DlcInfoDto(String name, String category) {}
-
-    public record SettingsResponse(
-            String gamePath,
-            boolean valid,
-            String validationMessage,
-            Set<String> disabledDlcs,
-            List<DlcInfoDto> availableDlcs
-    ) {}
 
     public record SaveSettingsRequest(String gamePath, Set<String> disabledDlcs) {}
 
@@ -83,9 +75,9 @@ public class SettingsController {
                 settings.disabledDlcs(), availableDlcs());
     }
 
-    private List<DlcInfoDto> availableDlcs() {
+    private List<DlcInfo> availableDlcs() {
         return DlcRegistry.ALL_DLCS.stream()
-                .map(d -> new DlcInfoDto(d.name(), d.category()))
+                .map(d -> new DlcInfo(d.name(), d.category()))
                 .toList();
     }
 }

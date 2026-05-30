@@ -3,6 +3,7 @@ package com.stellaris.bsgenerator.dto;
 import com.stellaris.bsgenerator.engine.GeneratedEmpire;
 import com.stellaris.bsgenerator.engine.GenerationSession;
 import com.stellaris.bsgenerator.parser.LocalizationService;
+import org.springframework.lang.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,16 +16,16 @@ public record EmpireResponse(
         OriginDto origin,
         ArchetypeDto speciesArchetype,
         String speciesClass,
-        String speciesClassName,
+        @Nullable String speciesClassName,
         List<TraitDto> speciesTraits,
         int traitPointsUsed,
         int traitPointsBudget,
         PlanetClassDto homeworld,
         PlanetClassDto habitabilityPreference,
         String shipset,
-        String shipsetName,
+        @Nullable String shipsetName,
         LeaderDto leader,
-        SecondarySpeciesDto secondarySpecies,
+        @Nullable SecondarySpeciesDto secondarySpecies,
         Map<String, Boolean> rerollsAvailable
 ) {
     public static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc) {

@@ -2,8 +2,9 @@ package com.stellaris.bsgenerator.dto;
 
 import com.stellaris.bsgenerator.model.Ethic;
 import com.stellaris.bsgenerator.parser.LocalizationService;
+import org.springframework.lang.Nullable;
 
-public record EthicDto(String id, String displayName, int cost, boolean isFanatic) {
+public record EthicDto(String id, @Nullable String displayName, int cost, boolean isFanatic) {
     public static EthicDto from(Ethic e, LocalizationService loc) {
         return new EthicDto(e.id(), loc.getDisplayName(e.id()), e.cost(), e.isFanatic());
     }

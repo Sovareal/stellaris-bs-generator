@@ -73,10 +73,10 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       empireName: empireName.trim(),
       speciesName: speciesName.trim(),
       rulerName: rulerName.trim(),
-      ...(speciesPlural.trim() ? { speciesPlural: speciesPlural.trim() } : {}),
-      ...(speciesAdjective.trim() ? { speciesAdjective: speciesAdjective.trim() } : {}),
-      ...(homeworldName.trim() ? { homeworldName: homeworldName.trim() } : {}),
-      ...(homeSystemName.trim() ? { homeSystemName: homeSystemName.trim() } : {}),
+      speciesPlural: speciesPlural.trim() || null,
+      speciesAdjective: speciesAdjective.trim() || null,
+      homeworldName: homeworldName.trim() || null,
+      homeSystemName: homeSystemName.trim() || null,
     };
 
     await saveToGame(req);

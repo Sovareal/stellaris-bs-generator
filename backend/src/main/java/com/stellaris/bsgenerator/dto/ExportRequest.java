@@ -1,15 +1,13 @@
 package com.stellaris.bsgenerator.dto;
 
-/**
- * Request body for POST /api/empire/export.
- * speciesPlural and speciesAdjective are optional (nullable = auto-derived).
- */
+import org.springframework.lang.Nullable;
+
 public record ExportRequest(
         String empireName,
         String speciesName,
-        String speciesPlural,
-        String speciesAdjective,
+        @Nullable String speciesPlural,
+        @Nullable String speciesAdjective,
         String rulerName,
-        String homeworldName,
-        String homeSystemName
+        @Nullable String homeworldName,
+        @Nullable String homeSystemName
 ) {}

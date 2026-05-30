@@ -1,5 +1,6 @@
 package com.stellaris.bsgenerator.controller;
 
+import com.stellaris.bsgenerator.dto.VersionResponse;
 import com.stellaris.bsgenerator.parser.cache.GameDataManager;
 import com.stellaris.bsgenerator.parser.cache.GameVersion;
 import lombok.RequiredArgsConstructor;
@@ -17,19 +18,13 @@ public class DataController {
 
     private final GameDataManager gameDataManager;
 
-    public record VersionResponse(String version, String rawVersion, String buildHash) {
-        static VersionResponse from(GameVersion gv) {
-            return new VersionResponse(gv.version(), gv.rawVersion(), gv.buildHash());
-        }
-    }
-
     @GetMapping("/version")
     public VersionResponse version() {
         GameVersion gv = gameDataManager.getGameVersion();
         if (gv == null) {
             return new VersionResponse("unknown", "unknown", "");
         }
-        return VersionResponse.from(gv);
+        return new VersionResponse(gv.version(), gv.rawVersion(), gv.buildHash());
     }
 
     public record ReloadResponse(String status, String dataStatus) {}

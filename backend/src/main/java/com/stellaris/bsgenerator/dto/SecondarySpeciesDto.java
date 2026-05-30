@@ -2,14 +2,15 @@ package com.stellaris.bsgenerator.dto;
 
 import com.stellaris.bsgenerator.model.SecondarySpecies;
 import com.stellaris.bsgenerator.parser.LocalizationService;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 
 public record SecondarySpeciesDto(
         String title,
-        String titleDisplayName,
+        @Nullable String titleDisplayName,
         String speciesClass,
-        String speciesClassName,
+        @Nullable String speciesClassName,
         List<TraitDto> enforcedTraits,
         List<TraitDto> additionalTraits,
         int traitPointsUsed,
