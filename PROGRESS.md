@@ -8,11 +8,11 @@ Session 52: Code review remediation -- Phases 67-71 planned from stellaris_code_
 
 ## Last Completed Task
 
-Phase 70: Dynamic port allocation (TcpListener::bind 0, --server.port=PORT); get_backend_port Tauri command; crash monitor thread + backend-crashed event; backendPortPromise in api.ts; listen in useBackendReady.ts.
+Phase 71: generateTypeScript Gradle task; @Nullable on DTOs; VersionResponse/DlcInfo/SettingsResponse moved to dto package; empire-generated.ts generated; empire.ts re-exports; bootJar wired.
 
 ## Next Up
 
-Phase 71: Type generation -- typescript-generator Gradle plugin auto-generating empire.ts from Java DTOs.
+Session 52 complete -- all 5 planned phases (67-71) done.
 
 ---
 

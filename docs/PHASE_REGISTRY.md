@@ -75,3 +75,4 @@ All files are in `docs/phases/`. Status: all phases DONE unless noted.
 | 68 | Error Handling | SettingsCorruptedException surfaced to UI with reset flow; ApiError captures error code; file export lock retry |
 | 69 | Code Quality | Zustand withApi wrapper eliminates store boilerplate; @Cacheable replaces DCL in CompatibilityFilterService |
 | 70 | Dynamic Port + IPC Crash | TcpListener::bind(0) allocates free port; --server.port=PORT to Java; get_backend_port command; try_wait monitor thread emits backend-crashed; backendPortPromise in api.ts; listen in useBackendReady |
+| 71 | TypeScript Type Generation | Custom Gradle generateTypeScript task; @Nullable on record components; VersionResponse/DlcInfo/SettingsResponse moved to dto package; empire-generated.ts auto-generated; empire.ts re-exports; bootJar dependency |
