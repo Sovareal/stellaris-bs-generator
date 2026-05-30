@@ -19,6 +19,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("com.twelvemonkeys.imageio:imageio-dds:3.12.0")
 
     compileOnly("org.projectlombok:lombok:1.18.42")
