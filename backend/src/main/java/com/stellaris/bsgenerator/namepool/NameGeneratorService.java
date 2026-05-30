@@ -30,9 +30,9 @@ public class NameGeneratorService {
                 rulerName,
                 homeworldName,
                 systemName,
-                empireName,
-                empireName,
-                empireName
+                "",
+                "",
+                ""
         );
     }
 
