@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { api } from "@/lib/api";
+import { listen } from "@tauri-apps/api/event";
+import { api, backendPortPromise } from "@/lib/api";
 
-const BACKEND_URL = "http://localhost:8080";
 const POLL_INTERVAL_MS = 1000;
 const MAX_RETRIES = 30;
+const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
 
 interface BackendState {
   ready: boolean;
@@ -33,23 +34,42 @@ export function useBackendReady(): BackendState {
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
+    let unlisten: (() => void) | undefined;
+
+    // Listen for unexpected backend crash events emitted by the Rust shell
+    if (isTauri) {
+      listen<void>("backend-crashed", () => {
+        if (!cancelled) {
+          setState({
+            ready: false,
+            error: "Backend process crashed unexpectedly.",
+            needsSetup: false,
+            version: null,
+            gameVersion: null,
+          });
+        }
+      }).then((fn) => {
+        unlisten = fn;
+      });
+    }
 
     async function poll() {
       if (cancelled) return;
 
       try {
-        const res = await fetch(`${BACKEND_URL}/api/health`);
+        const port = await backendPortPromise;
+        const res = await fetch(`http://localhost:${port}/api/health`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: HealthResponse = await res.json();
 
         if (data.dataStatus === "loading") {
-          // Still loading — keep polling
+          // Still loading -- keep polling
           timer = setTimeout(poll, POLL_INTERVAL_MS);
           return;
         }
 
         if (data.dataStatus === "error") {
-          // Data failed to load — needs setup
+          // Data failed to load -- needs setup
           if (!cancelled) {
             setState({
               ready: false,
@@ -68,7 +88,7 @@ export function useBackendReady(): BackendState {
           const versionData = await api.getVersion();
           gameVersion = versionData.rawVersion;
         } catch {
-          // Non-critical — game version display is optional
+          // Non-critical -- game version display is optional
         }
 
         if (!cancelled) {
@@ -103,6 +123,7 @@ export function useBackendReady(): BackendState {
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      unlisten?.();
     };
   }, []);
 

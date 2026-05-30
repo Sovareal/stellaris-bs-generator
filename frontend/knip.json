@@ -3,7 +3,6 @@
   "entry": ["src/components/ui/**/*.tsx"],
   "project": ["src/**/*.{ts,tsx}"],
   "ignoreDependencies": [
-    "@tauri-apps/api",
     "@tauri-apps/plugin-shell",
     "tailwindcss",
     "shadcn",

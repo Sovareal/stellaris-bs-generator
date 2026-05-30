@@ -1,12 +1,16 @@
 use std::fs::File;
+use std::net::TcpListener;
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::{Emitter, Manager, State};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
 struct BackendProcess(Mutex<Option<Child>>);
+struct BackendPort(Mutex<u16>);
+struct ShuttingDown(AtomicBool);
 
 fn find_backend_jar(app: &tauri::App) -> Option<std::path::PathBuf> {
     // In dev mode: look relative to project root
@@ -36,7 +40,6 @@ fn find_java_executable(app: &tauri::App) -> String {
     // In production: use bundled JRE
     if !cfg!(debug_assertions) {
         if let Ok(resource_dir) = app.path().resource_dir() {
-            // Windows uses java.exe; Linux and macOS use plain java
             let java_bin = if cfg!(windows) { "java.exe" } else { "java" };
             let bundled_java = resource_dir.join("jre").join("bin").join(java_bin);
             if bundled_java.exists() {
@@ -57,9 +60,29 @@ fn get_log_path(app: &tauri::App) -> Option<std::path::PathBuf> {
     })
 }
 
-fn spawn_backend(java_path: &str, jar_path: &std::path::Path, log_path: Option<&std::path::Path>) -> Result<Child, String> {
+fn allocate_port() -> Result<u16, String> {
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .map_err(|e| format!("Failed to allocate port: {e}"))?;
+    let port = listener
+        .local_addr()
+        .map_err(|e| format!("Failed to read allocated port: {e}"))?
+        .port();
+    drop(listener);
+    Ok(port)
+}
+
+fn spawn_backend(
+    java_path: &str,
+    jar_path: &std::path::Path,
+    port: u16,
+    log_path: Option<&std::path::Path>,
+) -> Result<Child, String> {
     let mut cmd = Command::new(java_path);
-    cmd.args(["-jar", &jar_path.to_string_lossy()]);
+    cmd.args([
+        "-jar",
+        &jar_path.to_string_lossy(),
+        &format!("--server.port={port}"),
+    ]);
 
     // Redirect stdout/stderr to log file for diagnostics
     if let Some(path) = log_path {
@@ -81,11 +104,49 @@ fn spawn_backend(java_path: &str, jar_path: &std::path::Path, log_path: Option<&
         .map_err(|e| format!("Failed to start backend: {e}"))
 }
 
+fn spawn_crash_monitor(app_handle: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+
+            let exited = {
+                let state = app_handle.state::<BackendProcess>();
+                let mut guard = state.0.lock().unwrap();
+                match guard.as_mut() {
+                    Some(child) => match child.try_wait() {
+                        Ok(Some(_)) => true,
+                        Ok(None) => false,
+                        Err(_) => false,
+                    },
+                    None => return, // No child -- nothing to monitor
+                }
+            };
+
+            if exited {
+                let shutting_down = app_handle.state::<ShuttingDown>();
+                if !shutting_down.0.load(Ordering::Relaxed) {
+                    log::warn!("Backend process exited unexpectedly -- emitting backend-crashed");
+                    let _ = app_handle.emit("backend-crashed", ());
+                }
+                break;
+            }
+        }
+    });
+}
+
+#[tauri::command]
+fn get_backend_port(state: State<BackendPort>) -> u16 {
+    *state.0.lock().unwrap()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(BackendProcess(Mutex::new(None)))
+        .manage(BackendPort(Mutex::new(8080)))
+        .manage(ShuttingDown(AtomicBool::new(false)))
+        .invoke_handler(tauri::generate_handler![get_backend_port])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -95,21 +156,37 @@ pub fn run() {
                 )?;
             }
 
-            // Launch the Spring Boot backend sidecar
+            // Allocate a free port for the Spring Boot backend
+            let port = match allocate_port() {
+                Ok(p) => {
+                    log::info!("Allocated backend port: {p}");
+                    p
+                }
+                Err(e) => {
+                    log::error!("{e} -- falling back to port 8080");
+                    8080
+                }
+            };
+            *app.state::<BackendPort>().0.lock().unwrap() = port;
+
             let java_path = find_java_executable(app);
             let log_path = get_log_path(app);
             if let Some(ref p) = log_path {
                 log::info!("Backend log file: {}", p.display());
             }
+
             match find_backend_jar(app) {
                 Some(jar_path) => {
-                    log::info!("Starting backend: java={}, jar={}", java_path, jar_path.display());
-                    match spawn_backend(&java_path, &jar_path, log_path.as_deref()) {
+                    log::info!("Starting backend: java={}, jar={}, port={port}", java_path, jar_path.display());
+                    match spawn_backend(&java_path, &jar_path, port, log_path.as_deref()) {
                         Ok(child) => {
                             let state = app.state::<BackendProcess>();
                             *state.0.lock().unwrap() = Some(child);
-                            log::info!("Backend process started (pid={})",
-                                state.0.lock().unwrap().as_ref().map(|c| c.id()).unwrap_or(0));
+                            log::info!(
+                                "Backend process started (pid={})",
+                                state.0.lock().unwrap().as_ref().map(|c| c.id()).unwrap_or(0)
+                            );
+                            spawn_crash_monitor(app.handle().clone());
                         }
                         Err(e) => {
                             log::error!("{e}");
@@ -129,6 +206,10 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             if let tauri::RunEvent::Exit = event {
+                // Signal the crash monitor that we are shutting down intentionally
+                if let Some(sd) = app_handle.try_state::<ShuttingDown>() {
+                    sd.0.store(true, Ordering::Relaxed);
+                }
                 // Kill the backend process on app exit (covers all close paths)
                 if let Some(state) = app_handle.try_state::<BackendProcess>() {
                     if let Ok(mut guard) = state.0.lock() {

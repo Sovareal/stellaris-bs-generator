@@ -1,6 +1,11 @@
+import { invoke } from "@tauri-apps/api/core";
 import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, SuggestedNames, VersionResponse } from "@/types/empire";
 
-const BASE_URL = "http://localhost:8080";
+const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+
+export const backendPortPromise: Promise<number> = isTauri
+  ? invoke<number>("get_backend_port").catch(() => 8080)
+  : Promise.resolve(8080);
 
 export class ApiError extends Error {
   status: number;
@@ -15,7 +20,8 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const port = await backendPortPromise;
+  const res = await fetch(`http://localhost:${port}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
