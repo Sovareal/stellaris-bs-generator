@@ -1,12 +1,15 @@
 import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, SuggestedNames, VersionResponse } from "@/types/empire";
 
-// Port injected by the Tauri initialization script (AddScriptToExecuteOnDocumentCreated)
-// before any page JavaScript runs. Falls back to 8080 for browser dev mode.
-export const backendPortPromise: Promise<number> = Promise.resolve(
-  typeof window !== "undefined" && typeof (window as { __BACKEND_PORT__?: number }).__BACKEND_PORT__ === "number"
-    ? (window as unknown as { __BACKEND_PORT__: number }).__BACKEND_PORT__
-    : 8080
-);
+// Port passed via URL query string ?p=PORT by the Tauri shell.
+// Synchronously available at module load time. Falls back to 8080 in browser dev mode.
+function readPortFromUrl(): number {
+  if (typeof window === "undefined") return 8080;
+  const p = new URLSearchParams(window.location.search).get("p");
+  const n = p ? parseInt(p, 10) : NaN;
+  return isNaN(n) ? 8080 : n;
+}
+
+export const backendPortPromise: Promise<number> = Promise.resolve(readPortFromUrl());
 
 export class ApiError extends Error {
   status: number;

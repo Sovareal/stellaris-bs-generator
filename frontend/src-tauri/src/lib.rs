@@ -199,15 +199,13 @@ pub fn run() {
             };
             *app.state::<BackendPort>().0.lock().unwrap() = port;
 
-            // Inject the port into the WebView before any page JavaScript runs via
-            // AddScriptToExecuteOnDocumentCreated. The frontend reads window.__BACKEND_PORT__
-            // directly -- no IPC invoke needed, no timing race.
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+            // Pass the port via URL query string -- synchronously available when the
+            // module loads, no initialization_script overhead.
+            WebviewWindowBuilder::new(app, "main", WebviewUrl::App(format!("index.html?p={port}").into()))
                 .title("Stellaris BS Empire Generator")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(900.0, 600.0)
                 .resizable(true)
-                .initialization_script(&format!("window.__BACKEND_PORT__={port};"))
                 .build()?;
 
             let java_path = find_java_executable(app);
