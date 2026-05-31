@@ -58,7 +58,7 @@ export function useBackendReady(): BackendState {
       const port = await backendPortPromise;
 
       try {
-        const res = await fetch(`http://localhost:${port}/api/health`);
+        const res = await fetch(`http://127.0.0.1:${port}/api/health`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: HealthResponse = await res.json();
 
