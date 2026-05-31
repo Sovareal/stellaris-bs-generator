@@ -4,3 +4,8 @@ server:
 stellaris:
   game-path: F:\Games\SteamLibrary\steamapps\common\Stellaris
   cache-path: ${user.home}/.stellaris-bs-generator
+
+logging:
+  level:
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    org.springframework.web.cors: DEBUG
