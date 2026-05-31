@@ -177,27 +177,19 @@ public class RerollService {
         var newTraits = preserveRandomTraits(empire, empire.origin(), finalCivics);
         int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
 
-        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraits);
-        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
-        PlanetClass newHomeworld = empire.homeworld();
-        PlanetClass newHabPref = empire.habitabilityPreference();
-        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
-            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraits, empire.speciesClass());
-            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
-        }
-        final var finalHomeworld = newHomeworld;
-        final var finalHabPref = newHabPref;
-        final int finalPointsUsed = newPointsUsed;
-        final var finalTraits = newTraits;
+        var hw = rederiveHomeworldIfConstraintChanged(
+                empire.origin(), empire.speciesClass(),
+                empire.speciesTraits(), newTraits,
+                empire.homeworld(), empire.habitabilityPreference());
 
         return copyWith(empire, b -> {
             b.authority = newAuth;
             b.civics = finalCivics;
             b.secondarySpecies = newSecondary;
-            b.speciesTraits = finalTraits;
-            b.traitPointsUsed = finalPointsUsed;
-            b.homeworld = finalHomeworld;
-            b.habitabilityPreference = finalHabPref;
+            b.speciesTraits = newTraits;
+            b.traitPointsUsed = newPointsUsed;
+            b.homeworld = hw.homeworld();
+            b.habitabilityPreference = hw.habitabilityPreference();
         });
     }
 
@@ -247,27 +239,18 @@ public class RerollService {
         var newTraits = preserveRandomTraits(empire, empire.origin(), civicsList);
         int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
 
-        // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
-        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraits);
-        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
-        PlanetClass newHomeworld = empire.homeworld();
-        PlanetClass newHabPref = empire.habitabilityPreference();
-        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
-            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraits, empire.speciesClass());
-            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
-        }
-        final var finalHomeworld = newHomeworld;
-        final var finalHabPref = newHabPref;
-        final int finalPointsUsed = newPointsUsed;
-        final var finalTraits = newTraits;
+        var hw = rederiveHomeworldIfConstraintChanged(
+                empire.origin(), empire.speciesClass(),
+                empire.speciesTraits(), newTraits,
+                empire.homeworld(), empire.habitabilityPreference());
 
         return copyWith(empire, b -> {
             b.civics = civicsList;
             b.secondarySpecies = newSecondary;
-            b.speciesTraits = finalTraits;
-            b.traitPointsUsed = finalPointsUsed;
-            b.homeworld = finalHomeworld;
-            b.habitabilityPreference = finalHabPref;
+            b.speciesTraits = newTraits;
+            b.traitPointsUsed = newPointsUsed;
+            b.homeworld = hw.homeworld();
+            b.habitabilityPreference = hw.habitabilityPreference();
         });
     }
 
@@ -403,24 +386,16 @@ public class RerollService {
 
         int newPointsUsed = newTraitList.stream().mapToInt(SpeciesTrait::cost).sum();
 
-        // Re-derive homeworld if trait planet constraints changed (e.g., Aquatic added/removed)
-        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);
-        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(currentTraits);
-        PlanetClass newHomeworld = empire.homeworld();
-        PlanetClass newHabPref = empire.habitabilityPreference();
-        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
-            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraitList, empire.speciesClass());
-            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
-        }
-        final var finalHomeworld = newHomeworld;
-        final var finalHabPref = newHabPref;
-        final int finalPointsUsed = newPointsUsed;
+        var hw = rederiveHomeworldIfConstraintChanged(
+                empire.origin(), empire.speciesClass(),
+                currentTraits, newTraitList,
+                empire.homeworld(), empire.habitabilityPreference());
 
         var updated = copyWith(empire, b -> {
             b.speciesTraits = newTraitList;
-            b.traitPointsUsed = finalPointsUsed;
-            b.homeworld = finalHomeworld;
-            b.habitabilityPreference = finalHabPref;
+            b.traitPointsUsed = newPointsUsed;
+            b.homeworld = hw.homeworld();
+            b.habitabilityPreference = hw.habitabilityPreference();
         });
 
         session.markRerolled();
@@ -512,25 +487,16 @@ public class RerollService {
         var newTraitList = List.copyOf(newTraits);
         int newPointsUsed = pointsSpent + newTrait.cost();
 
-        // Re-derive homeworld if planet constraints changed (e.g., Aquatic added)
-        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(newTraitList);
-        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
-        PlanetClass newHomeworld = empire.homeworld();
-        PlanetClass newHabPref = empire.habitabilityPreference();
-        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
-            newHomeworld = generatorService.pickHomeworld(empire.origin(), newTraitList, empire.speciesClass());
-            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
-        }
-        final var finalHomeworld = newHomeworld;
-        final var finalHabPref = newHabPref;
-        final int finalPointsUsed = newPointsUsed;
-        final var finalTraits = newTraitList;
+        var hw = rederiveHomeworldIfConstraintChanged(
+                empire.origin(), empire.speciesClass(),
+                empire.speciesTraits(), newTraitList,
+                empire.homeworld(), empire.habitabilityPreference());
 
         var updated = copyWith(empire, b -> {
-            b.speciesTraits = finalTraits;
-            b.traitPointsUsed = finalPointsUsed;
-            b.homeworld = finalHomeworld;
-            b.habitabilityPreference = finalHabPref;
+            b.speciesTraits = newTraitList;
+            b.traitPointsUsed = newPointsUsed;
+            b.homeworld = hw.homeworld();
+            b.habitabilityPreference = hw.habitabilityPreference();
         });
 
         session.setEmpire(updated);
@@ -786,25 +752,17 @@ public class RerollService {
 
         int newPointsUsed = List.copyOf(newTraits).stream().mapToInt(SpeciesTrait::cost).sum();
 
-        // Re-derive homeworld if planet constraints changed (e.g., Aquatic removed)
-        var newPlanetConstraint = generatorService.collectTraitPlanetClasses(List.copyOf(newTraits));
-        var oldPlanetConstraint = generatorService.collectTraitPlanetClasses(empire.speciesTraits());
-        PlanetClass newHomeworld = empire.homeworld();
-        PlanetClass newHabPref = empire.habitabilityPreference();
-        if (!newPlanetConstraint.equals(oldPlanetConstraint)) {
-            newHomeworld = generatorService.pickHomeworld(empire.origin(), List.copyOf(newTraits), empire.speciesClass());
-            newHabPref = generatorService.pickHabitabilityPreference(empire.origin(), newHomeworld);
-        }
-        final var finalHomeworld = newHomeworld;
-        final var finalHabPref = newHabPref;
-        final int finalPointsUsed = newPointsUsed;
-        final var finalTraits = List.copyOf(newTraits);
+        var finalTraits = List.copyOf(newTraits);
+        var hw = rederiveHomeworldIfConstraintChanged(
+                empire.origin(), empire.speciesClass(),
+                empire.speciesTraits(), finalTraits,
+                empire.homeworld(), empire.habitabilityPreference());
 
         var updated = copyWith(empire, b -> {
             b.speciesTraits = finalTraits;
-            b.traitPointsUsed = finalPointsUsed;
-            b.homeworld = finalHomeworld;
-            b.habitabilityPreference = finalHabPref;
+            b.traitPointsUsed = newPointsUsed;
+            b.homeworld = hw.homeworld();
+            b.habitabilityPreference = hw.habitabilityPreference();
         });
 
         session.setEmpire(updated);
@@ -890,6 +848,22 @@ public class RerollService {
             b.leaderClass = newClass;
             b.leaderTraits = newTraits;
         });
+    }
+
+    // --- Homeworld re-derivation helper ---
+
+    private record HomeworldDerivation(PlanetClass homeworld, PlanetClass habitabilityPreference) {}
+
+    private HomeworldDerivation rederiveHomeworldIfConstraintChanged(
+            Origin origin, String speciesClass,
+            List<SpeciesTrait> oldTraits, List<SpeciesTrait> newTraits,
+            PlanetClass currentHomeworld, PlanetClass currentHabPref) {
+        if (generatorService.collectTraitPlanetClasses(newTraits)
+                .equals(generatorService.collectTraitPlanetClasses(oldTraits))) {
+            return new HomeworldDerivation(currentHomeworld, currentHabPref);
+        }
+        var hw = generatorService.pickHomeworld(origin, newTraits, speciesClass);
+        return new HomeworldDerivation(hw, generatorService.pickHabitabilityPreference(origin, hw));
     }
 
     // --- Helper to build empire copies with selective changes ---
