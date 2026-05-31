@@ -94,6 +94,9 @@ public class GameDataManager {
             loadGameData(false);
             dataStatus = DataStatus.READY;
             dataError = null;
+            if (iconService != null) {
+                iconService.warmCacheAsync();
+            }
         } catch (Exception e) {
             dataStatus = DataStatus.ERROR;
             dataError = e.getMessage();

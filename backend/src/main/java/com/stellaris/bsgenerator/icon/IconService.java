@@ -84,6 +84,38 @@ public class IconService {
     }
 
     /**
+     * Spawn a daemon thread to pre-populate the icon cache for all known entity ids.
+     * Called after game data finishes loading so the first empire generation sees no icon waterfall.
+     */
+    public void warmCacheAsync() {
+        Thread thread = new Thread(this::doWarmCache, "icon-cache-warmer");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void doWarmCache() {
+        log.info("Icon cache warm-up started");
+        int count = 0;
+        if (gameDataManager.getEthics() != null)
+            for (var item : gameDataManager.getEthics()) if (getIcon("ethics", item.id()) != null) count++;
+        if (gameDataManager.getAuthorities() != null)
+            for (var item : gameDataManager.getAuthorities()) if (getIcon("authorities", item.id()) != null) count++;
+        if (gameDataManager.getCivics() != null)
+            for (var item : gameDataManager.getCivics()) if (getIcon("civics", item.id()) != null) count++;
+        if (gameDataManager.getOrigins() != null)
+            for (var item : gameDataManager.getOrigins()) if (getIcon("origins", item.id()) != null) count++;
+        if (gameDataManager.getStartingRulerTraits() != null)
+            for (var item : gameDataManager.getStartingRulerTraits()) if (getIcon("leadertraits", item.id()) != null) count++;
+        if (gameDataManager.getPlanetClasses() != null)
+            for (var item : gameDataManager.getPlanetClasses()) if (getIcon("planets", item.id()) != null) count++;
+        // allTraitIconPaths is the superset (covers both selectable and initial=no traits)
+        var traitPaths = gameDataManager.getAllTraitIconPaths();
+        if (traitPaths != null)
+            for (var id : traitPaths.keySet()) if (getIcon("traits", id) != null) count++;
+        log.info("Icon cache warm-up complete: {} icons cached", count);
+    }
+
+    /**
      * Clear both in-memory and disk caches.
      */
     public void clearCache() {
