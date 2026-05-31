@@ -13,19 +13,22 @@ struct BackendPort(Mutex<u16>);
 struct ShuttingDown(AtomicBool);
 
 fn find_backend_jar(app: &tauri::App) -> Option<std::path::PathBuf> {
-    // In dev mode: look relative to project root
-    let dev_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|p| p.parent())
-        .map(|root| root.join(format!("backend/build/libs/backend-{}.jar", env!("CARGO_PKG_VERSION"))));
+    // Dev mode only: look relative to project root (CARGO_MANIFEST_DIR is baked in at compile time).
+    // Skipped in release builds so the installed backend.jar is always used.
+    if cfg!(debug_assertions) {
+        let dev_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|p| p.parent())
+            .map(|root| root.join(format!("backend/build/libs/backend-{}.jar", env!("CARGO_PKG_VERSION"))));
 
-    if let Some(ref path) = dev_path {
-        if path.exists() {
-            return dev_path;
+        if let Some(ref path) = dev_path {
+            if path.exists() {
+                return dev_path;
+            }
         }
     }
 
-    // In production: look in the resource directory next to the binary
+    // Production (and dev fallback): look in the resource directory next to the binary
     if let Ok(resource_dir) = app.path().resource_dir() {
         let prod_path = resource_dir.join("backend.jar");
         if prod_path.exists() {
@@ -178,13 +181,16 @@ pub fn run() {
         .manage(ShuttingDown(AtomicBool::new(false)))
         .invoke_handler(tauri::generate_handler![get_backend_port])
         .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
+            let log_level = if cfg!(debug_assertions) {
+                log::LevelFilter::Info
+            } else {
+                log::LevelFilter::Warn
+            };
+            app.handle().plugin(
+                tauri_plugin_log::Builder::default()
+                    .level(log_level)
+                    .build(),
+            )?;
 
             // Allocate a free port for the Spring Boot backend
             let port = match allocate_port() {

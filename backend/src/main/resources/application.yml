@@ -4,8 +4,3 @@ server:
 stellaris:
   game-path: F:\Games\SteamLibrary\steamapps\common\Stellaris
   cache-path: ${user.home}/.stellaris-bs-generator
-
-spring:
-  web:
-    cors:
-      allowed-origins: http://localhost:5173,https://tauri.localhost
