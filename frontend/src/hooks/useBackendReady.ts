@@ -109,7 +109,7 @@ export function useBackendReady(): BackendState {
           if (!cancelled) {
             setState({
               ready: false,
-              error: `Backend not reachable on port ${port} after 30s. Is it running?`,
+              error: "Backend not reachable after 30s. Is it running?",
               needsSetup: false,
               version: null,
               gameVersion: null,
