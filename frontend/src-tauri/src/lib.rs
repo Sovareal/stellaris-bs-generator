@@ -134,6 +134,36 @@ fn spawn_crash_monitor(app_handle: tauri::AppHandle) {
     });
 }
 
+/// POST /api/system/shutdown via a raw TCP socket.
+/// Returns true if the server acknowledged with a 2xx response.
+/// Uses no external HTTP crate -- just stdlib TCP.
+fn try_graceful_shutdown(port: u16) -> bool {
+    use std::io::{Read, Write};
+    use std::net::TcpStream;
+    use std::time::Duration;
+
+    let addr_str = format!("127.0.0.1:{port}");
+    let Ok(addr) = addr_str.parse::<std::net::SocketAddr>() else {
+        return false;
+    };
+    let Ok(mut stream) = TcpStream::connect_timeout(&addr, Duration::from_millis(500)) else {
+        return false;
+    };
+
+    let request = format!(
+        "POST /api/system/shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    );
+    if stream.write_all(request.as_bytes()).is_err() {
+        return false;
+    }
+
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(1500)));
+    let mut response = Vec::with_capacity(64);
+    let _ = stream.read_to_end(&mut response);
+
+    response.starts_with(b"HTTP/1.1 2")
+}
+
 #[tauri::command]
 fn get_backend_port(state: State<BackendPort>) -> u16 {
     *state.0.lock().unwrap()
@@ -210,7 +240,37 @@ pub fn run() {
                 if let Some(sd) = app_handle.try_state::<ShuttingDown>() {
                     sd.0.store(true, Ordering::Relaxed);
                 }
-                // Kill the backend process on app exit (covers all close paths)
+
+                let port = app_handle
+                    .try_state::<BackendPort>()
+                    .map(|s| *s.0.lock().unwrap())
+                    .unwrap_or(8080);
+
+                // Try graceful shutdown: POST /api/system/shutdown, then poll up to 5 s
+                if try_graceful_shutdown(port) {
+                    let process_state = app_handle.try_state::<BackendProcess>();
+                    let mut gracefully_exited = false;
+                    for _ in 0..50 {
+                        if let Some(ref state) = process_state {
+                            if let Ok(mut guard) = state.0.lock() {
+                                if let Some(ref mut child) = *guard {
+                                    if matches!(child.try_wait(), Ok(Some(_))) {
+                                        gracefully_exited = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                    }
+                    if gracefully_exited {
+                        log::info!("Backend shut down gracefully");
+                        return;
+                    }
+                    log::warn!("Backend did not exit within 5 s -- force-killing");
+                }
+
+                // Fallback: force kill (graceful unavailable or timed out)
                 if let Some(state) = app_handle.try_state::<BackendProcess>() {
                     if let Ok(mut guard) = state.0.lock() {
                         if let Some(ref mut child) = *guard {
