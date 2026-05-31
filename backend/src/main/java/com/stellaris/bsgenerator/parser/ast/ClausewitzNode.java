@@ -1,10 +1,13 @@
 package com.stellaris.bsgenerator.parser.ast;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalDouble;
 
+@Slf4j
 public record ClausewitzNode(String key, String value, List<ClausewitzNode> children) {
 
     public static ClausewitzNode root(List<ClausewitzNode> children) {
@@ -54,7 +57,13 @@ public record ClausewitzNode(String key, String value, List<ClausewitzNode> chil
 
     public int childInt(String childKey, int defaultValue) {
         return childValue(childKey)
-                .map(v -> (int) Double.parseDouble(v))
+                .map(v -> {
+                    double d = Double.parseDouble(v);
+                    if (Math.abs(d - Math.rint(d)) > 1e-9) {
+                        log.warn("childInt('{}') truncating fractional value {} -> {}", childKey, d, (int) d);
+                    }
+                    return (int) d;
+                })
                 .orElse(defaultValue);
     }
 

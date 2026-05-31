@@ -136,7 +136,11 @@ public class SpeciesTraitExtractor {
     private int parseCost(ClausewitzNode costNode) {
         if (costNode.isLeaf()) {
             // cost = 2
-            return (int) Double.parseDouble(costNode.value());
+            double d = Double.parseDouble(costNode.value());
+            if (Math.abs(d - Math.rint(d)) > 1e-9) {
+                log.warn("parseCost() truncating fractional trait cost {} -> {}", d, (int) d);
+            }
+            return (int) d;
         } else if (costNode.isBlock()) {
             // cost = { base = 3 ... }
             return costNode.childInt("base", 0);
