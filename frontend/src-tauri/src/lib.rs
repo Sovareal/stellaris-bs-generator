@@ -3,7 +3,7 @@ use std::net::TcpListener;
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use tauri::{Emitter, Manager, State};
+use tauri::{Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -204,6 +204,21 @@ pub fn run() {
                 }
             };
             *app.state::<BackendPort>().0.lock().unwrap() = port;
+
+            // Create the main window with the backend port injected as an initialization script.
+            // This runs before any page JavaScript so the frontend can read window.__BACKEND_PORT__
+            // without relying on the Tauri IPC invoke path.
+            // WebviewUrl::App is automatically replaced by devUrl when running tauri dev.
+            WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+                .title("Stellaris BS Empire Generator")
+                .inner_size(1280.0, 800.0)
+                .min_inner_size(900.0, 600.0)
+                .resizable(true)
+                .initialization_script(&format!(
+                    "window.__BACKEND_PORT__ = {}; console.log('[tauri] backend port injected:', {});",
+                    port, port
+                ))
+                .build()?;
 
             let java_path = find_java_executable(app);
             let log_path = get_log_path(app);

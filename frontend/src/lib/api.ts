@@ -1,11 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, SuggestedNames, VersionResponse } from "@/types/empire";
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-
-export const backendPortPromise: Promise<number> = isTauri
-  ? invoke<number>("get_backend_port").catch(() => 8080)
-  : Promise.resolve(8080);
+// Port is injected by the Tauri initialization script as window.__BACKEND_PORT__ before
+// any page JavaScript runs. Fall back to invoke (for older builds / dev mode), then 8080.
+export const backendPortPromise: Promise<number> = (async () => {
+  if (typeof window !== "undefined") {
+    const injected = (window as unknown as { __BACKEND_PORT__?: number }).__BACKEND_PORT__;
+    if (typeof injected === "number") return injected;
+    if ("__TAURI_INTERNALS__" in window) {
+      try { return await invoke<number>("get_backend_port"); } catch { /* fall through */ }
+    }
+  }
+  return 8080;
+})();
 
 export class ApiError extends Error {
   status: number;
