@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 17984
 
 stellaris:
   game-path: F:\Games\SteamLibrary\steamapps\common\Stellaris

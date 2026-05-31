@@ -55,9 +55,9 @@ export function useBackendReady(): BackendState {
 
     async function poll() {
       if (cancelled) return;
+      const port = await backendPortPromise;
 
       try {
-        const port = await backendPortPromise;
         const res = await fetch(`http://localhost:${port}/api/health`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: HealthResponse = await res.json();
@@ -109,7 +109,7 @@ export function useBackendReady(): BackendState {
           if (!cancelled) {
             setState({
               ready: false,
-              error: "Backend not reachable after 30s. Is it running?",
+              error: `Backend not reachable on port ${port} after 30s. Is it running?`,
               needsSetup: false,
               version: null,
               gameVersion: null,
