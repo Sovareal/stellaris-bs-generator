@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { X, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEmpireStore } from "@/stores/useEmpireStore";
 import type { ExportRequest } from "@/types/empire";
 
@@ -61,8 +61,6 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     setHomeSystemName(suggestedNames.systemName);
   }, [suggestedNames]);
 
-  if (!open) return null;
-
   const isValid = empireName.trim() && speciesName.trim() && rulerName.trim();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,27 +80,24 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     await saveToGame(req);
   };
 
+  const blockWhenSaving = (e: { preventDefault: () => void }) => {
+    if (isSaving) e.preventDefault();
+  };
+
   const pluralPlaceholder = speciesName.trim() ? `auto: ${speciesName.trim()}s` : "auto: [name]s";
   const adjectivePlaceholder = speciesName.trim() ? `auto: ${speciesName.trim()}` : "auto: [name]";
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Save empire to game"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={!isSaving ? onClose : undefined}
-      />
-
-      {/* Modal panel */}
-      <div className="relative z-10 w-full max-w-md mx-4 bg-card border border-border rounded-xl shadow-2xl">
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
+        onEscapeKeyDown={blockWhenSaving}
+        onInteractOutside={blockWhenSaving}
+        onPointerDownOutside={blockWhenSaving}
+        aria-describedby={undefined}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">Save Empire to Game</h2>
+          <DialogTitle>Save Empire to Game</DialogTitle>
           <div className="flex items-center gap-1">
             <Button
               type="button"
@@ -138,6 +133,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             onChange={setEmpireName}
             placeholder="e.g. Galactic Commonwealth"
             disabled={isSaving}
+            autoFocus
           />
           <FormField
             label="Species Name"
@@ -211,9 +207,8 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             </Button>
           </div>
         </form>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -224,9 +219,10 @@ interface FormFieldProps {
   onChange: (v: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  autoFocus?: boolean;
 }
 
-function FormField({ label, required, value, onChange, placeholder, disabled }: FormFieldProps) {
+function FormField({ label, required, value, onChange, placeholder, disabled, autoFocus }: FormFieldProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-foreground">
@@ -239,6 +235,7 @@ function FormField({ label, required, value, onChange, placeholder, disabled }: 
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
+        autoFocus={autoFocus}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
       />
     </div>
