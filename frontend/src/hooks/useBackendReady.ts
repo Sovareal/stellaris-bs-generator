@@ -4,7 +4,7 @@ import { api, backendPortPromise } from "@/lib/api";
 
 const POLL_INTERVAL_MS = 1000;
 const MAX_RETRIES = 30;
-const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 interface BackendState {
   ready: boolean;

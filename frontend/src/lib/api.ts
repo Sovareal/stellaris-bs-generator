@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, SuggestedNames, VersionResponse } from "@/types/empire";
 
-const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export const backendPortPromise: Promise<number> = isTauri
   ? invoke<number>("get_backend_port").catch(() => 8080)
