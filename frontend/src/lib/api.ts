@@ -1,9 +1,12 @@
 import type { EmpireResponse, ExportRequest, ExportResponse, RerollCategory, SettingsResponse, SuggestedNames, VersionResponse } from "@/types/empire";
 
-// Fixed port -- must match BACKEND_PORT constant in lib.rs
-const BACKEND_PORT = 17984;
-
-export const backendPortPromise: Promise<number> = Promise.resolve(BACKEND_PORT);
+// Port injected by the Tauri initialization script (AddScriptToExecuteOnDocumentCreated)
+// before any page JavaScript runs. Falls back to 8080 for browser dev mode.
+export const backendPortPromise: Promise<number> = Promise.resolve(
+  typeof window !== "undefined" && typeof (window as { __BACKEND_PORT__?: number }).__BACKEND_PORT__ === "number"
+    ? (window as unknown as { __BACKEND_PORT__: number }).__BACKEND_PORT__
+    : 8080
+);
 
 export class ApiError extends Error {
   status: number;

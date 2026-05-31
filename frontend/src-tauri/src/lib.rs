@@ -63,10 +63,15 @@ fn get_log_path(app: &tauri::App) -> Option<std::path::PathBuf> {
     })
 }
 
-const BACKEND_PORT: u16 = 17984;
-
-fn is_port_free(port: u16) -> bool {
-    TcpListener::bind(("127.0.0.1", port)).is_ok()
+fn allocate_port() -> Result<u16, String> {
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .map_err(|e| format!("Failed to allocate port: {e}"))?;
+    let port = listener
+        .local_addr()
+        .map_err(|e| format!("Failed to read allocated port: {e}"))?
+        .port();
+    drop(listener);
+    Ok(port)
 }
 
 fn spawn_backend(
@@ -187,23 +192,22 @@ pub fn run() {
                     .build(),
             )?;
 
-            // Use a fixed well-known port so the frontend always knows where to find the backend.
-            // Avoids all IPC and initialization-script timing issues.
-            let port = if is_port_free(BACKEND_PORT) {
-                log::info!("Using fixed backend port: {BACKEND_PORT}");
-                BACKEND_PORT
-            } else {
-                log::warn!("Port {BACKEND_PORT} is in use -- backend may fail to start");
-                BACKEND_PORT
+            // Allocate a free port for the Spring Boot backend
+            let port = match allocate_port() {
+                Ok(p) => { log::info!("Allocated backend port: {p}"); p }
+                Err(e) => { log::error!("{e} -- falling back to port 8080"); 8080 }
             };
             *app.state::<BackendPort>().0.lock().unwrap() = port;
 
-            // Create the main window. Port is hardcoded in the frontend (no dynamic discovery needed).
+            // Inject the port into the WebView before any page JavaScript runs via
+            // AddScriptToExecuteOnDocumentCreated. The frontend reads window.__BACKEND_PORT__
+            // directly -- no IPC invoke needed, no timing race.
             WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
                 .title("Stellaris BS Empire Generator")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(900.0, 600.0)
                 .resizable(true)
+                .initialization_script(&format!("window.__BACKEND_PORT__={port};"))
                 .build()?;
 
             let java_path = find_java_executable(app);
