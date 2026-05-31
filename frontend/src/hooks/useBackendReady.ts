@@ -85,7 +85,10 @@ export function useBackendReady(): BackendState {
         // dataStatus === "ready"
         let gameVersion: string | null = null;
         try {
-          const versionData = await api.getVersion();
+          const timeout = new Promise<never>((_, r) =>
+            setTimeout(() => r(new Error("timeout")), 5000)
+          );
+          const versionData = await Promise.race([api.getVersion(), timeout]);
           gameVersion = versionData.rawVersion;
         } catch {
           // Non-critical -- game version display is optional

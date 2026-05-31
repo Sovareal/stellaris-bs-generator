@@ -21,9 +21,13 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const port = await backendPortPromise;
+  const hasBody = options?.body !== undefined;
   const res = await fetch(`http://localhost:${port}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...(options?.headers as Record<string, string> ?? {}),
+    },
   });
 
   if (!res.ok) {
