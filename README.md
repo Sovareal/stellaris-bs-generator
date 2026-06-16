@@ -101,6 +101,24 @@ gradlew.bat :backend:bootJar
 ./gradlew :backend:bootJar
 ```
 
+#### Stopping dev servers
+
+`bootRun` and `npm run dev` are long-running foreground processes - normally
+`Ctrl+C` in their terminal is enough. If a dev server was started detached
+(backgrounded, or its terminal was closed without stopping it first), the
+port can stay bound even after the window is gone. `scripts/stop-dev.ps1`
+(Windows) / `scripts/stop-dev.sh` (Linux/macOS) frees ports `8080` and `5173`
+by killing whatever process is listening on them, regardless of how it was
+started:
+
+```bash
+# Windows
+.\scripts\stop-dev.ps1
+
+# Linux / macOS
+bash scripts/stop-dev.sh
+```
+
 ### Production Build
 
 The build pipeline is fully automated via a cross-platform Node.js script:
@@ -168,7 +186,9 @@ Stellaris BS Generator/
     ├── before-build.js         # Cross-platform build orchestration (Node.js)
     ├── bump-version.js         # Sync version across all 4 manifest files
     ├── bundle-jre.bat          # Windows JRE bundler (jlink)
-    └── bundle-jre.sh           # Linux/macOS JRE bundler (jlink)
+    ├── bundle-jre.sh           # Linux/macOS JRE bundler (jlink)
+    ├── stop-dev.ps1            # Windows: free ports 8080/5173 by killing their owning process
+    └── stop-dev.sh             # Linux/macOS: same, via lsof
 ```
 
 ## Backend Logging (production)
