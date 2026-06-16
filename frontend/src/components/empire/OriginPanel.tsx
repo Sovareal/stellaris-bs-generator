@@ -56,7 +56,12 @@ export function OriginPanel({ empire }: OriginPanelProps) {
       {canRerollNomadic && (
         <MonoRow
           k="NOMADIC"
-          v={empire.nomadic ? "Yes" : "No"}
+          v={
+            <>
+              <EntityIcon category="indicators" id="nomadic" size={20} />
+              <span>{empire.nomadic ? "Yes" : "No"}</span>
+            </>
+          }
           id=""
           last
           reroll={

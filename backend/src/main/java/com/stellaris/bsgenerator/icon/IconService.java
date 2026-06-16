@@ -112,6 +112,7 @@ public class IconService {
         var traitPaths = gameDataManager.getAllTraitIconPaths();
         if (traitPaths != null)
             for (var id : traitPaths.keySet()) if (getIcon("traits", id) != null) count++;
+        if (getIcon("indicators", "nomadic") != null) count++;
         log.info("Icon cache warm-up complete: {} icons cached", count);
     }
 
@@ -146,6 +147,7 @@ public class IconService {
             case "traits" -> resolveTraitIcon(gamePath, id);
             case "leadertraits" -> resolveLeaderTraitIcon(gamePath, id);
             case "planets" -> gamePath.resolve("gfx/interface/icons/planet_backgrounds/" + id + ".dds");
+            case "indicators" -> resolveIndicatorIcon(gamePath, id);
             default -> {
                 log.debug("Unknown icon category: {}", category);
                 yield null;
@@ -185,6 +187,13 @@ public class IconService {
         }
         // Fallback: try direct ID match
         return gamePath.resolve("gfx/interface/icons/origins/" + originId + ".dds");
+    }
+
+    private Path resolveIndicatorIcon(Path gamePath, String id) {
+        return switch (id) {
+            case "nomadic" -> gamePath.resolve("gfx/interface/icons/governments/nomad_toggle.dds");
+            default -> null;
+        };
     }
 
     private Path resolveLeaderTraitIcon(Path gamePath, String traitId) {
