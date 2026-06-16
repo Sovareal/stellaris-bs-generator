@@ -68,7 +68,8 @@ public class RerollService {
             var state = EmpireState.empty()
                     .withEthics(toEthicIds(candidateEthics))
                     .withSpeciesArchetype(empire.speciesArchetype().id())
-                    .withSpeciesClass(empire.speciesClass());
+                    .withSpeciesClass(empire.speciesClass())
+                    .withNomadic(empire.nomadic());
             if (!evaluator.evaluateBoth(empire.authority().potential(), empire.authority().possible(), state)) {
                 continue;
             }
@@ -118,7 +119,8 @@ public class RerollService {
         var state = EmpireState.empty()
                 .withEthics(toEthicIds(empire.ethics()))
                 .withSpeciesArchetype(empire.speciesArchetype().id())
-                .withSpeciesClass(empire.speciesClass());
+                .withSpeciesClass(empire.speciesClass())
+                .withNomadic(empire.nomadic());
         var compatible = filterService.getCompatibleAuthorities(state).stream()
                 .filter(a -> !a.id().equals(empire.authority().id()))
                 .filter(a -> filterService.getCompatibleCivics(state.withAuthority(a.id())).size() >= 2)
@@ -219,7 +221,8 @@ public class RerollService {
                 .withAuthority(empire.authority().id())
                 .withSpeciesArchetype(empire.speciesArchetype().id())
                 .withSpeciesClass(empire.speciesClass())
-                .withCivics(Set.of(otherCivicId));
+                .withCivics(Set.of(otherCivicId))
+                .withNomadic(empire.nomadic());
 
         var compatible = filterService.getCompatibleCivics(state).stream()
                 .filter(c -> !c.id().equals(empire.civics().get(index).id()))
@@ -262,7 +265,8 @@ public class RerollService {
                 .withAuthority(empire.authority().id())
                 .withSpeciesArchetype(empire.speciesArchetype().id())
                 .withSpeciesClass(empire.speciesClass())
-                .withCivics(toCivicIds(empire.civics()));
+                .withCivics(toCivicIds(empire.civics()))
+                .withNomadic(empire.nomadic());
 
         var compatible = filterService.getCompatibleOrigins(state).stream()
                 .filter(o -> !o.id().equals(empire.origin().id()))
@@ -314,8 +318,10 @@ public class RerollService {
     }
 
     /**
-     * Flips the nomadic flag. Cascades to re-pick origin (nomadic and non-nomadic origin pools
-     * are disjoint), revalidate civics, and re-derive homeworld/arkship.
+     * Flips the nomadic flag. Keeps the current origin if it's still compatible with the new
+     * flag (most origins have no is_nomadic requirement at all, so they're valid either way);
+     * only re-picks when the current origin is actually incompatible (e.g. it requires
+     * is_nomadic=yes/no explicitly). Revalidates civics and re-derives homeworld/arkship either way.
      */
     private GeneratedEmpire rerollNomadic(GeneratedEmpire empire) {
         boolean newNomadic = !empire.nomadic();
@@ -330,7 +336,9 @@ public class RerollService {
         if (compatibleOrigins.isEmpty()) {
             throw new GenerationException("No compatible origins for nomadic=" + newNomadic);
         }
-        Origin newOrigin = generatorService.pickOrigin(state);
+        Origin newOrigin = evaluator.evaluateBoth(empire.origin().potential(), empire.origin().possible(), state)
+                ? empire.origin()
+                : generatorService.pickOrigin(state);
         state = state.withOrigin(newOrigin.id());
 
         List<Civic> newCivics = revalidateCivics(empire.civics(), state);
@@ -456,7 +464,8 @@ public class RerollService {
                 .withCivics(toCivicIds(empire.civics()))
                 .withOrigin(empire.origin().id())
                 .withSpeciesArchetype(empire.speciesArchetype().id())
-                .withSpeciesClass(empire.speciesClass());
+                .withSpeciesClass(empire.speciesClass())
+                .withNomadic(empire.nomadic());
 
         var candidates = filterService.getCompatibleTraits(empire.speciesArchetype().id(), state).stream()
                 .filter(t -> !excludedIds.contains(t.id()))
@@ -537,7 +546,8 @@ public class RerollService {
                 .withCivics(toCivicIds(empire.civics()))
                 .withOrigin(empire.origin().id())
                 .withSpeciesArchetype(archetype.id())
-                .withSpeciesClass(empire.speciesClass());
+                .withSpeciesClass(empire.speciesClass())
+                .withNomadic(empire.nomadic());
 
         var available = filterService.getCompatibleTraits(archetype.id(), state);
 
@@ -621,7 +631,8 @@ public class RerollService {
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
                 .withCivics(toCivicIds(empire.civics()))
-                .withOrigin(empire.origin().id());
+                .withOrigin(empire.origin().id())
+                .withNomadic(empire.nomadic());
 
         var compatible = filterService.getCompatibleRulerTraits(empire.leaderClass(), state);
 
@@ -771,7 +782,8 @@ public class RerollService {
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
                 .withSpeciesArchetype(empire.speciesArchetype().id())
-                .withSpeciesClass(empire.speciesClass());
+                .withSpeciesClass(empire.speciesClass())
+                .withNomadic(empire.nomadic());
         var newEnforcedTraits = generatorService.buildSpeciesTraits(
                 empire.speciesArchetype(), stateForBuild, newOrigin, newCivics);
 
@@ -932,7 +944,8 @@ public class RerollService {
                 .withEthics(toEthicIds(empire.ethics()))
                 .withAuthority(empire.authority().id())
                 .withCivics(toCivicIds(empire.civics()))
-                .withOrigin(empire.origin().id());
+                .withOrigin(empire.origin().id())
+                .withNomadic(empire.nomadic());
 
         // Pick a potentially different leader class
         var leaderClasses = List.of("official", "commander", "scientist");

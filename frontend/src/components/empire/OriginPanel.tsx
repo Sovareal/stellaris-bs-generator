@@ -3,7 +3,6 @@ import { displayName } from "@/lib/format";
 import { EntityIcon } from "@/components/EntityIcon";
 import { Panel } from "./Panel";
 import { MonoRow } from "./MonoRow";
-import { InlineReroll } from "./InlineReroll";
 import { RowReroll } from "./RowReroll";
 import { Tag } from "./Tag";
 import type { EmpireResponse } from "@/types/empire";
@@ -31,20 +30,12 @@ export function OriginPanel({ empire }: OriginPanelProps) {
       code="IDE.04"
       title="Origin"
       headerTag={empire.nomadic ? <Tag color="#facc15">NOMADIC</Tag> : undefined}
-      headerReroll={
-        <InlineReroll
-          available={!!r["origin"] && !anyBusy}
-          loading={isRerolling === "origin"}
-          onClick={() => reroll("origin")}
-          title="Reroll origin"
-        />
-      }
     >
       <MonoRow
         k="ORIGIN"
         v={
           <>
-            <EntityIcon category="origins" id={empire.origin.id} size={36} />
+            <EntityIcon category="origins" id={empire.origin.id} size={32} />
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {displayName(empire.origin)}
             </span>
@@ -52,13 +43,21 @@ export function OriginPanel({ empire }: OriginPanelProps) {
         }
         id={originId}
         last={!canRerollNomadic}
+        reroll={
+          <RowReroll
+            available={!!r["origin"] && !anyBusy}
+            loading={isRerolling === "origin"}
+            onClick={() => reroll("origin")}
+            title="Reroll origin"
+          />
+        }
       />
       {canRerollNomadic && (
         <MonoRow
           k="NOMADIC"
           v={
             <>
-              <EntityIcon category="indicators" id="nomadic" size={20} />
+              <EntityIcon category="indicators" id="nomadic" size={32} />
               <span>{empire.nomadic ? "Yes" : "No"}</span>
             </>
           }
