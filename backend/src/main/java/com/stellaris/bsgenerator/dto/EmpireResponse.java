@@ -26,9 +26,12 @@ public record EmpireResponse(
         @Nullable String shipsetName,
         LeaderDto leader,
         @Nullable SecondarySpeciesDto secondarySpecies,
-        Map<String, Boolean> rerollsAvailable
+        Map<String, Boolean> rerollsAvailable,
+        boolean nomadic,
+        @Nullable String arkshipType
 ) {
-    public static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc) {
+    public static EmpireResponse from(GeneratedEmpire empire, GenerationSession session, LocalizationService loc,
+                                       boolean nomadsAvailable) {
         var originEnforcedIds = new java.util.HashSet<>(empire.origin().enforcedTraitIds());
         var civicEnforcedIds = new java.util.HashSet<String>();
         for (var civic : empire.civics()) {
@@ -59,11 +62,13 @@ public record EmpireResponse(
                 loc.getDisplayName(empire.shipset().id()),
                 LeaderDto.from(empire.leaderClass(), empire.leaderTraits(), loc, empire.origin().id()),
                 SecondarySpeciesDto.from(empire.secondarySpecies(), loc),
-                buildRerollMap(empire, session)
+                buildRerollMap(empire, session, nomadsAvailable),
+                empire.nomadic(),
+                empire.arkshipType()
         );
     }
 
-    private static Map<String, Boolean> buildRerollMap(GeneratedEmpire empire, GenerationSession session) {
+    private static Map<String, Boolean> buildRerollMap(GeneratedEmpire empire, GenerationSession session, boolean nomadsAvailable) {
         boolean available = session.canReroll();
         var map = new LinkedHashMap<String, Boolean>();
         map.put("ethics", available);
@@ -71,11 +76,18 @@ public record EmpireResponse(
         map.put("civic1", available);
         map.put("civic2", available);
         map.put("origin", available);
-        map.put("homeworld", available);
+        if (empire.nomadic()) {
+            map.put("arkship_type", available);
+        } else {
+            map.put("homeworld", available);
+        }
         map.put("shipset", available);
         map.put("leader", available);
         if (empire.secondarySpecies() != null) {
             map.put("secondaryspecies", available);
+        }
+        if (empire.nomadic() || nomadsAvailable) {
+            map.put("nomadic", available);
         }
         return map;
     }

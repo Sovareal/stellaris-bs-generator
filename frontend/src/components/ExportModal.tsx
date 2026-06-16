@@ -11,6 +11,7 @@ interface ExportModalProps {
 }
 
 export function ExportModal({ open, onClose }: ExportModalProps) {
+  const empire = useEmpireStore((s) => s.empire);
   const isSaving = useEmpireStore((s) => s.isSaving);
   const saveToGame = useEmpireStore((s) => s.saveToGame);
   const saveSuccess = useEmpireStore((s) => s.saveSuccess);
@@ -166,7 +167,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             disabled={isSaving}
           />
           <FormField
-            label="Homeworld Name"
+            label={empire?.nomadic ? "Arkship Name" : "Homeworld Name"}
             value={homeworldName}
             onChange={setHomeworldName}
             placeholder="auto: Homeworld"

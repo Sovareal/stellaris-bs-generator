@@ -22,6 +22,10 @@ public class EmpireGeneratorService {
     private static final int ETHICS_BUDGET = 3;
     private static final int CIVIC_COUNT = 2;
     private static final double GESTALT_CHANCE = 0.30;
+    private static final double NOMADIC_CHANCE = 0.12;
+    static final List<String> ARKSHIP_TYPES = List.of(
+            "civilian_arkship_tier_1", "science_arkship_tier_1", "military_arkship_tier_1"
+    );
     // 3-regular path generates 3 picks/empire while fanatic path generates 1;
     // 0.65 compensates for that asymmetry and raises fanatic frequency closer to regular.
     private static final double FANATIC_ETHICS_CHANCE = 0.65;
@@ -70,9 +74,13 @@ public class EmpireGeneratorService {
      * @throws GenerationException if no valid combination can be found
      */
     public GeneratedEmpire generate() {
+        // 0. Decide nomadic before any selection — IS_NOMADIC must be evaluable from the start
+        boolean nomadic = shouldGenerateNomadic();
+
         // 1. Pick ethics (total cost = 3)
         List<Ethic> ethics = pickEthics();
         var state = EmpireState.empty()
+                .withNomadic(nomadic)
                 .withEthics(toIdSet(ethics));
 
         // 2. Pick compatible authority
@@ -106,11 +114,18 @@ public class EmpireGeneratorService {
         // traitPointsUsed = sum of ALL enforced trait costs (origin-enforced count toward budget)
         int pointsUsed = traits.stream().mapToInt(SpeciesTrait::cost).sum();
 
-        // 7. Pick homeworld planet (or use origin-fixed, constrained by traits + species class)
-        PlanetClass homeworld = pickHomeworld(origin, traits, speciesClass);
-
-        // 7b. Determine habitability preference
-        PlanetClass habPref = pickHabitabilityPreference(origin, homeworld);
+        // 7. Pick homeworld planet (or arkship, if nomadic)
+        PlanetClass homeworld;
+        PlanetClass habPref;
+        String arkshipType = null;
+        if (nomadic) {
+            homeworld = new PlanetClass("pc_ark", "fixed");
+            habPref = homeworld;
+            arkshipType = pickArkshipType();
+        } else {
+            homeworld = pickHomeworld(origin, traits, speciesClass);
+            habPref = pickHabitabilityPreference(origin, homeworld);
+        }
 
         // 8. Pick random shipset (constrained by origin/civic graphical_culture requirements)
         GraphicalCulture shipset = pickShipset(origin, civics);
@@ -122,7 +137,7 @@ public class EmpireGeneratorService {
         // 10. Generate secondary species if origin/civic requires one
         SecondarySpecies secondarySpecies = generateSecondarySpecies(origin, civics, speciesClass);
 
-        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, speciesClass={}, traits={} ({}/{}pts), homeworld={}, habPref={}, shipset={}, leader={}/{}, secondarySpecies={}",
+        log.info("Generated empire: ethics={}, authority={}, civics={}, origin={}, archetype={}, speciesClass={}, traits={} ({}/{}pts), homeworld={}, habPref={}, shipset={}, leader={}/{}, secondarySpecies={}, nomadic={}, arkshipType={}",
                 ethics.stream().map(Ethic::id).toList(),
                 authority.id(),
                 civics.stream().map(Civic::id).toList(),
@@ -132,11 +147,27 @@ public class EmpireGeneratorService {
                 pointsUsed, archetype.traitPoints(),
                 homeworld.id(), habPref.id(), shipset.id(),
                 leaderClass, leaderTraits.stream().map(StartingRulerTrait::id).toList(),
-                secondarySpecies != null ? secondarySpecies.speciesClass() : "none");
+                secondarySpecies != null ? secondarySpecies.speciesClass() : "none",
+                nomadic, arkshipType);
 
         return new GeneratedEmpire(ethics, authority, civics, origin,
                 archetype, speciesClass, traits, pointsUsed, archetype.traitPoints(),
-                homeworld, habPref, shipset, leaderClass, leaderTraits, secondarySpecies);
+                homeworld, habPref, shipset, leaderClass, leaderTraits, secondarySpecies,
+                nomadic, arkshipType);
+    }
+
+    /**
+     * 12% chance of a nomadic empire when Nomads DLC content is in the compatible pool;
+     * falls back to non-nomadic silently if no nomadic origin is available (DLC disabled).
+     */
+    private boolean shouldGenerateNomadic() {
+        if (random.nextDouble() >= NOMADIC_CHANCE) return false;
+        var testState = EmpireState.empty().withNomadic(true);
+        return !filterService.getCompatibleOrigins(testState).isEmpty();
+    }
+
+    String pickArkshipType() {
+        return ARKSHIP_TYPES.get(random.nextInt(ARKSHIP_TYPES.size()));
     }
 
     /**
@@ -343,7 +374,7 @@ public class EmpireGeneratorService {
             "origin_tree_of_life"
     );
 
-    private Origin pickOrigin(EmpireState state) {
+    Origin pickOrigin(EmpireState state) {
         var compatible = filterService.getCompatibleOrigins(state);
         if (compatible.isEmpty()) {
             throw new GenerationException("No compatible origins for current state");

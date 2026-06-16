@@ -70,6 +70,10 @@ public final class RequirementBlockParser {
                 if (!reqs.isEmpty()) {
                     categories.computeIfAbsent(category, _ -> new ArrayList<>()).addAll(reqs);
                 }
+            } else if (category == RequirementCategory.IS_NOMADIC && child.value() != null) {
+                // is_nomadic = yes/no is a direct leaf, not a nested block like other categories
+                categories.computeIfAbsent(category, _ -> new ArrayList<>())
+                        .add(new Requirement.Value(child.value()));
             }
         }
 

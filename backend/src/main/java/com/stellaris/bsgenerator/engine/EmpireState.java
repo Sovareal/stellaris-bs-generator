@@ -17,38 +17,43 @@ public record EmpireState(
         String origin,
         Set<String> traits,
         String speciesClass,
-        String speciesArchetype
+        String speciesArchetype,
+        boolean nomadic
 ) {
     public static EmpireState empty() {
-        return new EmpireState(Set.of(), null, Set.of(), null, Set.of(), null, null);
+        return new EmpireState(Set.of(), null, Set.of(), null, Set.of(), null, null, false);
     }
 
     public EmpireState withEthics(Set<String> ethics) {
-        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype);
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
     }
 
     public EmpireState withAuthority(String authority) {
-        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype);
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
     }
 
     public EmpireState withCivics(Set<String> civics) {
-        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype);
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
     }
 
     public EmpireState withOrigin(String origin) {
-        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype);
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
     }
 
     public EmpireState withTraits(Set<String> traits) {
-        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype);
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
     }
 
     public EmpireState withSpeciesClass(String speciesClass) {
-        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype);
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
     }
 
     public EmpireState withSpeciesArchetype(String speciesArchetype) {
-        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype);
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
+    }
+
+    public EmpireState withNomadic(boolean nomadic) {
+        return new EmpireState(ethics, authority, civics, origin, traits, speciesClass, speciesArchetype, nomadic);
     }
 
     /**
@@ -67,6 +72,7 @@ public record EmpireState(
             case SPECIES_ARCHETYPE -> speciesArchetype != null ? Set.of(speciesArchetype) : Set.of();
             case GRAPHICAL_CULTURE -> Set.of(); // Not tracked in empire state
             case COUNTRY_TYPE -> Set.of("default"); // Player empires are country_type "default"
+            case IS_NOMADIC -> Set.of(nomadic ? "yes" : "no");
         };
     }
 
@@ -84,6 +90,7 @@ public record EmpireState(
             case SPECIES_ARCHETYPE -> speciesArchetype != null;
             case COUNTRY_TYPE -> true; // Always "default" for player empires
             case GRAPHICAL_CULTURE -> false;
+            case IS_NOMADIC -> true; // Flag is known at generation start
         };
     }
 }

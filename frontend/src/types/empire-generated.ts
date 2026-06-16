@@ -44,6 +44,8 @@ export interface EmpireResponse {
   leader: LeaderDto;
   secondarySpecies: SecondarySpeciesDto | null;
   rerollsAvailable: Record<string, boolean>;
+  nomadic: boolean;
+  arkshipType: string | null;
 }
 
 export interface EthicDto {

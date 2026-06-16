@@ -32,4 +32,6 @@ export type RerollCategory =
   | "homeworld"
   | "shipset"
   | "leader"
-  | "secondaryspecies";
+  | "secondaryspecies"
+  | "nomadic"
+  | "arkship_type";

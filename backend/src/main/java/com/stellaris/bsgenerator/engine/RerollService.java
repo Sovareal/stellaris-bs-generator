@@ -47,6 +47,8 @@ public class RerollService {
             case SHIPSET -> rerollShipset(empire);
             case LEADER -> rerollLeader(empire);
             case SECONDARY_SPECIES -> rerollSecondarySpecies(empire);
+            case NOMADIC -> rerollNomadic(empire);
+            case ARKSHIP_TYPE -> rerollArkshipType(empire);
             case TRAIT_SINGLE, TRAIT_ADD, LEADER_TRAIT_ADD ->
                 throw new IllegalArgumentException("Use dedicated methods for " + category);
         };
@@ -309,6 +311,99 @@ public class RerollService {
             throw new GenerationException("Failed to generate secondary species");
         }
         return copyWith(empire, b -> b.secondarySpecies = newSecondary);
+    }
+
+    /**
+     * Flips the nomadic flag. Cascades to re-pick origin (nomadic and non-nomadic origin pools
+     * are disjoint), revalidate civics, and re-derive homeworld/arkship.
+     */
+    private GeneratedEmpire rerollNomadic(GeneratedEmpire empire) {
+        boolean newNomadic = !empire.nomadic();
+        var state = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withSpeciesArchetype(empire.speciesArchetype().id())
+                .withSpeciesClass(empire.speciesClass())
+                .withNomadic(newNomadic);
+
+        var compatibleOrigins = filterService.getCompatibleOrigins(state);
+        if (compatibleOrigins.isEmpty()) {
+            throw new GenerationException("No compatible origins for nomadic=" + newNomadic);
+        }
+        Origin newOrigin = generatorService.pickOrigin(state);
+        state = state.withOrigin(newOrigin.id());
+
+        List<Civic> newCivics = revalidateCivics(empire.civics(), state);
+        state = state.withCivics(toCivicIds(newCivics));
+
+        var newSecondary = generatorService.generateSecondarySpecies(newOrigin, newCivics, empire.speciesClass());
+        var newTraits = preserveRandomTraits(empire, newOrigin, newCivics);
+        int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
+
+        PlanetClass homeworld;
+        PlanetClass habPref;
+        String arkshipType;
+        if (newNomadic) {
+            homeworld = new PlanetClass("pc_ark", "fixed");
+            habPref = homeworld;
+            arkshipType = generatorService.pickArkshipType();
+        } else {
+            homeworld = generatorService.pickHomeworld(newOrigin, newTraits, empire.speciesClass());
+            habPref = generatorService.pickHabitabilityPreference(newOrigin, homeworld);
+            arkshipType = null;
+        }
+
+        var newLeaderTraits = generatorService.pickLeaderTraits(empire.leaderClass(), state);
+
+        return copyWith(empire, b -> {
+            b.nomadic = newNomadic;
+            b.origin = newOrigin;
+            b.civics = newCivics;
+            b.secondarySpecies = newSecondary;
+            b.speciesTraits = newTraits;
+            b.traitPointsUsed = newPointsUsed;
+            b.homeworld = homeworld;
+            b.habitabilityPreference = habPref;
+            b.arkshipType = arkshipType;
+            b.leaderTraits = newLeaderTraits;
+        });
+    }
+
+    /** Picks a different arkship type for a nomadic empire. No cascade. */
+    private GeneratedEmpire rerollArkshipType(GeneratedEmpire empire) {
+        if (!empire.nomadic()) {
+            throw new GenerationException("Cannot reroll arkship type for a non-nomadic empire");
+        }
+        String current = empire.arkshipType();
+        var others = EmpireGeneratorService.ARKSHIP_TYPES.stream()
+                .filter(t -> !t.equals(current))
+                .toList();
+        String newType = others.get(random.nextInt(others.size()));
+        return copyWith(empire, b -> b.arkshipType = newType);
+    }
+
+    /**
+     * Re-validates each civic against the given state, replacing any that are no longer
+     * compatible (e.g. nomadic-exclusive civics when flipping to non-nomadic).
+     */
+    private List<Civic> revalidateCivics(List<Civic> current, EmpireState state) {
+        var result = new ArrayList<Civic>();
+        var runningState = state;
+        for (var civic : current) {
+            Civic kept = civic;
+            if (!evaluator.evaluateBoth(civic.potential(), civic.possible(), runningState)) {
+                var pickable = filterService.getCompatibleCivics(runningState);
+                if (pickable.isEmpty()) {
+                    throw new GenerationException("No replacement civic available after nomadic toggle");
+                }
+                kept = WeightedRandom.select(pickable, Civic::randomWeight, random);
+            }
+            result.add(kept);
+            var ids = new HashSet<>(runningState.civics());
+            ids.add(kept.id());
+            runningState = runningState.withCivics(ids);
+        }
+        return result;
     }
 
     /**
@@ -884,6 +979,8 @@ public class RerollService {
         String leaderClass;
         List<StartingRulerTrait> leaderTraits;
         SecondarySpecies secondarySpecies;
+        boolean nomadic;
+        String arkshipType;
 
         EmpireBuilder(GeneratedEmpire e) {
             this.ethics = e.ethics();
@@ -901,12 +998,15 @@ public class RerollService {
             this.leaderClass = e.leaderClass();
             this.leaderTraits = e.leaderTraits();
             this.secondarySpecies = e.secondarySpecies();
+            this.nomadic = e.nomadic();
+            this.arkshipType = e.arkshipType();
         }
 
         GeneratedEmpire build() {
             return new GeneratedEmpire(ethics, authority, civics, origin,
                     speciesArchetype, speciesClass, speciesTraits, traitPointsUsed, traitPointsBudget,
-                    homeworld, habitabilityPreference, shipset, leaderClass, leaderTraits, secondarySpecies);
+                    homeworld, habitabilityPreference, shipset, leaderClass, leaderTraits, secondarySpecies,
+                    nomadic, arkshipType);
         }
     }
 
@@ -947,6 +1047,8 @@ public class RerollService {
                     + " → " + updated.speciesTraits().stream().map(SpeciesTrait::id).toList();
             case TRAIT_ADD -> "+ " + updated.speciesTraits().getLast().id();
             case LEADER_TRAIT_ADD -> "+ " + updated.leaderTraits().getLast().id();
+            case NOMADIC -> old.nomadic() + " → " + updated.nomadic();
+            case ARKSHIP_TYPE -> old.arkshipType() + " → " + updated.arkshipType();
         };
     }
 }

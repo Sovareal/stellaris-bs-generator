@@ -103,6 +103,13 @@ public class EmpireExporterService {
         "auth_machine_intelligence", "l_machine"
     );
 
+    // arkshipType → room ID for nomadic empires
+    private static final Map<String, String> ARKSHIP_ROOMS = Map.of(
+        "civilian_arkship_tier_1", "nomads_civilian_room",
+        "science_arkship_tier_1",  "nomads_science_room",
+        "military_arkship_tier_1", "nomads_military_room"
+    );
+
     // speciesClass → name_list ID
     private static final Map<String, String> SPECIES_NAME_LISTS = Map.ofEntries(
         Map.entry("HUM", "HUM1"),
@@ -183,7 +190,10 @@ public class EmpireExporterService {
             sb.append("\tadvisor_voice_type=").append(q(advisorVoice)).append("\n");
         }
 
-        // Homeworld
+        // Nomadic flag
+        sb.append("\tis_nomadic=").append(empire.nomadic() ? "yes" : "no").append("\n");
+
+        // Homeworld (or arkship, for nomadic empires — planet_class is already "pc_ark")
         appendNameBlock(sb, "\tplanet_name", opts.homeworldName());
         sb.append("\tplanet_class=").append(q(empire.homeworld().id())).append("\n");
         appendNameBlock(sb, "\tsystem_name", opts.homeSystemName());
@@ -192,6 +202,11 @@ public class EmpireExporterService {
         // Graphical culture (shipset)
         sb.append("\tgraphical_culture=").append(q(shipset)).append("\n");
         sb.append("\tcity_graphical_culture=").append(q(shipset)).append("\n");
+
+        // Arkship size (nomadic only)
+        if (empire.nomadic() && empire.arkshipType() != null) {
+            sb.append("\tship_size=").append(q(empire.arkshipType())).append("\n");
+        }
 
         // Flag block
         sb.append("\tempire_flag=\n\t{\n");
@@ -231,7 +246,8 @@ public class EmpireExporterService {
         // Flags
         sb.append("\tspawn_as_fallen=no\n");
         sb.append("\tignore_portrait_duplication=no\n");
-        sb.append("\troom=\"default\"\n");
+        String room = empire.nomadic() ? ARKSHIP_ROOMS.get(empire.arkshipType()) : null;
+        sb.append("\troom=").append(q(room != null ? room : "default")).append("\n");
         sb.append("\tspawn_enabled=yes\n");
 
         // Ethics

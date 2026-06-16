@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.engine;
 
 import com.stellaris.bsgenerator.model.*;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 
@@ -22,5 +23,7 @@ public record GeneratedEmpire(
         GraphicalCulture shipset,
         String leaderClass,
         List<StartingRulerTrait> leaderTraits,
-        SecondarySpecies secondarySpecies
+        SecondarySpecies secondarySpecies,
+        boolean nomadic,
+        @Nullable String arkshipType
 ) {}

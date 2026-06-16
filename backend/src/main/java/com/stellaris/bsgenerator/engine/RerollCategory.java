@@ -12,5 +12,7 @@ public enum RerollCategory {
     HOMEWORLD,
     SHIPSET,
     LEADER,
-    SECONDARY_SPECIES
+    SECONDARY_SPECIES,
+    NOMADIC,
+    ARKSHIP_TYPE
 }

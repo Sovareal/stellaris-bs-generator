@@ -27,6 +27,7 @@ public final class DlcRegistry {
             new DlcInfo("Federations",       "Expansion"),
             new DlcInfo("Overlord",          "Expansion"),
             new DlcInfo("Galactic Paragons", "Expansion"),
+            new DlcInfo("Nomads",            "Expansion"),
             // Story Packs
             new DlcInfo("Synthetic Dawn Story Pack", "Story Pack"),
             new DlcInfo("First Contact",             "Story Pack"),
@@ -89,7 +90,8 @@ public final class DlcRegistry {
             Map.entry("has_overlord_dlc",      "Overlord"),
             Map.entry("has_paragon_dlc",       "Galactic Paragons"),
             Map.entry("has_synthetic_dawn",    "Synthetic Dawn Story Pack"),
-            Map.entry("has_cosmic_storms_dlc", "Cosmic Storms")
+            Map.entry("has_cosmic_storms_dlc", "Cosmic Storms"),
+            Map.entry("has_nomads_dlc",        "Nomads")
     );
 
     /** Resolve a {@code host_has_dlc} string to a canonical DLC name. Returns null if unknown. */

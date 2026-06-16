@@ -15,7 +15,8 @@ public enum RequirementCategory {
     SPECIES_CLASS("species_class"),
     SPECIES_ARCHETYPE("species_archetype"),
     GRAPHICAL_CULTURE("graphical_culture"),
-    COUNTRY_TYPE("country_type");
+    COUNTRY_TYPE("country_type"),
+    IS_NOMADIC("is_nomadic");
 
     private final String clausewitzKey;
 

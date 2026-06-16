@@ -4,6 +4,8 @@ import { EntityIcon } from "@/components/EntityIcon";
 import { Panel } from "./Panel";
 import { MonoRow } from "./MonoRow";
 import { InlineReroll } from "./InlineReroll";
+import { RowReroll } from "./RowReroll";
+import { Tag } from "./Tag";
 import type { EmpireResponse } from "@/types/empire";
 
 interface OriginPanelProps {
@@ -22,11 +24,13 @@ export function OriginPanel({ empire }: OriginPanelProps) {
   const originId = empire.origin.dlcRequirement
     ? `${empire.origin.dlcRequirement} DLC`
     : "BASE";
+  const canRerollNomadic = "nomadic" in r;
 
   return (
     <Panel
       code="IDE.04"
       title="Origin"
+      headerTag={empire.nomadic ? <Tag color="#facc15">NOMADIC</Tag> : undefined}
       headerReroll={
         <InlineReroll
           available={!!r["origin"] && !anyBusy}
@@ -47,8 +51,24 @@ export function OriginPanel({ empire }: OriginPanelProps) {
           </>
         }
         id={originId}
-        last
+        last={!canRerollNomadic}
       />
+      {canRerollNomadic && (
+        <MonoRow
+          k="NOMADIC"
+          v={empire.nomadic ? "Yes" : "No"}
+          id=""
+          last
+          reroll={
+            <RowReroll
+              available={!!r["nomadic"] && !anyBusy}
+              loading={isRerolling === "nomadic"}
+              onClick={() => reroll("nomadic")}
+              title="Reroll nomadic status"
+            />
+          }
+        />
+      )}
     </Panel>
   );
 }

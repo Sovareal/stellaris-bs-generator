@@ -29,15 +29,21 @@ public class EmpireController {
     private final EmpireExporterService exporterService;
     private final UserEmpireFileService userEmpireFileService;
     private final NameGeneratorService nameGeneratorService;
+    private final CompatibilityFilterService filterService;
 
     // In-memory session (single user desktop app)
     private GenerationSession session;
+
+    /** Whether at least one nomadic-only origin is in the current compatible pool (Nomads DLC enabled). */
+    private boolean nomadsAvailable() {
+        return !filterService.getCompatibleOrigins(EmpireState.empty().withNomadic(true)).isEmpty();
+    }
 
     @PostMapping("/generate")
     public EmpireResponse generate() {
         var empire = generatorService.generate();
         session = new GenerationSession(empire);
-        return EmpireResponse.from(empire, session, localizationService);
+        return EmpireResponse.from(empire, session, localizationService, nomadsAvailable());
     }
 
     @PostMapping("/reroll")
@@ -53,23 +59,23 @@ public class EmpireController {
                 throw new IllegalArgumentException("traitId is required for trait_single reroll");
             }
             var updated = rerollService.rerollSingleTrait(session, request.traitId());
-            return EmpireResponse.from(updated, session, localizationService);
+            return EmpireResponse.from(updated, session, localizationService, nomadsAvailable());
         }
         if ("trait_add".equals(cat)) {
             var updated = rerollService.addOneTrait(session);
-            return EmpireResponse.from(updated, session, localizationService);
+            return EmpireResponse.from(updated, session, localizationService, nomadsAvailable());
         }
         if ("leader_trait_add".equals(cat)) {
             var updated = rerollService.addLeaderTrait(session);
-            return EmpireResponse.from(updated, session, localizationService);
+            return EmpireResponse.from(updated, session, localizationService, nomadsAvailable());
         }
         if ("trait_remove".equals(cat)) {
             var updated = rerollService.removeRandomTrait(session);
-            return EmpireResponse.from(updated, session, localizationService);
+            return EmpireResponse.from(updated, session, localizationService, nomadsAvailable());
         }
         if ("trait_secondary_add".equals(cat)) {
             var updated = rerollService.addOneSecondaryTrait(session);
-            return EmpireResponse.from(updated, session, localizationService);
+            return EmpireResponse.from(updated, session, localizationService, nomadsAvailable());
         }
 
         RerollCategory category = switch (cat) {
@@ -82,11 +88,13 @@ public class EmpireController {
             case "shipset" -> RerollCategory.SHIPSET;
             case "leader" -> RerollCategory.LEADER;
             case "secondaryspecies" -> RerollCategory.SECONDARY_SPECIES;
+            case "nomadic" -> RerollCategory.NOMADIC;
+            case "arkship_type" -> RerollCategory.ARKSHIP_TYPE;
             default -> throw new IllegalArgumentException("Unknown reroll category: " + request.category());
         };
 
         var updated = rerollService.reroll(session, category);
-        return EmpireResponse.from(updated, session, localizationService);
+        return EmpireResponse.from(updated, session, localizationService, nomadsAvailable());
     }
 
     @PostMapping("/export")
