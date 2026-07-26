@@ -87,6 +87,48 @@ class SpeciesTraitExtractorTest {
         assertFalse(agrarian.tags().isEmpty(), "trait_agrarian should have tags");
     }
 
+    @Test
+    void loyaltyCircuitsExcludesHiveMind() {
+        // trait_cyborg_loyalty_circuits declares its Hive Mind conflict via
+        // species_potential_add = { NOT = { has_trait = trait_hive_mind } } }, not via the
+        // `opposites` list -- a second conflict mechanism (phase 80, issue 3) that must be
+        // merged into `opposites` at extraction time.
+        var loyaltyCircuits = findById("trait_cyborg_loyalty_circuits");
+        assertTrue(loyaltyCircuits.opposites().contains("trait_hive_mind"),
+                "trait_cyborg_loyalty_circuits should exclude trait_hive_mind");
+        // Its declared opposites entry should still be preserved alongside the merged one
+        assertTrue(loyaltyCircuits.opposites().contains("trait_cyborg_apathy_loops"),
+                "trait_cyborg_loyalty_circuits should still oppose trait_cyborg_apathy_loops");
+    }
+
+    @Test
+    void allTraitOppositesCapturesInitialNoTraits() {
+        // trait_pathogenic_genes (initial = no, granted by origin_synthetic_fertility) is
+        // excluded from the creation-eligible pool, but its opposites list must still be
+        // recoverable for stubbing the enforced trait (phase 80, issue 1).
+        var service = new GameFileService(
+                new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir")),
+                new SettingsService(new ParserProperties(GAME_PATH, System.getProperty("java.io.tmpdir"))));
+        try {
+            service.loadAll();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        var allOpposites = new SpeciesTraitExtractor().extractAllTraitOpposites(service.getTraits());
+
+        assertTrue(traits.stream().noneMatch(t -> t.id().equals("trait_pathogenic_genes")),
+                "trait_pathogenic_genes should NOT be in the creation-eligible pool (initial = no)");
+
+        var pathogenicOpposites = allOpposites.get("trait_pathogenic_genes");
+        assertNotNull(pathogenicOpposites, "trait_pathogenic_genes should still have an opposites entry");
+        for (var expected : List.of("trait_rapid_breeders", "trait_slow_breeders", "trait_adaptive",
+                "trait_extremely_adaptive", "trait_nonadaptive", "trait_sedentary", "trait_egg_laying",
+                "trait_nascent_stage", "trait_incubator")) {
+            assertTrue(pathogenicOpposites.contains(expected),
+                    "trait_pathogenic_genes opposites should contain " + expected);
+        }
+    }
+
     private SpeciesTrait findById(String id) {
         return traits.stream().filter(t -> t.id().equals(id)).findFirst()
                 .orElseThrow(() -> new AssertionError("Trait " + id + " not found"));

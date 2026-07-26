@@ -278,13 +278,26 @@ public class RerollService {
 
         // Use uniform random — matches pickOrigin() (Phase 11.3 fix, now applied to reroll too)
         var newOrigin = compatible.get(random.nextInt(compatible.size()));
-        var stateWithOrigin = state.withOrigin(newOrigin.id());
+
+        // Re-validate civics against the new origin -- some origins restrict civics (e.g.
+        // origin_shattered_ring forbids civic_environmental_architects/Planetscapers) and that
+        // restriction is only declared on the civic side, so a civic picked before this reroll
+        // needs to be re-checked, not carried over unchanged.
+        var stateForCivics = EmpireState.empty()
+                .withEthics(toEthicIds(empire.ethics()))
+                .withAuthority(empire.authority().id())
+                .withSpeciesArchetype(empire.speciesArchetype().id())
+                .withSpeciesClass(empire.speciesClass())
+                .withNomadic(empire.nomadic())
+                .withOrigin(newOrigin.id());
+        var newCivics = revalidateCivics(empire.civics(), stateForCivics);
+        var stateWithOrigin = stateForCivics.withCivics(toCivicIds(newCivics));
 
         // Re-generate secondary species when origin changes
-        var newSecondary = generatorService.generateSecondarySpecies(newOrigin, empire.civics(), empire.speciesClass());
+        var newSecondary = generatorService.generateSecondarySpecies(newOrigin, newCivics, empire.speciesClass());
 
         // Preserve random traits; update enforced layer for new origin
-        var newTraits = preserveRandomTraits(empire, newOrigin, empire.civics());
+        var newTraits = preserveRandomTraits(empire, newOrigin, newCivics);
         int newPointsUsed = newTraits.stream().mapToInt(SpeciesTrait::cost).sum();
 
         // Regenerate leader traits: origin change may affect valid trait pool (e.g., Treasure Hunters → other)
@@ -296,6 +309,7 @@ public class RerollService {
 
         return copyWith(empire, b -> {
             b.origin = newOrigin;
+            b.civics = newCivics;
             b.secondarySpecies = newSecondary;
             b.speciesTraits = newTraits;
             b.traitPointsUsed = newPointsUsed;
@@ -392,7 +406,8 @@ public class RerollService {
 
     /**
      * Re-validates each civic against the given state, replacing any that are no longer
-     * compatible (e.g. nomadic-exclusive civics when flipping to non-nomadic).
+     * compatible (e.g. nomadic-exclusive civics when flipping to non-nomadic, or a civic whose
+     * own possible-block forbids the newly-picked origin, like Planetscapers vs Shattered Ring).
      */
     private List<Civic> revalidateCivics(List<Civic> current, EmpireState state) {
         var result = new ArrayList<Civic>();
@@ -402,7 +417,7 @@ public class RerollService {
             if (!evaluator.evaluateBoth(civic.potential(), civic.possible(), runningState)) {
                 var pickable = filterService.getCompatibleCivics(runningState);
                 if (pickable.isEmpty()) {
-                    throw new GenerationException("No replacement civic available after nomadic toggle");
+                    throw new GenerationException("No replacement civic available for: " + civic.id());
                 }
                 kept = WeightedRandom.select(pickable, Civic::randomWeight, random);
             }

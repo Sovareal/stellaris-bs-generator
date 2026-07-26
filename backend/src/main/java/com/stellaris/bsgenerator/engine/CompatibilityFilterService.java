@@ -236,4 +236,14 @@ public class CompatibilityFilterService {
     public int getTraitCost(String traitId) {
         return gameDataManager.getAllTraitCosts().getOrDefault(traitId, 0);
     }
+
+    /**
+     * Look up a trait's opposites from the all-traits opposites map (includes initial=no traits,
+     * e.g. trait_pathogenic_genes). Used when stubbing an enforced trait whose real definition
+     * isn't in the creation-eligible pool, so its conflict list isn't silently dropped.
+     * Returns an empty list if the trait has no opposites entry.
+     */
+    public List<String> getTraitOpposites(String traitId) {
+        return gameDataManager.getAllTraitOpposites().getOrDefault(traitId, List.of());
+    }
 }

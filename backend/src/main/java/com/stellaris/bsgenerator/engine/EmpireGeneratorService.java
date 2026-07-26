@@ -210,10 +210,11 @@ public class EmpireGeneratorService {
                                 real.allowedEthics(), real.forbiddenEthics(),
                                 real.iconPath());
                     }
-                    // Fallback stub (trait not in creation pool)
+                    // Fallback stub (trait not in creation pool) -- still pull its opposites from
+                    // the all-traits map so conflict exclusion works for initial=no traits
                     return new SpeciesTrait(
                             traitId, costOverride,
-                            List.of("BIOLOGICAL"), List.of(), List.of(), List.of(),
+                            List.of("BIOLOGICAL"), List.of(), List.of(), filterService.getTraitOpposites(traitId),
                             true, false, null, List.of(),
                             List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null);
                 })
@@ -528,66 +529,6 @@ public class EmpireGeneratorService {
                 random).id();
     }
 
-    private List<SpeciesTrait> pickTraits(SpeciesArchetype archetype, EmpireState state,
-                                          List<String> allExcludeIds, List<String> civicEnforcedIds) {
-        var available = filterService.getCompatibleTraits(archetype.id(), state);
-        int budget = archetype.traitPoints();
-        // Only civic-enforced traits consume trait slots (origin-enforced are free slots)
-        int maxTraits = archetype.maxTraits() - civicEnforcedIds.size();
-
-        // Deduct only civic-enforced costs from starting budget (origin-enforced are free)
-        int civicEnforcedCostSum = civicEnforcedIds.stream()
-                .mapToInt(id -> {
-                    var t = filterService.findTraitById(id);
-                    return t != null ? t.cost() : 0;
-                })
-                .sum();
-
-        // Exclude ALL enforced trait IDs from the random pool
-        var excludeSet = new HashSet<>(allExcludeIds);
-
-        List<SpeciesTrait> picked = new ArrayList<>();
-        Set<String> pickedIds = new HashSet<>();
-        Set<String> excludedByOpposites = new HashSet<>();
-        // Seed opposites from enforced traits so we never pick a trait that conflicts with them
-        for (var enforcedId : allExcludeIds) {
-            var enforcedTrait = filterService.findTraitById(enforcedId);
-            if (enforcedTrait != null) {
-                excludedByOpposites.addAll(enforcedTrait.opposites());
-            }
-        }
-        int pointsSpent = civicEnforcedCostSum; // start at civic enforced cost so random picks can't overspend
-
-        // Shuffle to add randomness (traits don't have random_weight)
-        var shuffled = new ArrayList<>(available);
-        Collections.shuffle(shuffled, random);
-
-        for (var trait : shuffled) {
-            if (picked.size() >= maxTraits) break;
-
-            // Skip origin enforced traits (they're added separately)
-            if (excludeSet.contains(trait.id())) continue;
-
-            // Skip if already picked or excluded by opposites
-            if (pickedIds.contains(trait.id())) continue;
-            if (excludedByOpposites.contains(trait.id())) continue;
-
-            // Check budget: positive traits cost points, negative traits give points back
-            int newTotal = pointsSpent + trait.cost();
-            if (newTotal > budget) continue; // Can't afford
-            if (newTotal < 0) continue; // Too many negative traits
-
-            picked.add(trait);
-            pickedIds.add(trait.id());
-            pointsSpent = newTotal;
-
-            // Exclude opposites
-            excludedByOpposites.addAll(trait.opposites());
-        }
-
-        return picked;
-    }
-
     private List<SpeciesTrait> prependEnforcedTraits(List<String> enforcedTraitIds, List<SpeciesTrait> pickedTraits) {
         if (enforcedTraitIds.isEmpty()) return pickedTraits;
 
@@ -607,11 +548,13 @@ public class EmpireGeneratorService {
                         realTrait.iconPath()));
             } else {
                 // Stub for initial=no traits (malleable_genes, necrophage, etc.)
-                // Look up the real cost from the all-traits map so it displays correctly
+                // Look up the real cost and opposites from the all-traits maps so both display
+                // correctly and conflicting traits still get excluded from later random picks
                 int traitCost = filterService.getTraitCost(traitId);
+                List<String> traitOpposites = filterService.getTraitOpposites(traitId);
                 result.add(new SpeciesTrait(
                         traitId, traitCost,
-                        List.of(), List.of(), List.of(), List.of(),
+                        List.of(), List.of(), List.of(), traitOpposites,
                         true, false, null, List.of(),
                         List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null));
             }

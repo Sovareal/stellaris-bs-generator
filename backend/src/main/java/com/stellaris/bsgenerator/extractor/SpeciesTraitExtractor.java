@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -54,10 +55,13 @@ public class SpeciesTraitExtractor {
             List<String> allowedPlanetClasses = node.child("allowed_planet_classes")
                     .map(ClausewitzNode::bareValues).orElse(List.of());
 
-            // Parse opposites: either bare values or quoted strings
-            List<String> opposites = node.child("opposites")
-                    .map(this::parseOpposites)
-                    .orElse(List.of());
+            // Parse opposites: either bare values or quoted strings, plus trait exclusions
+            // declared as `species_potential_add = { NOT = { has_trait = X } } }` (e.g. Cyborg:
+            // Loyalty Circuits vs. Hive Mind) -- a second, independent conflict mechanism games
+            // use besides the `opposites` list.
+            List<String> opposites = mergeOpposites(
+                    node.child("opposites").map(this::parseOpposites).orElse(List.of()),
+                    node.child("species_potential_add").orElse(null));
 
             boolean randomized = node.childBool("randomized", true);
 
@@ -133,6 +137,29 @@ public class SpeciesTraitExtractor {
         return map;
     }
 
+    /**
+     * Extract opposites for ALL species traits, including initial=no traits (e.g.
+     * trait_pathogenic_genes, granted by origin_synthetic_fertility) that are excluded from the
+     * creation pool but still need their conflict list available when they're stubbed in as an
+     * origin/civic-enforced trait.
+     */
+    public Map<String, List<String>> extractAllTraitOpposites(ClausewitzNode root) {
+        Map<String, List<String>> map = new HashMap<>();
+        for (var node : root.children()) {
+            if (node.key() == null || !node.isBlock()) continue;
+            if (node.child("allowed_archetypes").isEmpty()) continue;
+            if (node.child("cost").isEmpty()) continue;
+
+            List<String> opposites = mergeOpposites(
+                    node.child("opposites").map(this::parseOpposites).orElse(List.of()),
+                    node.child("species_potential_add").orElse(null));
+            if (!opposites.isEmpty()) {
+                map.put(node.key(), opposites);
+            }
+        }
+        return map;
+    }
+
     private int parseCost(ClausewitzNode costNode) {
         if (costNode.isLeaf()) {
             // cost = 2
@@ -153,5 +180,28 @@ public class SpeciesTraitExtractor {
         // e.g., opposites = { "trait_slow_breeders" "trait_fertile" }
         // The parser strips quotes, so these appear as bare values
         return oppositeNode.bareValues();
+    }
+
+    /**
+     * Combines a trait's declared `opposites` list with any traits it excludes via
+     * `species_potential_add = { NOT = { has_trait = X } } }` (e.g. trait_cyborg_loyalty_circuits
+     * requires NOT having trait_hive_mind). Only direct NOT children of species_potential_add are
+     * read -- a NOT nested inside an OR/AND combinator has different logical meaning and isn't a
+     * hard exclusion, so it's deliberately not treated as one here.
+     */
+    private List<String> mergeOpposites(List<String> declaredOpposites, ClausewitzNode potentialAdd) {
+        if (potentialAdd == null) return declaredOpposites;
+        List<String> forbidden = potentialAdd.children("NOT").stream()
+                .flatMap(notNode -> notNode.children("has_trait").stream())
+                .map(ClausewitzNode::value)
+                .filter(Objects::nonNull)
+                .toList();
+        if (forbidden.isEmpty()) return declaredOpposites;
+
+        var merged = new ArrayList<>(declaredOpposites);
+        for (var traitId : forbidden) {
+            if (!merged.contains(traitId)) merged.add(traitId);
+        }
+        return List.copyOf(merged);
     }
 }
