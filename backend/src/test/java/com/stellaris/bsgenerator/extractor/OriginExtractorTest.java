@@ -98,4 +98,34 @@ class OriginExtractorTest {
         var def = origins.stream().filter(o -> o.id().equals("origin_default")).findFirst().orElseThrow();
         assertTrue(def.randomWeight() > 0, "origin_default should have positive weight");
     }
+
+    @Test
+    void stormChasersHasNomadicNameSwap() {
+        // 4.5 added swap_type = { name = "origin_storm_chasers_nomadic" trigger = { is_nomadic = yes } }
+        var stormChasers = origins.stream().filter(o -> o.id().equals("origin_storm_chasers")).findFirst().orElseThrow();
+        assertEquals("origin_storm_chasers_nomadic", stormChasers.nomadicNameKey());
+    }
+
+    @Test
+    void toxicKnightsHasNoNomadicNameSwap() {
+        // origin_toxic_knights has no swap_type block in game data, unlike Storm Chasers
+        var toxicKnights = origins.stream().filter(o -> o.id().equals("origin_toxic_knights")).findFirst().orElseThrow();
+        assertNull(toxicKnights.nomadicNameKey());
+    }
+
+    @Test
+    void originDefaultHasNomadicNameSwapAcrossMultipleSwapTypeBlocks() {
+        // origin_default declares two separate swap_type blocks (organic vs. non-organic
+        // trait variants) that both trigger on is_nomadic = yes and share one name key --
+        // exercises the "multiple swap_type blocks per origin" extraction path.
+        var def = origins.stream().filter(o -> o.id().equals("origin_default")).findFirst().orElseThrow();
+        assertEquals("origin_default_nomadic", def.nomadicNameKey());
+    }
+
+    @Test
+    void nonNomadicSwapOnlyOriginHasNoNomadicNameSwap() {
+        // origin_necrophage has no swap_type block at all
+        var necro = origins.stream().filter(o -> o.id().equals("origin_necrophage")).findFirst().orElseThrow();
+        assertNull(necro.nomadicNameKey());
+    }
 }

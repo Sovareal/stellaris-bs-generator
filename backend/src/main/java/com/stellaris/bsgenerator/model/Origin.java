@@ -1,6 +1,7 @@
 package com.stellaris.bsgenerator.model;
 
 import com.stellaris.bsgenerator.model.requirement.RequirementBlock;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 
@@ -15,5 +16,6 @@ public record Origin(
         String iconPath,
         String habitabilityPreference,
         List<String> requiredShipsetIds,
-        List<String> excludedShipsetIds
+        List<String> excludedShipsetIds,
+        @Nullable String nomadicNameKey
 ) {}

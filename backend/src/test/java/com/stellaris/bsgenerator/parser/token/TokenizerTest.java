@@ -82,8 +82,9 @@ class TokenizerTest {
 
     @Test
     void comparisonOperators() {
-        var tokens = Tokenizer.tokenize("count > 0\ncount < 5\ncount >= 2\ncount <= 3");
+        var tokens = Tokenizer.tokenize("count > 0\ncount < 5\ncount >= 2\ncount <= 3\ncount != 1");
         assertTypes(tokens,
+                IDENTIFIER, COMPARISON, NUMBER,
                 IDENTIFIER, COMPARISON, NUMBER,
                 IDENTIFIER, COMPARISON, NUMBER,
                 IDENTIFIER, COMPARISON, NUMBER,
@@ -93,6 +94,25 @@ class TokenizerTest {
         assertEquals("<", tokens.get(4).value());
         assertEquals(">=", tokens.get(7).value());
         assertEquals("<=", tokens.get(10).value());
+        assertEquals("!=", tokens.get(13).value());
+    }
+
+    @Test
+    void notEqualsInVariableArithmeticBlock() {
+        // Stellaris 4.5 added check_variable_arithmetic { ... value != 1 } blocks
+        // to pop_attraction_tag entries in common/ethics/00_ethics.txt.
+        String input = """
+                check_variable_arithmetic = {
+                    which = some_var
+                    value != 1
+                }
+                """;
+        var tokens = Tokenizer.tokenize(input);
+        assertTypes(tokens, IDENTIFIER, EQUALS, OPEN_BRACE,
+                IDENTIFIER, EQUALS, IDENTIFIER,
+                IDENTIFIER, COMPARISON, NUMBER,
+                CLOSE_BRACE, EOF);
+        assertEquals("!=", tokens.get(7).value());
     }
 
     @Test

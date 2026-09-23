@@ -114,7 +114,20 @@ public class OriginExtractor {
                             .toList())
                     .orElse(List.of());
 
-            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath, habitabilityPreference, requiredShipsetIds, excludedShipsetIds));
+            // Parse nomadic display-name override: an origin may declare multiple
+            // swap_type = { name = "..." trigger = { is_nomadic = yes ... } } blocks
+            // (e.g. origin_default has separate variants per species trait); take the
+            // first one whose trigger requires is_nomadic = yes and that names a key.
+            String nomadicNameKey = node.children("swap_type").stream()
+                    .filter(swap -> swap.child("trigger")
+                            .flatMap(t -> t.childValue("is_nomadic"))
+                            .filter("yes"::equals)
+                            .isPresent())
+                    .flatMap(swap -> swap.childValue("name").stream())
+                    .findFirst()
+                    .orElse(null);
+
+            origins.add(new Origin(id, potential, possible, dlcRequirement, randomWeight, secondarySpecies, enforcedTraitIds, iconPath, habitabilityPreference, requiredShipsetIds, excludedShipsetIds, nomadicNameKey));
         }
 
         log.info("Extracted {} playable origins", origins.size());

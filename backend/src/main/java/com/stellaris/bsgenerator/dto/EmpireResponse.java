@@ -49,7 +49,7 @@ public record EmpireResponse(
                 empire.ethics().stream().map(e -> EthicDto.from(e, loc)).toList(),
                 AuthorityDto.from(empire.authority(), loc),
                 empire.civics().stream().map(c -> CivicDto.from(c, loc)).toList(),
-                OriginDto.from(empire.origin(), loc),
+                OriginDto.from(empire.origin(), loc, empire.nomadic()),
                 ArchetypeDto.from(empire.speciesArchetype(), loc),
                 empire.speciesClass(),
                 loc.getDisplayName(empire.speciesClass()),

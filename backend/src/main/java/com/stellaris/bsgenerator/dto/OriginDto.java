@@ -5,7 +5,8 @@ import com.stellaris.bsgenerator.parser.LocalizationService;
 import org.springframework.lang.Nullable;
 
 public record OriginDto(String id, @Nullable String displayName, @Nullable String dlcRequirement) {
-    public static OriginDto from(Origin o, LocalizationService loc) {
-        return new OriginDto(o.id(), loc.getDisplayName(o.id()), o.dlcRequirement());
+    public static OriginDto from(Origin o, LocalizationService loc, boolean nomadic) {
+        String nameKey = nomadic && o.nomadicNameKey() != null ? o.nomadicNameKey() : o.id();
+        return new OriginDto(o.id(), loc.getDisplayName(nameKey), o.dlcRequirement());
     }
 }

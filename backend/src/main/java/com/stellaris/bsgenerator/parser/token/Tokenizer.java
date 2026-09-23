@@ -34,7 +34,7 @@ public final class Tokenizer {
                 case '=' -> single(TokenType.EQUALS);
                 case '"' -> readString();
                 case '@' -> readVariable();
-                case '<', '>' -> readComparison();
+                case '<', '>', '!' -> readComparison();
                 default -> {
                     if (c == '-' && hasNext() && isDigitChar(peekAt(pos + 1))) {
                         yield readNumber();
