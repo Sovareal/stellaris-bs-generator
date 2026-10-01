@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-01
+
+### Fixed
+
+- Stellaris 4.5 "Cygnus" compatibility: the game's new `!=` comparisons in `00_ethics.txt` made the parser skip the whole ethics file, so every Generate click failed with "Could not pick 3 compatible ethics"
+- Trait conflicts hidden behind `initial = no` and `species_potential_add` are now excluded
+- Origin/Nomadic icon size and nomadic state handling on reroll
+- Desktop app backend connectivity: fixed backend port, corrected CORS origin, `127.0.0.1` for all backend calls, and Tauri v2 environment detection
+- Release builds now use the installed backend jar, with production logging enabled
+- `stop-dev.sh` no longer silently does nothing when `lsof` is unavailable
+
+### Added
+
+- Nomads DLC support: nomadic empire generation with a Nomadic indicator on the Origin panel, and nomadic title variants for origins such as Storm Chasers
+- Dev process cleanup scripts (`scripts/stop-dev.ps1`, `scripts/stop-dev.sh`) for stuck ports 8080/5173
+- Graceful backend shutdown on app exit
+- Export dialog migrated to Radix Dialog (focus trap, accessibility)
+
+### Changed
+
+- Icon cache is pre-warmed after game data loads
+- Backend CORS origins restricted and icon endpoint hardened against path traversal
+- Empire generation distribution rebalanced (species classes, fanatic ethics)
+
 ## [1.1.0] - 2026-05-01
 
 ### Added
@@ -129,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Civic description/modifier tooltip feature (reverted -- incomplete)
 
-[Unreleased]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Sovareal/stellaris-bs-generator/releases/tag/v1.0.0

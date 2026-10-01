@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.stellaris"
-version = "1.1.0"
+version = "1.1.1"
 
 java {
     toolchain {
