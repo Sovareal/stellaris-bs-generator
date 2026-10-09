@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-09
+
+### Fixed
+
+- Stellaris 4.5 "Cygnus" compatibility: `ruler? = { ... }` scopes in the game's authority and trait files made the parser skip those files, so no authorities loaded and every Generate click failed with "No compatible authorities"
+
+### Changed
+
+- Game data loading is now strict: if any game file cannot be parsed, or the loaded data is implausibly small, the app shows a clear error listing the affected files (with a "Copy details" button) instead of silently skipping them
+
 ## [1.1.1] - 2026-10-01
 
 ### Fixed
@@ -153,7 +163,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Civic description/modifier tooltip feature (reverted -- incomplete)
 
-[Unreleased]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Sovareal/stellaris-bs-generator/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Sovareal/stellaris-bs-generator/releases/tag/v1.0.0
