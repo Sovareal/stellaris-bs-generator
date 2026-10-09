@@ -20,9 +20,24 @@ public final class DirectoryLoader {
 
     private DirectoryLoader() {}
 
+    /** Lenient load: unparseable files are logged and skipped. Prefer {@link #loadDirectoryReporting}. */
     public static ClausewitzNode loadDirectory(Path directory, Map<String, String> globalVariables) throws IOException {
+        return loadDirectoryReporting(directory, globalVariables).root();
+    }
+
+    /** Strict load: throws if any file in the directory cannot be parsed. */
+    public static ClausewitzNode loadDirectoryStrict(Path directory, Map<String, String> globalVariables) throws IOException {
+        var result = loadDirectoryReporting(directory, globalVariables);
+        if (!result.failures().isEmpty()) {
+            throw new IOException("Failed to parse game files: " + result.failures());
+        }
+        return result.root();
+    }
+
+    /** Loads every .txt file; files that fail to parse are skipped but reported in the result. */
+    public static LoadResult loadDirectoryReporting(Path directory, Map<String, String> globalVariables) throws IOException {
         if (!Files.isDirectory(directory)) {
-            return ClausewitzNode.root(List.of());
+            return new LoadResult(ClausewitzNode.root(List.of()), List.of());
         }
 
         List<Path> files;
@@ -34,6 +49,7 @@ public final class DirectoryLoader {
         }
 
         var allChildren = new ArrayList<ClausewitzNode>();
+        var failures = new ArrayList<ParseFailure>();
         for (Path file : files) {
             var fileVars = new HashMap<>(globalVariables);
             try {
@@ -41,11 +57,13 @@ public final class DirectoryLoader {
                 allChildren.addAll(fileRoot.children());
             } catch (Exception e) {
                 log.warn("Skipping file {} due to parse error: {}", file.getFileName(), e.getMessage());
+                failures.add(new ParseFailure(directory.getFileName().toString(),
+                        file.getFileName().toString(), e.getMessage()));
             }
         }
 
         log.debug("Loaded {} top-level entries from {}", allChildren.size(), directory);
-        return ClausewitzNode.root(allChildren);
+        return new LoadResult(ClausewitzNode.root(allChildren), failures);
     }
 
     static ClausewitzNode parseFile(Path file, Map<String, String> variables) throws IOException {

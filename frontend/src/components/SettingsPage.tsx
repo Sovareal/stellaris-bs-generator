@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import type { DlcInfo } from "@/types/empire";
-import { FolderOpen, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { FolderOpen, Loader2, CheckCircle, XCircle, Copy } from "lucide-react";
 
 interface SettingsPageProps {
   onSaved: () => void;
@@ -104,7 +104,18 @@ export function SettingsPage({ onSaved, onClose, errorMessage }: SettingsPagePro
 
           {errorMessage && (
             <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20">
-              <p className="text-sm text-destructive">{errorMessage}</p>
+              <p className="text-sm text-destructive whitespace-pre-wrap break-words max-h-48 overflow-y-auto">{errorMessage}</p>
+              {errorMessage.includes("\n") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => navigator.clipboard?.writeText(errorMessage).catch(() => {})}
+                >
+                  <Copy className="size-3.5 mr-1.5" />
+                  Copy details
+                </Button>
+              )}
             </div>
           )}
 

@@ -124,4 +124,51 @@ class GameDataManagerTest {
 
         assertThrows(IOException.class, () -> manager.loadGameData(false));
     }
+
+    @Test
+    void unparseableGameFileFailsLoadWithFileName() throws IOException {
+        Path game = tempDir.resolve("game");
+        Files.createDirectories(game.resolve("common/governments/authorities"));
+        Files.writeString(game.resolve("launcher-settings.json"),
+                "{\"version\":\"Test v1 (abcd)\",\"rawVersion\":\"v1\"}");
+        Files.writeString(game.resolve("common/governments/authorities/00_authorities.txt"),
+                "auth_x = { possible = { a = $ } }\n");
+
+        var props = new ParserProperties(game.toString(), tempDir.resolve("cache").toString());
+        var settingsService = new SettingsService(props);
+        var manager = new GameDataManager(settingsService, new GameFileService(props, settingsService),
+                new ParsedDataCache(props, tools.jackson.databind.json.JsonMapper.builder().build()),
+                new EthicExtractor(), new AuthorityExtractor(),
+                new CivicExtractor(), new OriginExtractor(),
+                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
+                new PlanetClassExtractor(), new GraphicalCultureExtractor(),
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
+                new LocalizationService(props, settingsService));
+
+        var e = assertThrows(GameDataLoadException.class, () -> manager.loadGameData(true));
+        assertTrue(e.getMessage().contains("00_authorities.txt"), e.getMessage());
+        assertTrue(e.getMessage().contains("Could not parse 1 game file"), e.getMessage());
+    }
+
+    @Test
+    void emptyGameDataFailsSanityCheck() throws IOException {
+        Path game = tempDir.resolve("game");
+        Files.createDirectories(game.resolve("common/ethics"));
+        Files.writeString(game.resolve("launcher-settings.json"),
+                "{\"version\":\"Test v1 (abcd)\",\"rawVersion\":\"v1\"}");
+
+        var props = new ParserProperties(game.toString(), tempDir.resolve("cache").toString());
+        var settingsService = new SettingsService(props);
+        var manager = new GameDataManager(settingsService, new GameFileService(props, settingsService),
+                new ParsedDataCache(props, tools.jackson.databind.json.JsonMapper.builder().build()),
+                new EthicExtractor(), new AuthorityExtractor(),
+                new CivicExtractor(), new OriginExtractor(),
+                new SpeciesArchetypeExtractor(), new SpeciesTraitExtractor(),
+                new PlanetClassExtractor(), new GraphicalCultureExtractor(),
+                new StartingRulerTraitExtractor(), new SpeciesClassExtractor(),
+                new LocalizationService(props, settingsService));
+
+        var e = assertThrows(GameDataLoadException.class, () -> manager.loadGameData(true));
+        assertTrue(e.getMessage().contains("only 0 authorities extracted"), e.getMessage());
+    }
 }

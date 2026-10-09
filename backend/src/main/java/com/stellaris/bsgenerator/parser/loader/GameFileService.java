@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -30,6 +32,15 @@ public class GameFileService {
     @Getter private ClausewitzNode graphicalCultures;
     @Getter private ClausewitzNode speciesClasses;
 
+    /** Files skipped by the most recent {@link #loadAll()}. Non-empty means the game data is incomplete. */
+    @Getter private List<ParseFailure> parseFailures = List.of();
+
+    private ClausewitzNode load(Path dir, Map<String, String> globalVars, List<ParseFailure> failures) throws IOException {
+        var result = DirectoryLoader.loadDirectoryReporting(dir, globalVars);
+        failures.addAll(result.failures());
+        return result.root();
+    }
+
     public void loadAll() throws IOException {
         Path gamePath = Path.of(settingsService.getEffectiveGamePath());
         Path common = gamePath.resolve("common");
@@ -43,32 +54,32 @@ public class GameFileService {
         log.info("Loaded {} global scripted variables", globalVars.size());
 
         // Parse each category
-        ethics = DirectoryLoader.loadDirectory(common.resolve("ethics"), globalVars);
+        var failures = new ArrayList<ParseFailure>();
+        ethics = load(common.resolve("ethics"), globalVars, failures);
         log.info("Loaded {} ethics", ethics.children().size());
 
-        authorities = DirectoryLoader.loadDirectory(
-                common.resolve("governments").resolve("authorities"), globalVars);
+        authorities = load(common.resolve("governments").resolve("authorities"), globalVars, failures);
         log.info("Loaded {} authorities", authorities.children().size());
 
-        civics = DirectoryLoader.loadDirectory(
-                common.resolve("governments").resolve("civics"), globalVars);
+        civics = load(common.resolve("governments").resolve("civics"), globalVars, failures);
         log.info("Loaded {} civics/origins entries", civics.children().size());
 
-        speciesArchetypes = DirectoryLoader.loadDirectory(
-                common.resolve("species_archetypes"), globalVars);
+        speciesArchetypes = load(common.resolve("species_archetypes"), globalVars, failures);
         log.info("Loaded {} species archetypes", speciesArchetypes.children().size());
 
-        traits = DirectoryLoader.loadDirectory(common.resolve("traits"), globalVars);
+        traits = load(common.resolve("traits"), globalVars, failures);
         log.info("Loaded {} traits", traits.children().size());
 
-        planetClasses = DirectoryLoader.loadDirectory(common.resolve("planet_classes"), globalVars);
+        planetClasses = load(common.resolve("planet_classes"), globalVars, failures);
         log.info("Loaded {} planet class entries", planetClasses.children().size());
 
-        graphicalCultures = DirectoryLoader.loadDirectory(common.resolve("graphical_culture"), globalVars);
+        graphicalCultures = load(common.resolve("graphical_culture"), globalVars, failures);
         log.info("Loaded {} graphical culture entries", graphicalCultures.children().size());
 
-        speciesClasses = DirectoryLoader.loadDirectory(common.resolve("species_classes"), globalVars);
+        speciesClasses = load(common.resolve("species_classes"), globalVars, failures);
         log.info("Loaded {} species class entries", speciesClasses.children().size());
+
+        parseFailures = List.copyOf(failures);
 
         long elapsed = System.currentTimeMillis() - start;
         log.info("Game file loading complete in {}ms", elapsed);

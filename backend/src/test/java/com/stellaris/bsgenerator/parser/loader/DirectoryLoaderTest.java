@@ -82,4 +82,26 @@ class DirectoryLoaderTest {
         var root = DirectoryLoader.loadDirectory(tempDir, new HashMap<>());
         assertTrue(root.children().isEmpty());
     }
+
+    @Test
+    void reportingLoadCollectsFailuresAndKeepsGoodFiles() throws IOException {
+        Files.writeString(tempDir.resolve("00_good.txt"), "entity_a = { cost = 1 }\n", StandardCharsets.UTF_8);
+        Files.writeString(tempDir.resolve("01_bad.txt"), "entity_b = { cost = $ }\n", StandardCharsets.UTF_8);
+
+        var result = DirectoryLoader.loadDirectoryReporting(tempDir, new HashMap<>());
+
+        assertEquals(1, result.root().children().size());
+        assertEquals(1, result.failures().size());
+        assertEquals("01_bad.txt", result.failures().get(0).fileName());
+        assertFalse(result.failures().get(0).message().isBlank());
+    }
+
+    @Test
+    void strictLoadThrowsOnUnparseableFile() throws IOException {
+        Files.writeString(tempDir.resolve("01_bad.txt"), "entity_b = { cost = $ }\n", StandardCharsets.UTF_8);
+
+        var e = assertThrows(IOException.class,
+                () -> DirectoryLoader.loadDirectoryStrict(tempDir, new HashMap<>()));
+        assertTrue(e.getMessage().contains("01_bad.txt"));
+    }
 }

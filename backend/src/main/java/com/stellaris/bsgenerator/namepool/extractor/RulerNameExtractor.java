@@ -19,7 +19,7 @@ public class RulerNameExtractor {
     public record Result(List<String> rulerNames, List<String> regnalNames) {}
 
     public Result extract(Path commonDir, Map<String, String> loc) throws IOException {
-        var root = DirectoryLoader.loadDirectory(commonDir.resolve("name_lists"), Map.of());
+        var root = DirectoryLoader.loadDirectoryStrict(commonDir.resolve("name_lists"), Map.of());
 
         var rulerSet = new LinkedHashSet<String>();
         var regnalSet = new LinkedHashSet<String>();
