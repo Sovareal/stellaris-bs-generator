@@ -116,6 +116,15 @@ class TokenizerTest {
     }
 
     @Test
+    void questionMarkInScopeKey() {
+        // Stellaris 4.5 uses "ruler? = { ... }" existence-check scopes in common/governments/authorities.
+        var tokens = Tokenizer.tokenize("ruler? = { leader_class = official }");
+        assertTypes(tokens, IDENTIFIER, EQUALS, OPEN_BRACE,
+                IDENTIFIER, EQUALS, IDENTIFIER, CLOSE_BRACE, EOF);
+        assertEquals("ruler?", tokens.get(0).value());
+    }
+
+    @Test
     void bareValues() {
         var tokens = Tokenizer.tokenize("tags = { TAG_A TAG_B TAG_C }");
         assertTypes(tokens, IDENTIFIER, EQUALS, OPEN_BRACE,

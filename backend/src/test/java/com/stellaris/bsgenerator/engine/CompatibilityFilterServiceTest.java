@@ -86,6 +86,13 @@ class CompatibilityFilterServiceTest {
     }
 
     @Test
+    void fanaticAuthoritarianMilitaristHasAuthorities() {
+        var state = EmpireState.empty().withEthics(Set.of("ethic_fanatic_authoritarian", "ethic_militarist"));
+        var authorities = filterService.getCompatibleAuthorities(state);
+        assertFalse(authorities.isEmpty(), "got none; all=" + gameDataManager.getAuthorities().stream().map(Authority::id).toList());
+    }
+
+    @Test
     void gestaltEthicsFilterToGestaltAuthorities() {
         var state = EmpireState.empty().withEthics(Set.of("ethic_gestalt_consciousness"));
         var authorities = filterService.getCompatibleAuthorities(state);
